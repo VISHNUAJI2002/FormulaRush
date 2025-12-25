@@ -9,6 +9,7 @@
 <body>
 
     <div class="game-wrapper">
+        
         <div class="hud-panel">
             <div id="p1Score" class="score p1">P1: 0m</div>
             <div id="timerDisplay" class="timer-box">60s</div>
@@ -21,11 +22,11 @@
                 <div class="math-group">
                     <div class="math-box left">
                         <span class="label">MOVE LEFT</span>
-                        <span class="problem" id="p1-txt-left">2 + 1</span>
+                        <span class="problem" id="p1-txt-left">0 + 0</span>
                     </div>
                     <div class="math-box right">
                         <span class="label">MOVE RIGHT</span>
-                        <span class="problem" id="p1-txt-right">4 + 1</span>
+                        <span class="problem" id="p1-txt-right">0 + 0</span>
                     </div>
                 </div>
                 <div class="key-hint">USE TOP ROW NUMBERS</div>
@@ -35,11 +36,11 @@
                 <div class="math-group">
                     <div class="math-box left">
                         <span class="label">MOVE LEFT</span>
-                        <span class="problem" id="p2-txt-left">3 + 3</span>
+                        <span class="problem" id="p2-txt-left">0 + 0</span>
                     </div>
                     <div class="math-box right">
                         <span class="label">MOVE RIGHT</span>
-                        <span class="problem" id="p2-txt-right">5 + 2</span>
+                        <span class="problem" id="p2-txt-right">0 + 0</span>
                     </div>
                 </div>
                 <div class="key-hint">USE NUMPAD</div>
@@ -51,13 +52,16 @@
                 <div class="glass-panel">
                     <h1 id="winnerText">TIME UP!</h1>
                     <p id="finalScores" class="winner-result"></p>
-                    <div class="button-group">
-                        <button id="btnRetry" class="lux-btn">Play Again</button>
-                        <button id="btnExit" class="lux-btn secondary">Exit</button>
+                    
+                    <div class="modal-btn-group">
+                        <button id="btnRetry">PLAY AGAIN</button>
+                        <button id="btnExit">EXIT</button>
                     </div>
                 </div>
             </div>
-        </div>
+
+        </div> <a href="/" class="quit-btn">✕ ABORT RACE</a>
+
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

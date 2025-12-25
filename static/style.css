@@ -400,3 +400,73 @@ h1 { font-size: 3rem; margin-bottom: 1rem; color: white; }
 }
 
 .stat-unit { font-size: 1.5rem; color: #666; font-weight: 400; }
+
+/* --- NEW LOCATION: Bottom Center Quit Button --- */
+.quit-btn {
+    /* Remove absolute positioning so it sits in the flow */
+    position: relative; 
+    display: inline-block;
+    
+    /* Spacing */
+    margin-top: 15px;
+    padding: 10px 30px;
+    
+    /* Visual Style */
+    background: transparent;
+    border: 1px solid #444;
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 30px; /* Fully rounded 'pill' shape */
+    transition: 0.3s;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.quit-btn:hover {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+    background: rgba(254, 0, 105, 0.05);
+    box-shadow: 0 0 15px rgba(254, 0, 105, 0.2);
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+/* --- UPDATE: Game Over Modal Buttons --- */
+.modal-btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Make the Play Again button glow Cyan */
+#btnRetry {
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    background: var(--neon-cyan);
+    color: #000;
+    border: none;
+    font-weight: bold;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+}
+#btnRetry:hover {
+    transform: scale(1.05);
+    background: #fff;
+    box-shadow: 0 0 40px rgba(0, 242, 254, 0.8);
+}
+
+/* Make the Exit button outlined in Pink */
+#btnExit {
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    background: transparent;
+    color: var(--neon-pink);
+    border: 1px solid var(--neon-pink);
+    font-weight: bold;
+}
+#btnExit:hover {
+    background: var(--neon-pink);
+    color: white;
+    box-shadow: 0 0 20px rgba(254, 0, 105, 0.4);
+}
