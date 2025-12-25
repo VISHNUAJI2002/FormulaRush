@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <h2 class="auth-title">Pilot Login</h2>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-input" placeholder="ENTER CALLSIGN" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                Authenticate
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            New to the track? <a href="/register">Initialize Registration</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

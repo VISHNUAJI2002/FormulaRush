@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="profile-card">
+        
+        <div class="pilot-header">
+            <h1 class="pilot-name">{{ current_user.username }}</h1>
+            <div class="pilot-rank">Formula Rush Pilot</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label">Career Personal Best</div>
+                <div class="stat-value">
+                    {{ score if score else 0 }}<span class="stat-unit">m</span>
+                </div>
+            </div>
+        </div>
+
+        <a href="{{ url_for('play') }}" class="btn btn-primary btn-large" style="width: 100%; display: block;">
+            INITIATE RACE SEQUENCE
+        </a>
+
+    </div>
+</div>
+{% endblock %}
