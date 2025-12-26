@@ -2,60 +2,65 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Game Settings
 const CONFIG = {
     laneCount: 5,
     roadWidth: 800,
-    carWidth: 60,       // Enemy car width (UNCHANGED)
+    carWidth: 60,
     carHeight: 100,
     laneWidth: 800 / 5
 };
 
-// --- PLAYER-ONLY SIZE ---
-const PLAYER_CAR_WIDTH = 90;    // 👈 Increased player width
-const PLAYER_CAR_HEIGHT = 100;
-
-// Difficulty Presets
 const SPEEDS = {
-    easy:   { base: 3, max: 10, acceleration: 0.001 },
-    medium: { base: 6, max: 15, acceleration: 0.003 },
-    hard:   { base: 9, max: 25, acceleration: 0.005 }
+    easy:   { base: 4, max: 9, acceleration: 0.001 },
+    medium: { base: 6, max: 12, acceleration: 0.002 },
+    hard:   { base: 8, max: 16, acceleration: 0.004 }
 };
 
-// Game State
 let gameState = {
     isPlaying: false,
     score: 0,
     speed: 0,
     maxSpeed: 0,
-    lane: 2,
+    lane: 2, 
     mathMode: 'simple',
+    difficulty: 'easy', 
     distance: 0
 };
 
-// --- IMAGES ---
+// IMAGES
 const playerImg = new Image();
-playerImg.src = "/static/car_player.png";
-
+playerImg.src = "/static/car_player.png"; 
 const enemyImg = new Image();
-enemyImg.src = "/static/car_enemy.png";
+enemyImg.src = "/static/car_enemy.png"; 
 
-// Objects
 let enemies = [];
 let currentQuestion = null;
 
-/* --- HTML ELEMENTS --- */
+/* --- UI ELEMENTS --- */
 const questionLeftEl = document.getElementById('question-left');
 const questionRightEl = document.getElementById('question-right');
 const gameOverScreen = document.getElementById('game-over-screen');
+const gameOverTitle = document.getElementById('game-over-title');
 const finalScoreEl = document.getElementById('final-score');
+const liveDistanceEl = document.getElementById('live-distance');
 const speedNeedle = document.getElementById('speed-needle');
 const speedValueEl = document.getElementById('speed-value');
-const startBtn = document.getElementById('start-engine-btn');
-const cockpitControls = document.getElementById('cockpit-controls');
 
-/* --- INPUT HANDLING --- */
-startBtn.addEventListener('click', startGame);
+// CONTROLS
+const btnStart = document.getElementById('btn-start');
+const btnStop = document.getElementById('btn-stop');
+const settingsArea = document.getElementById('settings-area');
+
+// SHIFTER
+const shifterAssembly = document.getElementById('shifter-assembly');
+const knobNumber = document.getElementById('knob-number');
+const labelEasy = document.getElementById('label-easy');
+const labelMedium = document.getElementById('label-medium');
+const labelHard = document.getElementById('label-hard');
+
+/* --- EVENT LISTENERS --- */
+btnStart.addEventListener('click', startGame);
+btnStop.addEventListener('click', abortRace);
 
 document.addEventListener('keydown', (e) => {
     if (!gameState.isPlaying) return;
@@ -69,8 +74,55 @@ function getSelectedRadio(name) {
     for (let radio of radios) {
         if (radio.checked) return radio.value;
     }
-    return 'easy';
+    return 'simple';
 }
+
+/* --- UI LOGIC (GEAR SHIFT) --- */
+function shiftGear(level) {
+    if (gameState.isPlaying) return; // Locked while playing
+
+    gameState.difficulty = level;
+
+    // 1. CLEANUP: Reset ALL labels to default gray
+    // We explicitly clear the inline styles (color/textShadow) 
+    // so they revert to the CSS default.
+    [labelEasy, labelMedium, labelHard].forEach(label => {
+        label.classList.remove('active-label');
+        label.style.color = "";
+        label.style.textShadow = "";
+    });
+
+    // 2. APPLY NEW STYLE based on level
+    // Adjust height for the new Compact Shifter
+    if (level === 'hard') {
+        shifterAssembly.style.top = "30px";
+        knobNumber.innerText = "3";
+        knobNumber.style.color = "#dc3545"; 
+        knobNumber.style.textShadow = "0 0 15px #dc3545";
+        
+        labelHard.classList.add('active-label');
+        labelHard.style.color = "#dc3545";
+    } 
+    else if (level === 'medium') {
+        shifterAssembly.style.top = "90px";
+        knobNumber.innerText = "2";
+        knobNumber.style.color = "#ffc107";
+        knobNumber.style.textShadow = "0 0 15px #ffc107";
+        
+        labelMedium.classList.add('active-label');
+        labelMedium.style.color = "#ffc107";
+    } 
+    else { // easy
+        shifterAssembly.style.top = "150px";
+        knobNumber.innerText = "1";
+        knobNumber.style.color = "#00d2ff"; 
+        knobNumber.style.textShadow = "0 0 15px #00d2ff";
+        
+        labelEasy.classList.add('active-label');
+        labelEasy.style.color = "#00d2ff";
+    }
+}
+
 
 /* --- MATH LOGIC --- */
 function generateTwoProblems() {
@@ -86,26 +138,40 @@ function generateTwoProblems() {
         rightDigit: rightObj.lastDigit
     };
 
-    questionLeftEl.textContent = `Left: ${leftObj.text}`;
-    questionRightEl.textContent = `Right: ${rightObj.text}`;
+    questionLeftEl.textContent = `L: ${leftObj.text}`;   
+    questionRightEl.textContent = `R: ${rightObj.text}`; 
 }
 
 function createMathProblem() {
-    const n1 = Math.floor(Math.random() * 9) + 1;
-    const n2 = Math.floor(Math.random() * 9) + 1;
+    let n1, n2, op, ans, text;
+    let isValid = false;
 
-    let operators = ['+', '-'];
-    if (gameState.mathMode === 'mixed') operators.push('*');
-    const op = operators[Math.floor(Math.random() * operators.length)];
+    while (!isValid) {
+        n1 = Math.floor(Math.random() * 12) + 1; 
+        n2 = Math.floor(Math.random() * 12) + 1;
+        
+        let operators = ['+', '-'];
+        if (gameState.mathMode === 'mixed') operators.push('*');
+        op = operators[Math.floor(Math.random() * operators.length)];
 
-    let ans, text;
-    if (op === '+') { ans = n1 + n2; text = `${n1}+${n2}`; }
-    else if (op === '*') { ans = n1 * n2; text = `${n1}x${n2}`; }
-    else {
-        let big = Math.max(n1, n2);
-        let small = Math.min(n1, n2);
-        ans = big - small;
-        text = `${big}-${small}`;
+        if (op === '+') { ans = n1 + n2; text = `${n1}+${n2}`; }
+        else if (op === '*') { ans = n1 * n2; text = `${n1}x${n2}`; }
+        else { 
+            let big = Math.max(n1, n2);
+            let small = Math.min(n1, n2);
+            ans = big - small; 
+            text = `${big}-${small}`; 
+        }
+
+        if (gameState.difficulty === 'easy') {
+            if (ans < 10) isValid = true;
+        } 
+        else if (gameState.difficulty === 'medium') {
+            if (ans >= 10 && ans < 100) isValid = true;
+        } 
+        else if (gameState.difficulty === 'hard') {
+            if (ans >= 10) isValid = true;
+        }
     }
 
     return {
@@ -118,37 +184,57 @@ function checkAnswer(inputDigit) {
     if (inputDigit === currentQuestion.leftDigit) {
         if (gameState.lane > 0) gameState.lane--;
         generateTwoProblems();
-    } else if (inputDigit === currentQuestion.rightDigit) {
+    } 
+    else if (inputDigit === currentQuestion.rightDigit) {
         if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++;
         generateTwoProblems();
     }
 }
 
+
 /* --- GAME ENGINE --- */
 
 function startGame() {
-    cockpitControls.classList.add('controls-locked');
-    startBtn.style.display = 'none';
+    if (gameState.isPlaying) return;
 
-    const speedSetting = getSelectedRadio('speed');
+    // Lock Settings
+    settingsArea.classList.add('controls-locked');
+    
+    // Toggle Buttons
+    btnStart.classList.add('btn-disabled');
+    btnStop.classList.remove('btn-disabled');
+
     gameState.mathMode = getSelectedRadio('math');
+    // Difficulty set by shifter
 
-    const physics = SPEEDS[speedSetting];
+    const physics = SPEEDS[gameState.difficulty];
     gameState.speed = physics.base;
     gameState.maxSpeed = physics.max;
-
+    
     gameState.isPlaying = true;
-    gameState.lane = 2;
+    gameState.lane = 2; 
     gameState.score = 0;
     gameState.distance = 0;
     enemies = [];
 
     generateTwoProblems();
     requestAnimationFrame(gameLoop);
-
+    
     setInterval(() => {
         if (gameState.isPlaying) spawnEnemy();
     }, 2000 / (gameState.speed / 5));
+}
+
+function abortRace() {
+    if (!gameState.isPlaying) return;
+    
+    gameState.isPlaying = false;
+    gameOverTitle.innerText = "RACE ABORTED";
+    gameOverTitle.style.color = "#ffc107"; 
+    finalScoreEl.innerText = gameState.score;
+    gameOverScreen.style.display = 'flex';
+    
+    btnStop.classList.add('btn-disabled');
 }
 
 function spawnEnemy() {
@@ -156,7 +242,7 @@ function spawnEnemy() {
     enemies.push({
         lane: lane,
         y: -150,
-        speedOffset: (Math.random() * 2)
+        speedOffset: (Math.random() * 2) 
     });
 }
 
@@ -164,26 +250,26 @@ function updatePhysics() {
     if (gameState.speed < gameState.maxSpeed) gameState.speed += 0.01;
     gameState.distance += gameState.speed;
     gameState.score = Math.floor(gameState.distance / 10);
+    liveDistanceEl.innerText = gameState.score;
 }
 
 function updateSpeedometer() {
-    const maxS = 25;
+    const maxS = 20; 
     let pct = gameState.speed / maxS;
-    if (pct > 1) pct = 1;
+    if(pct > 1) pct = 1;
     const angle = 225 + (pct * 270);
     speedNeedle.style.transform = `rotate(${angle}deg)`;
-    speedValueEl.innerText = Math.floor(gameState.speed * 10);
+    speedValueEl.innerText = Math.floor(gameState.speed * 10); 
 }
 
-/* --- RENDERING HELPER --- */
-function drawCar(img, x, y, color, w = CONFIG.carWidth, h = CONFIG.carHeight) {
+function drawCar(img, x, y, color) {
     if (img.complete && img.naturalHeight !== 0) {
-        ctx.drawImage(img, x, y, w, h);
+        ctx.drawImage(img, x, y, CONFIG.carWidth, CONFIG.carHeight);
     } else {
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = "#fff";
-        ctx.strokeRect(x, y, w, h);
+        ctx.fillRect(x, y, CONFIG.carWidth, CONFIG.carHeight);
+        ctx.strokeStyle = "#fff"; 
+        ctx.strokeRect(x, y, CONFIG.carWidth, CONFIG.carHeight);
     }
 }
 
@@ -197,8 +283,7 @@ function gameLoop() {
     // Road
     ctx.fillStyle = "#222";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
     ctx.lineWidth = 4;
     ctx.setLineDash([30, 30]);
     const lineOffset = gameState.distance % 60;
@@ -211,38 +296,27 @@ function gameLoop() {
     ctx.stroke();
 
     // Player
-    const playerX = (gameState.lane * CONFIG.laneWidth) +
-                    (CONFIG.laneWidth / 2) -
-                    (PLAYER_CAR_WIDTH / 2);
+    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.carWidth/2);
     const playerY = canvas.height - 150;
-
-    drawCar(playerImg, playerX, playerY, "cyan",
-            PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT);
+    drawCar(playerImg, playerX, playerY, "cyan");
 
     // Enemies
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
         e.y += gameState.speed * 0.8 + e.speedOffset;
-        const ex = (e.lane * CONFIG.laneWidth) +
-                   (CONFIG.laneWidth / 2) -
-                   (CONFIG.carWidth / 2);
-
+        const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.carWidth/2);
         drawCar(enemyImg, ex, e.y, "red");
 
         const p = 15;
         if (
             playerX + p < ex + CONFIG.carWidth - p &&
-            playerX + PLAYER_CAR_WIDTH - p > ex + p &&
+            playerX + CONFIG.carWidth - p > ex + p &&
             playerY + p < e.y + CONFIG.carHeight - p &&
-            playerY + PLAYER_CAR_HEIGHT - p > e.y + p
+            playerY + CONFIG.carHeight - p > e.y + p
         ) {
             gameOver();
         }
-
-        if (e.y > canvas.height) {
-            enemies.splice(i, 1);
-            i--;
-        }
+        if (e.y > canvas.height) { enemies.splice(i, 1); i--; }
     }
 
     requestAnimationFrame(gameLoop);
@@ -250,6 +324,10 @@ function gameLoop() {
 
 function gameOver() {
     gameState.isPlaying = false;
+    gameOverTitle.innerText = "CRITICAL FAILURE";
+    gameOverTitle.style.color = "#ff4b2b";
     finalScoreEl.innerText = gameState.score;
     gameOverScreen.style.display = 'flex';
+    
+    btnStop.classList.add('btn-disabled');
 }
