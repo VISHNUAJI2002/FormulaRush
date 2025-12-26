@@ -18,9 +18,19 @@
             </div>
         </div>
 
-        <a href="{{ url_for('play') }}" class="btn btn-primary btn-large" style="width: 100%; display: block;">
-            INITIATE RACE SEQUENCE
-        </a>
+        <div class="mode-select-container" style="margin-top: 25px; display: flex; flex-direction: column; gap: 15px;">
+            
+            <a href="{{ url_for('single_player') }}" class="btn btn-primary btn-large"style="width: 100%; display: block; background: linear-gradient(90deg, #00f260, #0575e6); border: none;">
+                <div style="font-size: 1.2rem; font-weight: bold;">🏎️ SINGLE PLAYER</div>
+                <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">5-LANE SURVIVAL MODE</div>
+            </a>
+
+            <a href="{{ url_for('play') }}" class="btn btn-primary btn-large" style="width: 100%; display: block; background: linear-gradient(90deg, #1cb5e0, #000851); border: none;">
+                <div style="font-size: 1.2rem; font-weight: bold;">🌐 MULTIPLAYER</div>
+                <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">RACE AGAINST RIVALS</div>
+            </a>
+
+        </div>
 
     </div>
 </div>

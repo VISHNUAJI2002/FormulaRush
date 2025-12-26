@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* --- COCKPIT UI STYLES --- */
+    /* We use !important to override any defaults from base.html that might interfere */
+    .cockpit-body {
+        background-color: #1a1a2e !important;
+        color: #eee;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 90vh; /* Ensure it fills screen */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .game-wrapper {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 20px;
+        padding: 20px;
+        width: 100%;
+        max-width: 1400px;
+    }
+
+    /* --- LEFT PANEL: CONTROLS --- */
+    .control-panel {
+        width: 260px;
+        background: #2a2a40;
+        padding: 25px;
+        border-radius: 12px;
+        border: 2px solid #444;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .control-group { margin-bottom: 25px; }
+
+    .control-label {
+        font-weight: bold;
+        color: #00d2ff;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+        display: block;
+        font-size: 0.9rem;
+    }
+
+    /* SWITCH STYLING */
+    .switch-container { display: flex; flex-direction: column; gap: 8px; }
+    .switch-input { display: none; } /* Hide the real radio button */
+
+    .switch-label {
+        display: block;
+        padding: 12px;
+        background: #333;
+        color: #888;
+        text-align: center;
+        border-radius: 6px;
+        border: 2px solid #444;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+    .switch-label:hover { background: #3b3b3b; }
+
+    /* Active States (Colors) */
+    #speed-easy:checked + .switch-label { background: #28a745; color: white; border-color: #28a745; box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); }
+    #speed-medium:checked + .switch-label { background: #ffc107; color: black; border-color: #ffc107; box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); }
+    #speed-hard:checked + .switch-label { background: #dc3545; color: white; border-color: #dc3545; box-shadow: 0 0 10px rgba(220, 53, 69, 0.5); }
+
+    #math-simple:checked + .switch-label { background: #17a2b8; color: white; border-color: #17a2b8; box-shadow: 0 0 10px rgba(23, 162, 184, 0.5); }
+    #math-mixed:checked + .switch-label { background: #6610f2; color: white; border-color: #6610f2; box-shadow: 0 0 10px rgba(102, 16, 242, 0.5); }
+
+    #start-engine-btn {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: white;
+        background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 5px 15px rgba(255, 75, 43, 0.4);
+        text-transform: uppercase;
+        margin-top: 10px;
+    }
+    #start-engine-btn:hover { transform: scale(1.02); }
+
+    .controls-locked { opacity: 0.6; pointer-events: none; }
+
+    /* --- CENTER PANEL: GAME CANVAS --- */
+    .game-container {
+        position: relative;
+        border: 4px solid #00d2ff;
+        border-radius: 8px;
+        box-shadow: 0 0 40px rgba(0, 210, 255, 0.2);
+        background: #000;
+        width: 800px;  /* Fixed Width */
+        height: 600px; /* Fixed Height */
+    }
+
+    canvas { display: block; width: 100%; height: 100%; }
+
+    .math-overlay {
+        position: absolute;
+        top: 20px;
+        font-size: 28px;
+        font-weight: 800;
+        color: white;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 2px solid #00d2ff;
+        z-index: 10;
+    }
+    #question-left { left: 20px; }
+    #question-right { right: 20px; }
+
+    #game-over-screen {
+        display: none;
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 20;
+    }
+    #game-over-screen h1 { font-size: 4rem; color: #ff4b2b; margin: 0; text-transform: uppercase; letter-spacing: 5px; }
+
+    /* --- RIGHT PANEL: SPEEDOMETER --- */
+    .hud-panel {
+        width: 240px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #2a2a40;
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid #444;
+    }
+
+    /* GAUGE CSS */
+    .gauge-wrapper {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(#222, #000);
+        border-radius: 50%;
+        border: 4px solid #555;
+        margin-top: 10px;
+    }
+    
+    .gauge-arc {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        background: conic-gradient(from 225deg, #28a745 0deg, #ffc107 135deg, #dc3545 270deg, transparent 270deg);
+        -webkit-mask: radial-gradient(transparent 65%, black 65%);
+        mask: radial-gradient(transparent 65%, black 65%);
+    }
+
+    .gauge-needle {
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 45%; height: 4px;
+        background: #ff4b2b;
+        transform-origin: 0% 50%; /* Pivot from center */
+        transform: rotate(225deg); /* Start position */
+        transition: transform 0.1s linear;
+        border-radius: 50%;
+        z-index: 5;
+        box-shadow: 0 0 5px red;
+    }
+
+    .gauge-value {
+        position: absolute;
+        bottom: 50px; left: 0; right: 0;
+        text-align: center;
+        color: white;
+        font-size: 2.5rem;
+        font-weight: bold;
+        z-index: 6;
+    }
+    .gauge-unit { font-size: 1rem; color: #888; display: block; margin-top: -5px; }
+
+</style>
+
+<div class="cockpit-body">
+    <div class="game-wrapper">
+
+        <div class="control-panel" id="cockpit-controls">
+            <div class="control-group">
+                <span class="control-label">Engine Class (Speed)</span>
+                <div class="switch-container">
+                    <input type="radio" name="speed" id="speed-easy" value="easy" class="switch-input" checked>
+                    <label for="speed-easy" class="switch-label">Easy</label>
+
+                    <input type="radio" name="speed" id="speed-medium" value="medium" class="switch-input">
+                    <label for="speed-medium" class="switch-label">Medium</label>
+
+                    <input type="radio" name="speed" id="speed-hard" value="hard" class="switch-input">
+                    <label for="speed-hard" class="switch-label">Hard</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Nav Computer (Math)</span>
+                <div class="switch-container">
+                    <input type="radio" name="math" id="math-simple" value="simple" class="switch-input" checked>
+                    <label for="math-simple" class="switch-label">(+, -) Only</label>
+
+                    <input type="radio" name="math" id="math-mixed" value="mixed" class="switch-input">
+                    <label for="math-mixed" class="switch-label">Mixed (+, -, ×, ÷)</label>
+                </div>
+            </div>
+
+            <button id="start-engine-btn">INITIATE SEQUENCE</button>
+            <a href="{{ url_for('dashboard') }}" style="display:block; text-align:center; margin-top:15px; color:#888; text-decoration:none;">&larr; Abort to Dashboard</a>
+        </div>
+
+        <div class="game-container">
+            <div id="question-left" class="math-overlay">L: --</div>
+            <div id="question-right" class="math-overlay">R: --</div>
+
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+            <div id="game-over-screen">
+                <h1>CRITICAL FAILURE</h1>
+                <p style="font-size: 1.5rem; color:#ccc;">Distance: <span id="final-score">0</span>m</p>
+                <button onclick="location.reload()" class="btn btn-danger btn-lg" style="margin-top:20px;">REBOOT SYSTEM</button>
+            </div>
+        </div>
+
+        <div class="hud-panel">
+            <span class="control-label">Velocity</span>
+            <div class="gauge-wrapper">
+                <div class="gauge-arc"></div>
+                <div class="gauge-needle" id="speed-needle"></div>
+                <div class="gauge-value">
+                    <span id="speed-value">0</span>
+                    <span class="gauge-unit">KM/H</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='single_script.js') }}"></script>
+
+{% endblock %}

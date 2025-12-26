@@ -75,11 +75,19 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
-# --- GAME ROUTE ---
+# --- GAME ROUTES ---
+
+# 1. EXISTING MULTIPLAYER MODE (Kept exactly as it was)
 @app.route('/play')
 @login_required
 def play():
     return render_template('game.html')
+
+# 2. NEW SINGLE PLAYER MODE (Added)
+@app.route('/single_player')
+@login_required
+def single_player():
+    return render_template('single_game.html')
 
 # --- CREATE DATABASE ---
 if __name__ == '__main__':
