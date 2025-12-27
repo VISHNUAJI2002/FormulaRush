@@ -5,15 +5,21 @@ const ctx = canvas.getContext('2d');
 const CONFIG = {
     laneCount: 5,
     roadWidth: 800,
-    carWidth: 60,
-    carHeight: 100,
+    
+    // --- NEW DIMENSIONS ---
+    playerWidth: 130,  // Increased Width for Player (Change this value as needed)
+    playerHeight: 110,
+    
+    enemyWidth: 45,   // Standard Width for Traffic
+    enemyHeight: 85,
+    
     laneWidth: 800 / 5
 };
 
 const SPEEDS = {
-    easy:   { base: 4, max: 9, acceleration: 0.001 },
-    medium: { base: 6, max: 12, acceleration: 0.002 },
-    hard:   { base: 8, max: 16, acceleration: 0.004 }
+    easy:   { base: 1, max: 3, acceleration: 0.0003, spawnInterval: 2000 },
+    medium: { base: 1.5, max: 5, acceleration: 0.001, spawnInterval: 1500 },
+    hard:   { base: 2, max: 6, acceleration: 0.0012, spawnInterval: 1000 }
 };
 
 let gameState = {
@@ -222,7 +228,7 @@ function startGame() {
     
     setInterval(() => {
         if (gameState.isPlaying) spawnEnemy();
-    }, 2000 / (gameState.speed / 5));
+    },physics.spawnInterval);
 }
 
 function abortRace() {
@@ -262,14 +268,15 @@ function updateSpeedometer() {
     speedValueEl.innerText = Math.floor(gameState.speed * 10); 
 }
 
-function drawCar(img, x, y, color) {
+// Updated to accept 'w' (width) and 'h' (height)
+function drawCar(img, x, y, w, h, color) {
     if (img.complete && img.naturalHeight !== 0) {
-        ctx.drawImage(img, x, y, CONFIG.carWidth, CONFIG.carHeight);
+        ctx.drawImage(img, x, y, w, h);
     } else {
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, CONFIG.carWidth, CONFIG.carHeight);
+        ctx.fillRect(x, y, w, h);
         ctx.strokeStyle = "#fff"; 
-        ctx.strokeRect(x, y, CONFIG.carWidth, CONFIG.carHeight);
+        ctx.strokeRect(x, y, w, h);
     }
 }
 
@@ -280,7 +287,7 @@ function gameLoop() {
     updatePhysics();
     updateSpeedometer();
 
-    // Road
+    // 1. Draw Road
     ctx.fillStyle = "#222";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
@@ -295,27 +302,35 @@ function gameLoop() {
     }
     ctx.stroke();
 
-    // Player
-    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.carWidth/2);
+    // 2. Draw Player (Using CONFIG.playerWidth)
+    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.playerWidth/2);
     const playerY = canvas.height - 150;
-    drawCar(playerImg, playerX, playerY, "cyan");
+    
+    // Pass the specific Player dimensions here
+    drawCar(playerImg, playerX, playerY, CONFIG.playerWidth, CONFIG.playerHeight, "cyan");
 
-    // Enemies
+    // 3. Draw Enemies (Using CONFIG.enemyWidth)
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
         e.y += gameState.speed * 0.8 + e.speedOffset;
-        const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.carWidth/2);
-        drawCar(enemyImg, ex, e.y, "red");
+        const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.enemyWidth/2);
+        
+        // Pass the specific Enemy dimensions here
+        drawCar(enemyImg, ex, e.y, CONFIG.enemyWidth, CONFIG.enemyHeight, "red");
 
-        const p = 15;
+        // --- UPDATED COLLISION LOGIC ---
+        // We must use specific widths for accurate hitboxes
+        const p = 10; // Padding (allow a tiny overlap before crashing)
+        
         if (
-            playerX + p < ex + CONFIG.carWidth - p &&
-            playerX + CONFIG.carWidth - p > ex + p &&
-            playerY + p < e.y + CONFIG.carHeight - p &&
-            playerY + CONFIG.carHeight - p > e.y + p
+            playerX + p < ex + CONFIG.enemyWidth - p &&       // Player Right < Enemy Right
+            playerX + CONFIG.playerWidth - p > ex + p &&      // Player Left > Enemy Left
+            playerY + p < e.y + CONFIG.enemyHeight - p &&     // Player Bottom < Enemy Bottom
+            playerY + CONFIG.playerHeight - p > e.y + p       // Player Top > Enemy Top
         ) {
             gameOver();
         }
+
         if (e.y > canvas.height) { enemies.splice(i, 1); i--; }
     }
 
