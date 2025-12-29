@@ -6,20 +6,22 @@ const CONFIG = {
     laneCount: 5,
     roadWidth: 800,
     
-    // --- NEW DIMENSIONS ---
-    playerWidth: 130,  // Increased Width for Player (Change this value as needed)
+    // --- DIMENSIONS ---
+    playerWidth: 130, 
     playerHeight: 110,
     
-    enemyWidth: 45,   // Standard Width for Traffic
+    enemyWidth: 45, 
     enemyHeight: 85,
     
     laneWidth: 800 / 5
 };
 
+// FIXED: Reduced Max speeds for better playability
+// Adjusted spawn intervals slightly
 const SPEEDS = {
-    easy:   { base: 1, max: 3, acceleration: 0.0003, spawnInterval: 2000 },
-    medium: { base: 1.5, max: 5, acceleration: 0.001, spawnInterval: 1500 },
-    hard:   { base: 2, max: 6, acceleration: 0.0012, spawnInterval: 1000 }
+    easy:   { base: 0.5, max: 2.0, acceleration: 0.00005, spawnInterval: 2500 },
+    medium: { base: 0.5, max: 2.5, acceleration: 0.00005, spawnInterval: 2000 },
+    hard:   { base: 0.5, max: 3.0, acceleration: 0.00005, spawnInterval: 1800 }
 };
 
 let gameState = {
@@ -41,6 +43,7 @@ enemyImg.src = "/static/car_enemy.png";
 
 let enemies = [];
 let currentQuestion = null;
+let spawnTimer = null;
 
 /* --- UI ELEMENTS --- */
 const questionLeftEl = document.getElementById('question-left');
@@ -83,23 +86,35 @@ function getSelectedRadio(name) {
     return 'simple';
 }
 
+// NEW: Function to update math mode immediately
+function updateMathMode() {
+    gameState.mathMode = getSelectedRadio('math');
+    // If playing, regenerate questions immediately so new logic applies
+    if (gameState.isPlaying) {
+        generateTwoProblems();
+    }
+}
+
 /* --- UI LOGIC (GEAR SHIFT) --- */
 function shiftGear(level) {
-    if (gameState.isPlaying) return; // Locked while playing
+    // REMOVED: if (gameState.isPlaying) return; 
+    // Now allowing gear shift during gameplay
 
     gameState.difficulty = level;
 
-    // 1. CLEANUP: Reset ALL labels to default gray
-    // We explicitly clear the inline styles (color/textShadow) 
-    // so they revert to the CSS default.
+    // Update Physics in real-time
+    const physics = SPEEDS[gameState.difficulty];
+    gameState.maxSpeed = physics.max;
+    // Note: We don't reset current speed, we just let it cap or grow to new max
+
+    // 1. CLEANUP: Reset ALL labels
     [labelEasy, labelMedium, labelHard].forEach(label => {
         label.classList.remove('active-label');
         label.style.color = "";
         label.style.textShadow = "";
     });
 
-    // 2. APPLY NEW STYLE based on level
-    // Adjust height for the new Compact Shifter
+    // 2. APPLY NEW STYLE
     if (level === 'hard') {
         shifterAssembly.style.top = "30px";
         knobNumber.innerText = "3";
@@ -135,6 +150,7 @@ function generateTwoProblems() {
     let leftObj = createMathProblem();
     let rightObj = createMathProblem();
 
+    // Ensure distinct last digits
     while (rightObj.lastDigit === leftObj.lastDigit) {
         rightObj = createMathProblem();
     }
@@ -152,31 +168,60 @@ function createMathProblem() {
     let n1, n2, op, ans, text;
     let isValid = false;
 
-    while (!isValid) {
-        n1 = Math.floor(Math.random() * 12) + 1; 
-        n2 = Math.floor(Math.random() * 12) + 1;
+    // Safety counter to prevent infinite loops (rare case)
+    let safety = 0;
+
+    while (!isValid && safety < 100) {
+        safety++;
         
         let operators = ['+', '-'];
-        if (gameState.mathMode === 'mixed') operators.push('*');
+        // FIXED: Added Division '/'
+        if (gameState.mathMode === 'mixed') operators.push('*', '/');
+        
         op = operators[Math.floor(Math.random() * operators.length)];
 
-        if (op === '+') { ans = n1 + n2; text = `${n1}+${n2}`; }
-        else if (op === '*') { ans = n1 * n2; text = `${n1}x${n2}`; }
-        else { 
+        // Random numbers setup
+        // We use slightly smaller numbers for division multiplication base
+        n1 = Math.floor(Math.random() * 12) + 1; 
+        n2 = Math.floor(Math.random() * 12) + 1;
+
+        if (op === '+') { 
+            ans = n1 + n2; 
+            text = `${n1}+${n2}`; 
+        }
+        else if (op === '-') { 
             let big = Math.max(n1, n2);
             let small = Math.min(n1, n2);
             ans = big - small; 
             text = `${big}-${small}`; 
         }
+        else if (op === '*') { 
+            ans = n1 * n2; 
+            text = `${n1}x${n2}`; 
+        }
+        else if (op === '/') {
+            // Division Logic: 
+            // Generate answer and divisor, then calculate dividend.
+            // This ensures the result is a whole number.
+            let divisor = Math.floor(Math.random() * 9) + 2; // Divisor between 2 and 10
+            let quotient = Math.floor(Math.random() * 10) + 1; // Answer
+            let dividend = quotient * divisor;
+            
+            ans = quotient;
+            text = `${dividend}/${divisor}`;
+        }
 
+        // Difficulty Checks (Answer Magnitude)
+        isValid = false; 
         if (gameState.difficulty === 'easy') {
-            if (ans < 10) isValid = true;
+            if (ans < 10 && ans >= 0) isValid = true;
         } 
         else if (gameState.difficulty === 'medium') {
-            if (ans >= 10 && ans < 100) isValid = true;
+            // Medium can be single or double digit, but prefers slightly harder math
+            if (ans >= 0 && ans < 100) isValid = true;
         } 
         else if (gameState.difficulty === 'hard') {
-            if (ans >= 10) isValid = true;
+            if (ans >= 10 || (op === '*' || op === '/')) isValid = true; 
         }
     }
 
@@ -203,16 +248,15 @@ function checkAnswer(inputDigit) {
 function startGame() {
     if (gameState.isPlaying) return;
 
-    // Lock Settings
-    settingsArea.classList.add('controls-locked');
+    // REMOVED: settingsArea.classList.add('controls-locked');
     
     // Toggle Buttons
     btnStart.classList.add('btn-disabled');
     btnStop.classList.remove('btn-disabled');
 
     gameState.mathMode = getSelectedRadio('math');
-    // Difficulty set by shifter
-
+    
+    // Init physics based on current gear
     const physics = SPEEDS[gameState.difficulty];
     gameState.speed = physics.base;
     gameState.maxSpeed = physics.max;
@@ -226,9 +270,12 @@ function startGame() {
     generateTwoProblems();
     requestAnimationFrame(gameLoop);
     
-    setInterval(() => {
+    // Clear old interval if exists
+    if(spawnTimer) clearInterval(spawnTimer);
+    
+    spawnTimer = setInterval(() => {
         if (gameState.isPlaying) spawnEnemy();
-    },physics.spawnInterval);
+    }, physics.spawnInterval);
 }
 
 function abortRace() {
@@ -241,19 +288,27 @@ function abortRace() {
     gameOverScreen.style.display = 'flex';
     
     btnStop.classList.add('btn-disabled');
+    // Start button stays disabled until reload or manual reset logic
+    // (Here we follow existing logic: reload page to restart fully)
 }
 
 function spawnEnemy() {
     const lane = Math.floor(Math.random() * CONFIG.laneCount);
+    
+    // FIXED: Reduced random speed offset significantly (from 2 to 0.5)
+    // This makes traffic flow more predictable
     enemies.push({
         lane: lane,
         y: -150,
-        speedOffset: (Math.random() * 2) 
+        speedOffset: (Math.random() * 0.5) 
     });
 }
 
 function updatePhysics() {
     if (gameState.speed < gameState.maxSpeed) gameState.speed += 0.01;
+    // If we shifted down, decelerate smoothly
+    if (gameState.speed > gameState.maxSpeed) gameState.speed -= 0.02;
+
     gameState.distance += gameState.speed;
     gameState.score = Math.floor(gameState.distance / 10);
     liveDistanceEl.innerText = gameState.score;
@@ -268,7 +323,7 @@ function updateSpeedometer() {
     speedValueEl.innerText = Math.floor(gameState.speed * 10); 
 }
 
-// Updated to accept 'w' (width) and 'h' (height)
+// Draw Function
 function drawCar(img, x, y, w, h, color) {
     if (img.complete && img.naturalHeight !== 0) {
         ctx.drawImage(img, x, y, w, h);
@@ -302,31 +357,32 @@ function gameLoop() {
     }
     ctx.stroke();
 
-    // 2. Draw Player (Using CONFIG.playerWidth)
+    // 2. Draw Player
     const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.playerWidth/2);
     const playerY = canvas.height - 150;
     
-    // Pass the specific Player dimensions here
     drawCar(playerImg, playerX, playerY, CONFIG.playerWidth, CONFIG.playerHeight, "cyan");
 
-    // 3. Draw Enemies (Using CONFIG.enemyWidth)
+    // 3. Draw Enemies
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
+        
+        // Update Enemy Y
+        // Enemies move based on player speed + their own offset
         e.y += gameState.speed * 0.8 + e.speedOffset;
+        
         const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.enemyWidth/2);
         
-        // Pass the specific Enemy dimensions here
         drawCar(enemyImg, ex, e.y, CONFIG.enemyWidth, CONFIG.enemyHeight, "red");
 
-        // --- UPDATED COLLISION LOGIC ---
-        // We must use specific widths for accurate hitboxes
-        const p = 10; // Padding (allow a tiny overlap before crashing)
+        // Collision Logic
+        const p = 10; // Padding
         
         if (
-            playerX + p < ex + CONFIG.enemyWidth - p &&       // Player Right < Enemy Right
-            playerX + CONFIG.playerWidth - p > ex + p &&      // Player Left > Enemy Left
-            playerY + p < e.y + CONFIG.enemyHeight - p &&     // Player Bottom < Enemy Bottom
-            playerY + CONFIG.playerHeight - p > e.y + p       // Player Top > Enemy Top
+            playerX + p < ex + CONFIG.enemyWidth - p &&       
+            playerX + CONFIG.playerWidth - p > ex + p &&      
+            playerY + p < e.y + CONFIG.enemyHeight - p &&     
+            playerY + CONFIG.playerHeight - p > e.y + p       
         ) {
             gameOver();
         }

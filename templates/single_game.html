@@ -294,7 +294,7 @@
                     <span class="control-label">Nav Computer</span>
                     <div class="rocker-group">
                         <div class="rocker-wrapper">
-                            <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" checked>
+                            <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" onchange="updateMathMode()" checked>
                             <label for="math-simple" class="rocker-label">
                                 <div style="text-align:center;">
                                     <div class="rocker-light"></div>
@@ -304,7 +304,7 @@
                         </div>
 
                         <div class="rocker-wrapper">
-                            <input type="radio" name="math" id="math-mixed" value="mixed" class="rocker-input">
+                            <input type="radio" name="math" id="math-mixed" value="mixed" class="rocker-input" onchange="updateMathMode()">
                             <label for="math-mixed" class="rocker-label">
                                 <div style="text-align:center;">
                                     <div class="rocker-light"></div>
