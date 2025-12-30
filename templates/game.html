@@ -1,253 +1,254 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Math Racer: Dual Cockpit</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    /* --- CORE LAYOUT OVERRIDES --- */
+    /* Force the game background and disable scrolling specifically for this page */
+    body {
+        background-color: #0b0b14 !important; /* Darker Space Blue */
+        margin: 0;
+        overflow: hidden; /* Stop scrolling */
+        color: #eee;
+        font-family: 'Rajdhani', sans-serif;
+    }
+
+    /* --- GAME CONTAINER --- */
+    .cockpit-body {
+        position: fixed;
+        top: 0; 
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        
+        /* Flexbox Centering */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        
+        /* PADDING: Pushes game down so the Base Navbar doesn't cover it. 
+           Adjust this (e.g., 70px or 80px) depending on your Base Navbar height. */
+        padding-top: 70px; 
+        box-sizing: border-box;
+        z-index: 1; 
+    }
+
+    .game-transform-wrapper {
+        transform-origin: center center;
+        display: flex; justify-content: center; align-items: center;
+        width: 100%; height: 100%;
+        transform: scale(1);
+    }
+
+    .main-layout {
+        display: flex; flexDirection: row; align-items: flex-start; gap: 20px;
+    }
+
+    /* --- SIDE PANELS --- */
+    .control-panel {
+        width: 260px;
+        background: #181818;
+        padding: 20px;
+        border-radius: 12px;
+        border: 4px solid #333;
+        box-shadow: 10px 10px 30px rgba(0,0,0,0.6);
+        display: flex; flex-direction: column; align-items: center;
+        height: 600px; justify-content: space-between;
+    }
+    .p1-panel { border-color: #00d2ff; }
+    .p2-panel { border-color: #d966ff; }
+
+    .panel-header { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; text-align: center; margin-bottom: 5px; }
+    .p1-title { color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+    .p2-title { color: #d966ff; text-shadow: 0 0 10px rgba(255, 144, 104, 0.5); }
+
+    .input-hint { font-size: 0.9rem; color: #fff; background: #333; padding: 5px 10px; border-radius: 4px; margin-bottom: 20px; text-transform: uppercase; font-weight: bold; }
+    .control-label { font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 2px; margin: 10px 0; font-size: 0.8rem; width: 100%; text-align: center; }
+
+    /* GEAR SHIFTER */
+    .shifter-container { position: relative; width: 120px; height: 180px; background: linear-gradient(145deg, #2a2a2a, #1a1a1a); border-radius: 10px; border: 3px solid #444; box-shadow: inset 0 0 15px #000; overflow: hidden; margin: 0 auto; }
+    .shifter-slot { width: 10px; height: 140px; background: #000; border-radius: 10px; margin: 20px auto 0; box-shadow: inset 0 0 5px rgba(0,0,0,1); position: relative; z-index: 1; }
+    .shifter-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+    .shift-mark { position: absolute; left: 10px; font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase; transition: color 0.3s; }
+    .mark-3 { top: 30px; } .mark-2 { top: 80px; } .mark-1 { top: 130px; }
+    .shifter-stick-assembly { position: absolute; top: 130px; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; z-index: 10; transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none; }
+    .shifter-knob { width: 50px; height: 50px; background: radial-gradient(circle at 30% 30%, #444, #111); border-radius: 50%; border: 2px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; color: #888; font-weight: bold; font-size: 1.5rem; }
+    .click-zone { position: absolute; left: 0; width: 100%; height: 60px; cursor: pointer; z-index: 20; }
+    .zone-3 { top: 0px; } .zone-2 { top: 60px; } .zone-1 { top: 120px; }
+
+    /* ROCKER SWITCHES */
+    .rocker-group { display: flex; gap: 10px; justify-content: center; width: 100%; }
+    .rocker-input { display: none; }
+    .rocker-label { width: 70px; height: 45px; background: linear-gradient(to bottom, #222, #333); border-top: 2px solid #555; border-bottom: 2px solid #111; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .rocker-light { width: 12px; height: 4px; background: #333; margin-bottom: 3px; transition: 0.3s; }
+    .rocker-text { font-size: 0.6rem; font-weight: bold; color: #666; text-transform: uppercase; }
+    .rocker-input:checked + .rocker-label { background: linear-gradient(to bottom, #111, #222); border-top: 2px solid #000; transform: translateY(2px); }
+    .p1-panel .rocker-input:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
+    .p2-panel .rocker-input:checked + .rocker-label .rocker-light { background: #d966ff; box-shadow: 0 0 8px #d966ff; }
+
+    /* SPEEDOMETERS */
+    .gauge-wrapper { position: relative; width: 160px; height: 160px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #444; margin: 10px auto; }
+    .gauge-arc { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; -webkit-mask: radial-gradient(transparent 65%, black 65%); mask: radial-gradient(transparent 65%, black 65%); }
+    .p1-arc { background: conic-gradient(from 225deg, #00d2ff 0deg, #0056b3 200deg, transparent 200deg); }
+    .p2-arc { background: conic-gradient(from 225deg, #d966ff 0deg, #b33a00 200deg, transparent 200deg); }
+    .gauge-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 3px; background: #fff; transform-origin: 0% 50%; transform: rotate(225deg); border-radius: 50%; z-index: 5; transition: transform 0.1s; }
+    .gauge-value { position: absolute; bottom: 35px; left: 0; right: 0; text-align: center; color: white; font-size: 1.8rem; font-weight: bold; z-index: 6; }
+
+
+    /* --- CENTER AREA --- */
+    .center-stage { display: flex; flex-direction: column; width: 800px; }
     
-    <style>
-        /* --- CORE LAYOUT --- */
-        body {
-            background-color: #0b0b14; /* Darker Space Blue */
-            margin: 0;
-            overflow: hidden;
-            color: #eee;
-            font-family: 'Rajdhani', sans-serif;
-            height: 100vh;
-        }
+    .canvas-wrapper {
+        position: relative; width: 800px; height: 600px;
+        border: 4px solid #444; border-radius: 8px; background: #000;
+        box-shadow: 0 0 40px rgba(0,0,0,0.5); overflow: hidden;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
 
-        /* --- 1. NEW TOP NAVBAR --- */
-        .game-navbar {
-            position: fixed;
-            top: 0; left: 0; width: 100%;
-            height: 60px;
-            background: rgba(10, 10, 20, 0.95);
-            border-bottom: 2px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 40px;
-            box-sizing: border-box;
-            z-index: 1000;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-        }
+    /* MATH LAYOUT */
+    .math-layer { position: absolute; top: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; pointer-events: none; }
+    .p1-math-group, .p2-math-group { width: 400px; display: flex; justify-content: space-around; padding: 0 10px; }
+    .math-box { background: rgba(0,0,0,0.85); padding: 5px 15px; border-radius: 8px; border: 2px solid #555; text-align: center; min-width: 80px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+    .p1-math-group .math-box { border-color: #00d2ff; }
+    .p2-math-group .math-box { border-color: #d966ff; }
+    .label { display: block; font-size: 0.7rem; color: #aaa; margin-bottom: 2px; }
+    .problem { font-size: 1.5rem; font-weight: bold; color: white; display: block; }
+    .timer-float { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #fff; padding: 5px 15px; border-radius: 20px; font-size: 1.5rem; font-weight: bold; color: #fff; }
 
-        .nav-brand {
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .nav-brand span { color: #ff4b2b; } /* "RUSH" in red */
+    /* --- 3. NEON GLASS + PHYSICAL WEIGHT BUTTONS --- */
+    .mission-control {
+        margin-top: 15px; height: 110px; /* Taller for the button depth */
+        background: rgba(0, 0, 0, 0.8); 
+        border: 2px solid #333; 
+        border-radius: 12px;
+        display: flex; justify-content: center; align-items: center; gap: 40px;
+        box-shadow: inset 0 0 30px #000;
+    }
 
-        .nav-links a {
-            color: #888;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 1rem;
-            margin-left: 30px;
-            text-transform: uppercase;
-            transition: color 0.3s;
-        }
-        .nav-links a:hover { color: #00d2ff; text-shadow: 0 0 10px #00d2ff; }
-
-
-        /* --- 2. SCALABLE GAME WRAPPER --- */
-        .cockpit-body {
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding-top: 60px; /* Space for Navbar */
-            box-sizing: border-box;
-        }
-
-        .game-transform-wrapper {
-            transform-origin: center center;
-            display: flex; justify-content: center; align-items: center;
-            width: 100%; height: 100%;
-            transform: scale(1);
-        }
-
-        .main-layout {
-            display: flex; flexDirection: row; align-items: flex-start; gap: 20px;
-        }
-
-        /* --- SIDE PANELS --- */
-        .control-panel {
-            width: 260px;
-            background: #181818;
-            padding: 20px;
-            border-radius: 12px;
-            border: 4px solid #333;
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.6);
-            display: flex; flex-direction: column; align-items: center;
-            height: 600px; justify-content: space-between;
-        }
-        .p1-panel { border-color: #00d2ff; }
-        .p2-panel { border-color: #d966ff; }
-
-        .panel-header { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; text-align: center; margin-bottom: 5px; }
-        .p1-title { color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
-        .p2-title { color: #d966ff; text-shadow: 0 0 10px rgba(255, 144, 104, 0.5); }
-
-        .input-hint { font-size: 0.9rem; color: #fff; background: #333; padding: 5px 10px; border-radius: 4px; margin-bottom: 20px; text-transform: uppercase; font-weight: bold; }
-        .control-label { font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 2px; margin: 10px 0; font-size: 0.8rem; width: 100%; text-align: center; }
-
-        /* GEAR SHIFTER */
-        .shifter-container { position: relative; width: 120px; height: 180px; background: linear-gradient(145deg, #2a2a2a, #1a1a1a); border-radius: 10px; border: 3px solid #444; box-shadow: inset 0 0 15px #000; overflow: hidden; margin: 0 auto; }
-        .shifter-slot { width: 10px; height: 140px; background: #000; border-radius: 10px; margin: 20px auto 0; box-shadow: inset 0 0 5px rgba(0,0,0,1); position: relative; z-index: 1; }
-        .shifter-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
-        .shift-mark { position: absolute; left: 10px; font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase; transition: color 0.3s; }
-        .mark-3 { top: 30px; } .mark-2 { top: 80px; } .mark-1 { top: 130px; }
-        .shifter-stick-assembly { position: absolute; top: 130px; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; z-index: 10; transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none; }
-        .shifter-knob { width: 50px; height: 50px; background: radial-gradient(circle at 30% 30%, #444, #111); border-radius: 50%; border: 2px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; color: #888; font-weight: bold; font-size: 1.5rem; }
-        .click-zone { position: absolute; left: 0; width: 100%; height: 60px; cursor: pointer; z-index: 20; }
-        .zone-3 { top: 0px; } .zone-2 { top: 60px; } .zone-1 { top: 120px; }
-
-        /* ROCKER SWITCHES */
-        .rocker-group { display: flex; gap: 10px; justify-content: center; width: 100%; }
-        .rocker-input { display: none; }
-        .rocker-label { width: 70px; height: 45px; background: linear-gradient(to bottom, #222, #333); border-top: 2px solid #555; border-bottom: 2px solid #111; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .rocker-light { width: 12px; height: 4px; background: #333; margin-bottom: 3px; transition: 0.3s; }
-        .rocker-text { font-size: 0.6rem; font-weight: bold; color: #666; text-transform: uppercase; }
-        .rocker-input:checked + .rocker-label { background: linear-gradient(to bottom, #111, #222); border-top: 2px solid #000; transform: translateY(2px); }
-        .p1-panel .rocker-input:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
-        .p2-panel .rocker-input:checked + .rocker-label .rocker-light { background: #d966ff; box-shadow: 0 0 8px #d966ff; }
-
-        /* SPEEDOMETERS */
-        .gauge-wrapper { position: relative; width: 160px; height: 160px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #444; margin: 10px auto; }
-        .gauge-arc { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; -webkit-mask: radial-gradient(transparent 65%, black 65%); mask: radial-gradient(transparent 65%, black 65%); }
-        .p1-arc { background: conic-gradient(from 225deg, #00d2ff 0deg, #0056b3 200deg, transparent 200deg); }
-        .p2-arc { background: conic-gradient(from 225deg, #d966ff 0deg, #b33a00 200deg, transparent 200deg); }
-        .gauge-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 3px; background: #fff; transform-origin: 0% 50%; transform: rotate(225deg); border-radius: 50%; z-index: 5; transition: transform 0.1s; }
-        .gauge-value { position: absolute; bottom: 35px; left: 0; right: 0; text-align: center; color: white; font-size: 1.8rem; font-weight: bold; z-index: 6; }
-
-
-        /* --- CENTER AREA --- */
-        .center-stage { display: flex; flex-direction: column; width: 800px; }
+    .ctrl-btn {
+        height: 60px; min-width: 220px;
+        font-family: 'Rajdhani', sans-serif;
+        font-size: 1.5rem; font-weight: 900; letter-spacing: 3px;
+        text-transform: uppercase;
+        cursor: pointer;
+        position: relative;
         
-        .canvas-wrapper {
-            position: relative; width: 800px; height: 600px;
-            border: 4px solid #444; border-radius: 8px; background: #000;
-            box-shadow: 0 0 40px rgba(0,0,0,0.5); overflow: hidden;
-        }
-        canvas { display: block; width: 100%; height: 100%; }
-
-        /* MATH LAYOUT */
-        .math-layer { position: absolute; top: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; pointer-events: none; }
-        .p1-math-group, .p2-math-group { width: 400px; display: flex; justify-content: space-around; padding: 0 10px; }
-        .math-box { background: rgba(0,0,0,0.85); padding: 5px 15px; border-radius: 8px; border: 2px solid #555; text-align: center; min-width: 80px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .p1-math-group .math-box { border-color: #00d2ff; }
-        .p2-math-group .math-box { border-color: #d966ff; }
-        .label { display: block; font-size: 0.7rem; color: #aaa; margin-bottom: 2px; }
-        .problem { font-size: 1.5rem; font-weight: bold; color: white; display: block; }
-        .timer-float { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #fff; padding: 5px 15px; border-radius: 20px; font-size: 1.5rem; font-weight: bold; color: #fff; }
-
-
-        /* --- 3. COOLER MISSION CONTROL BUTTONS --- */
-        .mission-control {
-            margin-top: 15px; height: 90px;
-            background: #111; border: 4px solid #333; border-radius: 12px;
-            display: flex; justify-content: center; align-items: center; gap: 40px;
-            box-shadow: inset 0 0 20px #000;
-        }
-
-        .ctrl-btn {
-            height: 60px; min-width: 200px;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1.5rem; font-weight: 900; letter-spacing: 2px;
-            border: none; border-radius: 6px; cursor: pointer;
-            text-transform: uppercase; position: relative; transition: all 0.1s;
-        }
-
-        /* INITIATE BUTTON (Green Industrial) */
-        .btn-initiate {
-            background: linear-gradient(to bottom, #2ecc71, #27ae60);
-            color: #fff;
-            box-shadow: 0 6px 0 #1e8449, 0 10px 10px rgba(0,0,0,0.4);
-            text-shadow: 0 2px 0 rgba(0,0,0,0.2);
-        }
-        .btn-initiate:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 #1e8449, 0 4px 4px rgba(0,0,0,0.4);
-        }
-
-        /* ABORT BUTTON (Red Hazard) */
-        .btn-abort {
-            background: repeating-linear-gradient(45deg, #c0392b, #c0392b 10px, #e74c3c 10px, #e74c3c 20px);
-            color: white;
-            box-shadow: 0 6px 0 #922b21, 0 10px 10px rgba(0,0,0,0.4);
-            text-shadow: 0 2px 0 rgba(0,0,0,0.5);
-            border: 2px solid #922b21;
-        }
-        .btn-abort:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 #922b21, 0 4px 4px rgba(0,0,0,0.4);
-        }
-
-        /* Disabled states */
-        .ctrl-btn.disabled { filter: grayscale(100%) brightness(50%); pointer-events: none; opacity: 0.6; box-shadow: none; transform: translateY(4px); }
-
-
-        /* --- 4. COOLER GAME OVER MODAL --- */
-        .ui-layer { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; z-index: 100; pointer-events: none;}
-        .ui-layer.hidden { display: none; }
+        /* Glass Base */
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid; /* Color comes from specific class */
+        border-radius: 6px; 
+        backdrop-filter: blur(4px);
         
-        .glass-panel {
-            pointer-events: auto;
-            background: rgba(15, 15, 25, 0.95);
-            padding: 50px;
-            border-radius: 20px;
-            text-align: center;
-            border: 4px solid #00d2ff;
-            box-shadow: 0 0 50px rgba(0, 210, 255, 0.3);
-            min-width: 400px;
-        }
+        /* Snappy mechanical transition */
+        transition: all 0.1s ease-in-out; 
+    }
 
-        .winner-result { font-size: 2.5rem; color: #fff; margin: 10px 0 30px 0; text-transform: uppercase; font-weight: 800; letter-spacing: 2px; }
-        #winnerText { font-size: 4rem; margin: 0; line-height: 1; color: #ffc107; text-shadow: 0 0 20px #ffc107; }
+    /* --- INITIATE BUTTON (Neon Cyan) --- */
+    .btn-initiate {
+        color: #00ffcc;
+        border-color: #00ffcc;
+        text-shadow: 0 0 8px rgba(0, 255, 204, 0.8);
+        
+        /* The Weight: Semi-transparent colored shadow creates a "Glass Block" depth */
+        box-shadow: 
+            0 6px 0 rgba(0, 255, 204, 0.4), /* The thick bottom edge */
+            0 0 15px rgba(0, 255, 204, 0.2); /* The ambient glow */
+    }
 
-        .modal-btn {
-            display: inline-block; width: 200px; padding: 15px 0; margin: 10px;
-            font-size: 1.2rem; font-weight: 800; text-transform: uppercase;
-            text-decoration: none; border-radius: 5px; border: none; cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .btn-retry {
-            background: #00d2ff; color: #000; box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
-        }
-        .btn-exit {
-            background: transparent; color: #888; border: 2px solid #555;
-        }
-        .btn-retry:hover { background: #fff; }
-        .btn-exit:hover { border-color: #fff; color: #fff; }
+    .btn-initiate:hover {
+        transform: translateY(-2px); /* Slight lift */
+        background: rgba(0, 255, 204, 0.1);
+        box-shadow: 
+            0 8px 0 rgba(0, 255, 204, 0.4), 
+            0 0 25px rgba(0, 255, 204, 0.6); /* Brighter glow on hover */
+    }
+
+    .btn-initiate:active {
+        /* The Press: Move down to cover the shadow space */
+        transform: translateY(6px); 
+        box-shadow: 
+            0 0 0 rgba(0, 255, 204, 0.4), /* Bottom edge disappears */
+            inset 0 0 20px rgba(0, 255, 204, 0.4); /* Glow moves inside */
+    }
+
+    /* --- ABORT BUTTON (Neon Red) --- */
+    .btn-abort {
+        color: #ff2a2a;
+        border-color: #ff2a2a;
+        text-shadow: 0 0 8px rgba(255, 42, 42, 0.8);
+        
+        /* The Weight: Red glass depth */
+        box-shadow: 
+            0 6px 0 rgba(255, 42, 42, 0.4), 
+            0 0 15px rgba(255, 42, 42, 0.2);
+    }
+
+    .btn-abort:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 42, 42, 0.15);
+        box-shadow: 
+            0 8px 0 rgba(255, 42, 42, 0.4),
+            0 0 25px rgba(255, 42, 42, 0.6);
+    }
+
+    .btn-abort:active {
+        transform: translateY(6px);
+        box-shadow: 
+            0 0 0 rgba(255, 42, 42, 0.4),
+            inset 0 0 20px rgba(255, 42, 42, 0.4);
+    }
+
+    /* --- DISABLED STATE --- */
+    .ctrl-btn.disabled { 
+        filter: grayscale(100%); 
+        opacity: 0.2; 
+        pointer-events: none; 
+        box-shadow: none; 
+        border-color: #555;
+        color: #555;
+        transform: translateY(6px); /* Permanently pressed down look */
+    }
+
+    /* --- 4. COOLER GAME OVER MODAL --- */
+    .ui-layer { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; z-index: 100; pointer-events: none;}
+    .ui-layer.hidden { display: none; }
+    
+    .glass-panel {
+        pointer-events: auto;
+        background: rgba(15, 15, 25, 0.95);
+        padding: 50px;
+        border-radius: 20px;
+        text-align: center;
+        border: 4px solid #00d2ff;
+        box-shadow: 0 0 50px rgba(0, 210, 255, 0.3);
+        min-width: 400px;
+    }
+
+    .winner-result { font-size: 2.5rem; color: #fff; margin: 10px 0 30px 0; text-transform: uppercase; font-weight: 800; letter-spacing: 2px; }
+    #winnerText { font-size: 4rem; margin: 0; line-height: 1; color: #ffc107; text-shadow: 0 0 20px #ffc107; }
+
+    .modal-btn {
+        display: inline-block; width: 200px; padding: 15px 0; margin: 10px;
+        font-size: 1.2rem; font-weight: 800; text-transform: uppercase;
+        text-decoration: none; border-radius: 5px; border: none; cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .btn-retry {
+        background: #00d2ff; color: #000; box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+    }
+    .btn-exit {
+        background: transparent; color: #888; border: 2px solid #555;
+    }
+    .btn-retry:hover { background: #fff; }
+    .btn-exit:hover { border-color: #fff; color: #fff; }
 
 
-        /* Scaling */
-        @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.9); } }
-        @media (max-height: 750px) { .game-transform-wrapper { transform: scale(0.8); } }
-        @media (max-width: 1350px) { .game-transform-wrapper { transform: scale(0.85); } }
+    /* Scaling */
+    @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.9); } }
+    @media (max-height: 750px) { .game-transform-wrapper { transform: scale(0.8); } }
+    @media (max-width: 1350px) { .game-transform-wrapper { transform: scale(0.85); } }
 
-    </style>
-</head>
-<body>
-
-<nav class="game-navbar">
-    <div class="nav-brand">
-        🏎️ FORMULA <span>RUSH</span>
-    </div>
-    <div class="nav-links">
-        <a href="{{ url_for('dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('logout') }}">Logout</a>
-    </div>
-</nav>
+</style>
 
 <div class="cockpit-body">
     <div class="game-transform-wrapper">
@@ -365,13 +366,13 @@
                         <div class="rocker-wrapper">
                             <input type="radio" name="p2-math" id="p2-simple" value="simple" class="rocker-input" checked onclick="setMath(2, 'simple')">
                             <label for="p2-simple" class="rocker-label">
-                                <div><div class="rocker-light"></div><div class="rocker-text">Simple</div></div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">Add / Sub</div></div>
                             </label>
                         </div>
                         <div class="rocker-wrapper">
                             <input type="radio" name="p2-math" id="p2-mixed" value="mixed" class="rocker-input" onclick="setMath(2, 'mixed')">
                             <label for="p2-mixed" class="rocker-label">
-                                <div><div class="rocker-light"></div><div class="rocker-text">Mixed</div></div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">All Operations</div></div>
                             </label>
                         </div>
                     </div>
@@ -423,5 +424,4 @@
     }
 </script>
 
-</body>
-</html>
+{% endblock %}
