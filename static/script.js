@@ -492,18 +492,35 @@ function endGame(aborted) {
     clearInterval(timerInt);
     
     let txt = "DRAW!";
-    if (p1.dist > p2.dist) txt = "PILOT 1 WINS!";
-    else if (p2.dist > p1.dist) txt = "PILOT 2 WINS!";
+    let winnerColor = "#fff"; // Default white for Draw/Abort
+
+    if (p1.dist > p2.dist) {
+        txt = "PILOT 1 WINS!";
+        winnerColor = "#00d2ff"; // Pilot 1 Blue
+    } 
+    else if (p2.dist > p1.dist) {
+        txt = "PILOT 2 WINS!";
+        winnerColor = "#d966ff"; // Pilot 2 Violet
+    }
     
     if (aborted) {
         uiRefs.winnerText.innerText = "RACE ABORTED";
         uiRefs.winnerText.style.color = "#ffc107";
+        winnerColor = "#ffed4eff"; // Yellow for abort
     } else {
         uiRefs.winnerText.innerText = txt;
         uiRefs.winnerText.style.color = "#fff";
     }
 
     uiRefs.finalScores.innerText = `P1: ${Math.floor(p1.dist)}m  vs  P2: ${Math.floor(p2.dist)}m`;
+    
+    // --- NEW CODE: CHANGE BORDER COLOR DYNAMICALLY ---
+    const panel = document.querySelector('.glass-panel');
+    panel.style.borderColor = winnerColor;
+    // Optional: Change the glow effect color too
+    panel.style.boxShadow = `0 0 50px ${winnerColor}`; 
+    // -------------------------------------------------
+
     uiRefs.gameOverScreen.classList.remove('hidden');
     
     uiRefs.btnStart.classList.remove('disabled');
