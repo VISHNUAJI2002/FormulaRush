@@ -4,263 +4,200 @@
 <style>
     /* --- COCKPIT UI STYLES --- */
     body {
-        overflow: hidden; /* Prevent scrolling completely */
-        background-color: #1a1a2e;
+        overflow: hidden; 
+        background-color: #050510;
+        margin: 0;
     }
 
     .cockpit-body {
-        /* Fix the container to the viewport to ensure perfect centering */
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        
-        /* Flexbox Centering */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        
-        color: #eee;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        user-select: none;
-        z-index: 10; /* Ensure it sits above background elements */
-        
-        /* Add a small padding-top to account for visual navbar offset if needed */
-        padding-top: 20px; 
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        display: flex; justify-content: center; align-items: center;
+        color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        user-select: none; z-index: 10; 
+        /* FIXED: Added sufficient padding so it doesn't merge with dashboard */
+        padding-top: 60px; 
     }
 
-    /* SCALE WRAPPER: Handles the Zoom */
     .game-transform-wrapper {
         transform-origin: center center;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-        
-        /* ENLARGE: Set default scale larger */
-        transform: scale(1.05); 
+        display: flex; justify-content: center; align-items: center;
+        width: 100%; height: 100%;
+        transform: scale(0.95); /* Perfect fit */
     }
 
     .game-wrapper {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: flex-start;
-        gap: 25px; /* Increased gap slightly for better look */
-        padding: 20px;
+        display: flex; flex-direction: row; justify-content: center; align-items: flex-start; /* Aligned Top */
+        gap: 20px; 
     }
 
-    /* --- LEFT PANEL: CONTROLS --- */
-    .control-panel {
-        width: 310px; /* Wider */
-        background: #1c1c1c;
+    /* --- SIDE PANELS --- */
+    .control-panel, .hud-panel {
+        width: 300px; 
+        background: rgba(15, 20, 30, 0.95); 
         padding: 25px;
         border-radius: 12px;
-        border: 4px solid #333;
-        box-shadow: 10px 10px 30px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,0,0,0.8);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        height: 600px; /* Match Game Height */
-        justify-content: space-between; /* Distribute items evenly */
+        border: 2px solid #00d2ff; 
+        box-shadow: 0 0 25px rgba(0, 210, 255, 0.1), inset 0 0 60px rgba(0,0,0,0.8);
+        display: flex; flex-direction: column; align-items: center;
+        /* FIXED: Reduced height to prevent overlap */
+        height: 640px; 
     }
 
+    /* Left Panel: Distribute space evenly */
+    .control-panel { justify-content: space-between; }
+    
+    /* Right Panel: Force Top/Bottom separation */
+    .hud-panel { justify-content: space-between; }
+
     .panel-divider {
-        width: 100%; height: 2px; background: #333; margin: 10px 0;
-        box-shadow: 0 1px 0 #000;
+        width: 100%; height: 2px; 
+        background: linear-gradient(90deg, transparent, #00d2ff, transparent); 
+        opacity: 0.5; box-shadow: 0 0 5px #00d2ff;
+        margin: 5px 0;
     }
 
     .control-label {
-        font-weight: bold; color: #888; text-transform: uppercase;
-        letter-spacing: 2px; margin-bottom: 10px; font-size: 0.8rem;
-        text-align: center; width: 100%;
+        font-weight: 800; color: #00d2ff; text-transform: uppercase;
+        letter-spacing: 2px; margin-bottom: 8px; font-size: 0.75rem;
+        text-align: center; width: 100%; display: block;
+        text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
     }
 
-    /* --- SHIFTER --- */
+    /* --- GEARBOX (Refined Size) --- */
     .shifter-container {
-        position: relative; width: 140px; height: 220px;
-        background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
-        border-radius: 10px; border: 4px solid #444;
-        box-shadow: inset 0 0 15px #000; 
-        display: flex; justify-content: center;
-        overflow: hidden; /* Fixes white line */
+        position: relative; 
+        width: 160px; /* Wider */
+        height: 230px; /* Taller, but not huge */
+        background: linear-gradient(145deg, #222, #111);
+        border-radius: 10px; border: 2px solid #444;
+        box-shadow: inset 0 0 20px #000; 
+        display: flex; justify-content: center; overflow: hidden;
+        flex-shrink: 0;
     }
     .shifter-slot {
-        width: 12px; height: 180px; background: #000;
-        border-radius: 10px; margin-top: 20px;
-        box-shadow: inset 0 0 5px rgba(0,0,0,1); position: relative; z-index: 1;
+        width: 12px; 
+        height: 190px; /* Internal Slot Size */
+        background: #000; border-radius: 10px; margin-top: 20px;
+        box-shadow: inset 0 0 5px #000; position: relative; z-index: 1;
     }
     .shifter-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
     
+    /* Label Positions based on 230px Height */
     .shift-mark {
-        position: absolute; left: 15px; font-family: sans-serif;
-        font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase;
-        transition: color 0.3s;
+        position: absolute; left: 15px; font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase; transition: color 0.3s;
     }
-    .mark-3 { top: 35px; } .mark-2 { top: 95px; } .mark-1 { top: 155px; }
+    .mark-3 { top: 30px; }   /* Hard */
+    .mark-2 { top: 95px; }   /* Medium */
+    .mark-1 { top: 160px; }  /* Easy */
+    
     .active-label { text-shadow: 0 0 10px currentColor; }
 
     .shifter-stick-assembly {
-        position: absolute; top: 150px; left: 50%;
-        transform: translate(-50%, -50%); width: 70px; height: 70px; z-index: 10;
-        transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none;
+        position: absolute; 
+        top: 165px; /* Default Easy Pos */
+        left: 50%; transform: translate(-50%, -50%); 
+        width: 60px; height: 60px; z-index: 10;
+        transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+        pointer-events: none;
     }
     .shifter-rod {
-        position: absolute; top: 50%; left: 50%; width: 8px; height: 100px;
-        background: linear-gradient(90deg, #888, #fff, #888); transform: translate(-50%, 0); z-index: -1;
+        position: absolute; top: 50%; left: 50%; width: 6px; 
+        height: 120px; 
+        background: #888; transform: translate(-50%, 0); z-index: -1;
     }
     .shifter-knob {
-        width: 60px; height: 60px; background: radial-gradient(circle at 30% 30%, #444, #111);
-        border-radius: 50%; border: 2px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #444, #111);
+        border-radius: 50%; border: 2px solid #555; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.8);
         display: flex; justify-content: center; align-items: center;
     }
-    .knob-number {
-        font-size: 1.8rem; font-weight: 900; color: #333; font-family: 'Courier New', monospace; transition: all 0.3s;
-    }
+    .knob-number { font-size: 1.5rem; font-weight: 900; color: #333; font-family: 'Courier New', monospace; transition: all 0.3s; }
+    
     .click-zone { position: absolute; left: 0; width: 100%; height: 70px; cursor: pointer; z-index: 20; }
-    .zone-3 { top: 5px; } .zone-2 { top: 75px; } .zone-1 { top: 145px; }
+    .zone-3 { top: 0px; } 
+    .zone-2 { top: 76px; } 
+    .zone-1 { top: 152px; }
 
 
-    /* --- SWITCHES --- */
-    .rocker-group { display: flex; gap: 15px; justify-content: center; width: 100%; }
+    /* --- ROCKERS --- */
+    .rocker-group { display: flex; gap: 10px; justify-content: center; width: 100%; }
     .rocker-input { display: none; }
-    .rocker-label {
-        width: 80px; height: 50px;
-        background: linear-gradient(to bottom, #222, #333);
-        border-top: 2px solid #555; border-bottom: 2px solid #111;
-        border-radius: 4px; position: relative; cursor: pointer;
-        box-shadow: 0 5px 10px rgba(0,0,0,0.5);
-        display: flex; align-items: center; justify-content: center; transition: all 0.1s;
-    }
-    .rocker-light {
-        width: 15px; height: 5px; background: #333; margin-bottom: 5px;
-        box-shadow: inset 0 0 2px #000; transition: all 0.3s;
-    }
+    .rocker-label { width: 100px; height: 45px; background: linear-gradient(to bottom, #222, #333); border-top: 1px solid #555; border-bottom: 2px solid #000; border-radius: 4px; position: relative; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; transition: all 0.1s; }
+    .rocker-light { width: 20px; height: 4px; background: #333; margin-bottom: 5px; box-shadow: inset 0 0 2px #000; transition: all 0.3s; }
     .rocker-text { font-size: 0.6rem; font-weight: bold; color: #666; text-transform: uppercase;}
-    .rocker-input:checked + .rocker-label {
-        background: linear-gradient(to bottom, #111, #222);
-        border-top: 2px solid #000; border-bottom: 2px solid #444; transform: translateY(2px);
-    }
-    .rocker-input:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
-    .rocker-input:checked + .rocker-label .rocker-text { color: #eee; }
+    .rocker-input:checked + .rocker-label { background: linear-gradient(to bottom, #111, #222); border-top: 2px solid #000; transform: translateY(2px); }
+    #math-simple:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
     #math-mixed:checked + .rocker-label .rocker-light { background: #d63384; box-shadow: 0 0 8px #d63384; }
+    .rocker-input:checked + .rocker-label .rocker-text { color: #eee; }
 
 
-    /* --- IGNITION --- */
-    .button-group {
-        display: flex; width: 100%; justify-content: space-around; align-items: center;
-        margin-top: 15px;
-    }
-    .start-btn {
-        width: 90px; height: 90px;
-        border-radius: 50%; background: radial-gradient(circle at 30% 30%, #b00, #500);
-        border: 4px solid #ccc; box-shadow: 0 5px 15px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.5);
-        color: #fff; font-weight: bold; font-size: 0.8rem; text-align: center;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        cursor: pointer; text-transform: uppercase; text-shadow: 0 1px 2px #000; transition: all 0.1s;
-    }
-    .start-btn span { font-size: 1.2rem; display: block; margin-bottom: -4px; }
-    .start-btn:active { transform: scale(0.95); box-shadow: 0 2px 5px rgba(0,0,0,0.8); }
-    .start-btn.btn-disabled { filter: grayscale(80%) brightness(50%); pointer-events: none; cursor: not-allowed; }
+    /* --- INPUT BUTTONS --- */
+    .control-selection-group { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
 
-    .stop-btn {
-        width: 90px; height: 90px;
-        background: repeating-linear-gradient(45deg, #f1c40f, #f1c40f 10px, #222 10px, #222 20px);
-        border: 3px solid #222; border-radius: 8px; display: flex; justify-content: center; align-items: center;
-        cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.8); transition: all 0.1s;
-    }
-    .stop-btn-inner {
-        width: 60px; height: 60px; background: #c0392b; border-radius: 4px; border: 2px solid #800;
-        box-shadow: inset 0 0 10px #000; color: white; font-weight: bold; font-size: 0.7rem;
-        display: flex; justify-content: center; align-items: center; text-align: center; text-transform: uppercase;
-    }
-    .stop-btn:active { transform: scale(0.95); }
-    .stop-btn.btn-disabled { opacity: 0.3; filter: grayscale(100%); pointer-events: none; cursor: not-allowed; }
-
-
-    /* --- CENTER: GAME --- */
-    .game-container {
-        position: relative;
-        border: 4px solid #00d2ff;
+    .input-mode-btn {
+        width: 100%; height: 60px;
+        background: rgba(0, 10, 20, 0.6); 
+        border: 1px solid rgba(0, 210, 255, 0.3); 
         border-radius: 8px;
-        box-shadow: 0 0 40px rgba(0, 210, 255, 0.2);
-        background: #000;
-        width: 800px; height: 600px;
-        flex-shrink: 0;
+        color: #557; 
+        display: flex; align-items: center; justify-content: flex-start; padding-left: 20px;
+        cursor: pointer; transition: all 0.2s; position: relative;
     }
+    .input-mode-btn .icon { font-size: 1.8rem; margin-right: 15px; opacity: 0.5; transition: 0.3s; }
+    .input-mode-btn .text-group { display: flex; flex-direction: column; align-items: flex-start; }
+    .input-mode-btn .main-text { font-size: 0.9rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+    .input-mode-btn .sub-text { font-size: 0.55rem; font-weight: normal; text-transform: uppercase; opacity: 0.7; }
+
+    .input-mode-btn:hover { background: rgba(0, 210, 255, 0.05); border-color: #00d2ff; }
+    
+    .input-mode-btn.active-mode {
+        background: rgba(0, 210, 255, 0.1); border: 2px solid #00d2ff; color: #fff;
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1);
+    }
+    #btn-mode-voice.active-mode {
+        border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); color: #fff;
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.2), inset 0 0 10px rgba(46, 204, 113, 0.1);
+    }
+    .input-mode-btn.active-mode .icon { opacity: 1; text-shadow: 0 0 10px #fff; }
+
+    /* MIC STATUS */
+    .mic-indicator { margin-top: 5px; width: 100%; text-align: center; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #444; border: 1px solid #333; padding: 5px; border-radius: 4px; background: #000; opacity: 0; transition: opacity 0.3s; }
+    .mic-indicator.visible { opacity: 1; }
+    .mic-indicator.listening { color: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.3); }
+
+
+    /* --- CENTER STAGE --- */
+    .center-stage { display: flex; flex-direction: column; width: 800px; height: 640px; justify-content: space-between; }
+    .game-container { position: relative; border: 4px solid #00d2ff; border-radius: 12px; box-shadow: 0 0 40px rgba(0, 210, 255, 0.2); background: #000; width: 100%; height: 530px; flex-shrink: 0; z-index: 5; }
     canvas { display: block; width: 100%; height: 100%; }
 
-    .math-overlay {
-        position: absolute; top: 20px;
-        font-size: 28px; font-weight: 800; color: white;
-        background: rgba(0, 0, 0, 0.8); padding: 8px 16px;
-        border-radius: 8px; border: 2px solid #00d2ff; z-index: 10;
-    }
-    #question-left { left: 20px; }
-    #question-right { right: 20px; }
+    /* --- MISSION CONTROL --- */
+    .mission-control { height: 90px; width: 100%; background: rgba(10, 10, 10, 0.8); border: 2px solid #333; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 30px; box-shadow: inset 0 0 30px #000; margin-top: 10px; }
+    .ctrl-btn { height: 60px; min-width: 250px; font-family: 'Segoe UI', sans-serif; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); border-radius: 4px; position: relative; overflow: hidden; }
+    .btn-initiate { border: 2px solid #2ecc71; color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.2); text-shadow: 0 0 8px #2ecc71; }
+    .btn-initiate:hover { background: rgba(46, 204, 113, 0.1); box-shadow: 0 0 20px rgba(46, 204, 113, 0.6); }
+    .btn-initiate:active { transform: scale(0.98); }
+    .btn-abort { border: 2px solid #e74c3c; color: #e74c3c; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); text-shadow: 0 0 8px #e74c3c; background: repeating-linear-gradient(45deg, rgba(231,76,60,0.1), rgba(231,76,60,0.1) 10px, transparent 10px, transparent 20px); }
+    .btn-abort:hover { background-color: rgba(231, 76, 60, 0.2); box-shadow: 0 0 20px rgba(231, 76, 60, 0.6); }
+    .ctrl-btn.btn-disabled { filter: grayscale(100%); opacity: 0.2; pointer-events: none; border-style: dashed; }
 
-    #game-over-screen {
-        display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.9); flex-direction: column;
-        justify-content: center; align-items: center; z-index: 20;
-    }
+    /* --- HUD --- */
+    .digital-display { background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; width: 100%; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+    .digital-value { color: #00d2ff; font-size: 2.5rem; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 0 0 10px rgba(0,210,255,0.5); }
+    
+    .gauge-wrapper { position: relative; width: 220px; height: 220px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #333; margin-top: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.8);}
+    .gauge-arc { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: conic-gradient(from 225deg, #00d2ff 0deg, #0056b3 200deg, transparent 200deg); -webkit-mask: radial-gradient(transparent 65%, black 65%); mask: radial-gradient(transparent 65%, black 65%); }
+    .gauge-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 3px; background: #fff; transform-origin: 0% 50%; transform: rotate(225deg); transition: transform 0.1s linear; border-radius: 50%; z-index: 5; box-shadow: 0 0 5px white; }
+    .gauge-value { position: absolute; bottom: 50px; left: 0; right: 0; text-align: center; color: white; font-size: 2.5rem; font-weight: bold; z-index: 6; }
+    .gauge-unit { font-size: 0.8rem; color: #888; display: block; }
 
-    /* --- RIGHT PANEL: HUD --- */
-    .hud-panel {
-        width: 250px; /* Wider */
-        background: #1c1c1c; padding: 20px;
-        border-radius: 12px; border: 2px solid #333;
-        display: flex; flex-direction: column; align-items: center;
-        box-shadow: 10px 10px 30px rgba(0,0,0,0.6);
-        height: 600px; /* Match Game Height */
-        justify-content: center; /* Center content vertically */
-        gap: 40px;
-    }
-    .digital-display {
-        background: #000; border: 2px solid #555; border-radius: 6px;
-        padding: 10px; width: 100%; text-align: center;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-    }
-    .digital-label { color: #888; font-size: 0.8rem; text-transform: uppercase; display: block;}
-    .digital-value { color: #00d2ff; font-size: 2rem; font-family: 'Courier New', monospace; font-weight: bold; }
+    /* OVERLAYS */
+    .math-overlay { position: absolute; top: 20px; font-size: 32px; font-weight: 800; color: white; background: rgba(0, 0, 0, 0.85); padding: 10px 20px; border-radius: 8px; border: 2px solid #00d2ff; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    #question-left { left: 30px; } #question-right { right: 30px; }
+    #game-over-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
 
-    /* GAUGE CSS */
-    .gauge-wrapper {
-        position: relative; width: 200px; height: 200px;
-        background: radial-gradient(#222, #000); border-radius: 50%;
-        border: 4px solid #555; margin-top: 10px;
-    }
-    .gauge-arc {
-        position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%;
-        background: conic-gradient(from 225deg, #28a745 0deg, #ffc107 135deg, #dc3545 270deg, transparent 270deg);
-        -webkit-mask: radial-gradient(transparent 65%, black 65%); mask: radial-gradient(transparent 65%, black 65%);
-    }
-    .gauge-needle {
-        position: absolute; top: 50%; left: 50%; width: 45%; height: 4px;
-        background: #ff4b2b; transform-origin: 0% 50%; transform: rotate(225deg);
-        transition: transform 0.1s linear; border-radius: 50%; z-index: 5; box-shadow: 0 0 5px red;
-    }
-    .gauge-value {
-        position: absolute; bottom: 50px; left: 0; right: 0; text-align: center;
-        color: white; font-size: 2.2rem; font-weight: bold; z-index: 6;
-    }
-    .gauge-unit { font-size: 1rem; color: #888; display: block; margin-top: -2px; }
-
-    /* --- RESPONSIVE SCALING --- */
-    /* Only shrink if screen height is actually small */
-    @media (max-height: 800px) {
-        .game-transform-wrapper { transform: scale(0.9); }
-    }
-    @media (max-height: 700px) {
-        .game-transform-wrapper { transform: scale(0.8); }
-    }
-    @media (max-width: 1400px) {
-        /* If screen is narrow, also shrink slightly to fit width */
-        .game-transform-wrapper { transform: scale(0.9); }
-    }
-
+    /* Scaling */
+    @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.85); } }
 </style>
 
 <div class="cockpit-body">
@@ -269,7 +206,7 @@
 
             <div class="control-panel">
                 
-                <div id="settings-area">
+                <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
                     <span class="control-label">Transmission</span>
                     <div class="shifter-container">
                         <div class="shifter-slot"></div>
@@ -288,43 +225,52 @@
                             <div class="shifter-rod"></div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="panel-divider"></div>
+                <div class="panel-divider"></div>
 
+                <div style="width:100%">
                     <span class="control-label">Nav Computer</span>
                     <div class="rocker-group">
                         <div class="rocker-wrapper">
-                            <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" onchange="updateMathMode()" checked>
+                            <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" checked onchange="updateMathMode()">
                             <label for="math-simple" class="rocker-label">
-                                <div style="text-align:center;">
-                                    <div class="rocker-light"></div>
-                                    <div class="rocker-text">Add / Sub</div>
-                                </div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">Add / Sub</div></div>
                             </label>
                         </div>
-
                         <div class="rocker-wrapper">
                             <input type="radio" name="math" id="math-mixed" value="mixed" class="rocker-input" onchange="updateMathMode()">
                             <label for="math-mixed" class="rocker-label">
-                                <div style="text-align:center;">
-                                    <div class="rocker-light"></div>
-                                    <div class="rocker-text">All Operations</div>
-                                </div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">All Ops</div></div>
                             </label>
                         </div>
                     </div>
-                </div> <div class="panel-divider"></div>
+                </div>
+
+                <div class="panel-divider"></div>
 
                 <div style="width:100%">
-                    <span class="control-label">Ignition System</span>
-                    <div class="button-group">
-                        <div id="btn-start" class="start-btn">
-                            <span>Start</span>Engine
-                        </div>
-                        <div id="btn-stop" class="stop-btn btn-disabled">
-                            <div class="stop-btn-inner">
-                                KILL<br>SWITCH
+                    <span class="control-label">Control System</span>
+                    <div class="control-selection-group">
+                        
+                        <div id="btn-mode-key" class="input-mode-btn active-mode" onclick="setControlMode('keyboard')">
+                            <div class="icon">⌨️</div>
+                            <div class="text-group">
+                                <span class="main-text">Manual</span>
+                                <span class="sub-text">Keyboard</span>
                             </div>
+                        </div>
+
+                        <div id="btn-mode-voice" class="input-mode-btn" onclick="setControlMode('voice')">
+                            <div class="icon">🎙️</div>
+                            <div class="text-group">
+                                <span class="main-text">Voice</span>
+                                <span class="sub-text">Speech Rec.</span>
+                            </div>
+                        </div>
+
+                        <div id="mic-indicator" class="mic-indicator">
+                            STATUS: <span id="mic-text">STANDBY</span>
                         </div>
                     </div>
                 </div>
@@ -333,18 +279,28 @@
             </div>
 
 
-            <div class="game-container">
-                <div id="question-left" class="math-overlay">L: --</div>
-                <div id="question-right" class="math-overlay">R: --</div>
+            <div class="center-stage">
+                
+                <div class="game-container">
+                    <div id="question-left" class="math-overlay">L: --</div>
+                    <div id="question-right" class="math-overlay">R: --</div>
 
-                <canvas id="gameCanvas" width="800" height="600"></canvas>
+                    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-                <div id="game-over-screen">
-                    <h1 id="game-over-title" style="color:#ff4b2b;">CRITICAL FAILURE</h1>
-                    <p style="font-size: 1.5rem; color:#ccc;">Distance Traveled: <span id="final-score">0</span>m</p>
-                    <button onclick="location.reload()" class="btn btn-primary btn-lg" style="margin-top:20px;">REBOOT SYSTEM</button>
+                    <div id="game-over-screen">
+                        <h1 id="game-over-title" style="font-size:3rem; margin-bottom:10px; color:#ff4b2b;">CRITICAL FAILURE</h1>
+                        <p style="font-size: 1.5rem; color:#ccc;">Distance Traveled: <span id="final-score">0</span>m</p>
+                        <button onclick="location.reload()" class="btn btn-primary btn-lg" style="margin-top:30px; font-size:1.5rem;">REBOOT SYSTEM</button>
+                    </div>
                 </div>
+
+                <div class="mission-control">
+                    <div id="btn-start" class="ctrl-btn btn-initiate">START ENGINE</div>
+                    <div id="btn-stop" class="ctrl-btn btn-abort btn-disabled">KILL SWITCH</div>
+                </div>
+
             </div>
+
 
             <div class="hud-panel">
                 <div style="width:100%">
@@ -367,7 +323,9 @@
                 </div>
             </div>
 
-        </div> </div> </div>
+        </div> 
+    </div> 
+</div>
 
 <script src="{{ url_for('static', filename='single_script.js') }}"></script>
 
