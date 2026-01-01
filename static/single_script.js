@@ -16,7 +16,7 @@ const SPEEDS = {
 };
 
 const VOICE_STATS = {
-    base: 0.5, max: 1.5, acceleration: 0.00005, spawnInterval: 3500 
+    base: 0.5, max: 1.5, acceleration: 0.000025, spawnInterval: 3900 
 };
 
 let gameState = {
@@ -299,7 +299,8 @@ function gameLoop() {
 
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
-        e.y += gameState.speed * 0.8 + e.speedOffset;
+        const trafficMultiplier = (gameState.controlMode === 'voice') ? 0.5 : 0.8;
+        e.y += gameState.speed * trafficMultiplier + e.speedOffset;
         const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.enemyWidth/2);
         drawCar(enemyImg, ex, e.y, CONFIG.enemyWidth, CONFIG.enemyHeight, "red");
         const p = 10; 
