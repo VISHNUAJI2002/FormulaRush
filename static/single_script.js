@@ -32,6 +32,8 @@ let enemies = [];
 let currentQuestion = null;
 let spawnTimer = null;
 let recognition = null; 
+// NEW: Lock variable to prevent double-steering
+let isProcessingSpeech = false; 
 
 /* --- UI ELEMENTS --- */
 const questionLeftEl = document.getElementById('question-left');
@@ -80,12 +82,19 @@ const wordMap = { 'zero':0, 'one':1, 'two':2, 'three':3, 'four':4, 'five':5, 'si
 function initSpeech() {
     const SpeechChoice = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechChoice) { alert("Voice not supported. Use Chrome."); return; }
+    
     recognition = new SpeechChoice();
     recognition.continuous = true;
-    recognition.interimResults = false;
+    
+    // CHANGED: Set to TRUE to get results immediately while speaking
+    recognition.interimResults = true; 
+    
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
+        // CHANGED: If we just moved the car, ignore inputs for 1.2 seconds
+        if (isProcessingSpeech) return;
+
         const last = event.results.length - 1;
         const transcript = event.results[last][0].transcript.trim().toLowerCase();
         micText.innerText = `HEARD: "${transcript}"`;
@@ -100,8 +109,18 @@ function initSpeech() {
 
         if (num !== null) {
             let lastDigit = parseInt(String(num).slice(-1));
+            
+            // CHANGED: Move car, then LOCK input briefly
             checkAnswer(lastDigit);
-            setTimeout(() => { if(gameState.isPlaying) micText.innerText = "LISTENING..."; }, 1000);
+            
+            isProcessingSpeech = true; // Lock
+            micText.innerText = "PROCESSING..."; // Visual feedback
+            
+            // Unlock after 1.2 seconds (prevents double moves from same word)
+            setTimeout(() => { 
+                isProcessingSpeech = false;
+                if(gameState.isPlaying) micText.innerText = "LISTENING..."; 
+            }, 1200);
         }
     };
 
@@ -160,17 +179,16 @@ function shiftGear(level) {
         label.classList.remove('active-label'); label.style.color = ""; label.style.textShadow = "";
     });
 
-    // UPDATED POSITIONS FOR 230px HEIGHT
     if (level === 'hard') {
         shifterAssembly.style.top = "30px";
         knobNumber.innerText = "3"; knobNumber.style.color = "#dc3545"; knobNumber.style.textShadow = "0 0 15px #dc3545";
         labelHard.classList.add('active-label'); labelHard.style.color = "#dc3545";
     } else if (level === 'medium') {
-        shifterAssembly.style.top = "95px"; // Middle
+        shifterAssembly.style.top = "95px";
         knobNumber.innerText = "2"; knobNumber.style.color = "#ffc107"; knobNumber.style.textShadow = "0 0 15px #ffc107";
         labelMedium.classList.add('active-label'); labelMedium.style.color = "#ffc107";
     } else { 
-        shifterAssembly.style.top = "165px"; // Bottom
+        shifterAssembly.style.top = "165px"; 
         knobNumber.innerText = "1"; knobNumber.style.color = "#00d2ff"; knobNumber.style.textShadow = "0 0 15px #00d2ff";
         labelEasy.classList.add('active-label'); labelEasy.style.color = "#00d2ff";
     }
