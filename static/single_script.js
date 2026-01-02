@@ -26,7 +26,7 @@ let gameState = {
 };
 
 const playerImg = new Image(); playerImg.src = "/static/car_player.png"; 
-const enemyImg = new Image(); enemyImg.src = "/static/car_enemy.png"; 
+
 
 let enemies = [];
 let currentQuestion = null;
@@ -34,6 +34,49 @@ let spawnTimer = null;
 let recognition = null; 
 // NEW: Lock variable to prevent double-steering
 let isProcessingSpeech = false; 
+
+/* --- TRAFFIC CAR TYPES --- */
+const TRAFFIC_TYPES = [
+    {
+        name: "normal",
+        img: "/static/normal.png",
+        width: 95,
+        height: 105,
+        speedMultiplier: 0.9,
+        spawnWeight: 15
+    },
+    {
+        name: "taxi",
+        img: "/static/car_enemy.png",
+        width: 45,
+        height: 90,
+        speedMultiplier: 0.9,
+        spawnWeight: 45
+    },    
+    {
+        name: "bike",
+        img: "/static/bike.png",
+        width: 73,
+        height: 100,
+        speedMultiplier: 0.6,
+        spawnWeight: 10
+    },
+    {
+        name: "redcar",
+        img: "/static/car1.png",
+        width: 80,
+        height: 115,
+        speedMultiplier: 0.8,
+        spawnWeight: 30
+    }
+];
+const enemyImages = {};
+
+TRAFFIC_TYPES.forEach(type => {
+    const img = new Image();
+    img.src = type.img;
+    enemyImages[type.name] = img;
+}); 
 
 /* --- UI ELEMENTS --- */
 const questionLeftEl = document.getElementById('question-left');
@@ -276,7 +319,26 @@ function abortRace() {
 
 function spawnEnemy() {
     const lane = Math.floor(Math.random() * CONFIG.laneCount);
-    enemies.push({ lane: lane, y: -150, speedOffset: (Math.random() * 0.5) });
+
+    // Weighted random traffic type selection
+    const totalWeight = TRAFFIC_TYPES.reduce((sum, t) => sum + t.spawnWeight, 0);
+    let rand = Math.random() * totalWeight;
+    let chosenType = TRAFFIC_TYPES[0];
+
+    for (let t of TRAFFIC_TYPES) {
+        rand -= t.spawnWeight;
+        if (rand <= 0) {
+            chosenType = t;
+            break;
+        }
+    }
+
+    enemies.push({
+        lane: lane,
+        y: -150,
+        type: chosenType,
+        speedOffset: Math.random() * 0.5
+    });
 }
 
 function updatePhysics() {
@@ -318,11 +380,25 @@ function gameLoop() {
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
         const trafficMultiplier = (gameState.controlMode === 'voice') ? 0.5 : 0.8;
-        e.y += gameState.speed * trafficMultiplier + e.speedOffset;
-        const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.enemyWidth/2);
-        drawCar(enemyImg, ex, e.y, CONFIG.enemyWidth, CONFIG.enemyHeight, "red");
+        e.y += (gameState.speed * trafficMultiplier * e.type.speedMultiplier) + e.speedOffset;
+        const ex = (e.lane * CONFIG.laneWidth) +
+                (CONFIG.laneWidth / 2) -
+                (e.type.width / 2);
+        drawCar(
+            enemyImages[e.type.name],
+            ex,
+            e.y,
+            e.type.width,
+            e.type.height,
+            "red"
+        );
         const p = 10; 
-        if (playerX + p < ex + CONFIG.enemyWidth - p && playerX + CONFIG.playerWidth - p > ex + p && playerY + p < e.y + CONFIG.enemyHeight - p && playerY + CONFIG.playerHeight - p > e.y + p) { gameOver(); }
+        if (playerX + p < ex + e.type.width - p &&
+            playerX + CONFIG.playerWidth - p > ex + p &&
+            playerY + p < e.y + e.type.height - p &&
+            playerY + CONFIG.playerHeight - p > e.y + p) {
+            gameOver();
+        }
         if (e.y > canvas.height) { enemies.splice(i, 1); i--; }
     }
     requestAnimationFrame(gameLoop);
