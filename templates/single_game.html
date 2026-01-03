@@ -2,125 +2,44 @@
 
 {% block content %}
 <style>
-    /* --- COCKPIT UI STYLES --- */
-    body {
-        overflow: hidden; 
-        background-color: #050510;
-        margin: 0;
-    }
-
-    .cockpit-body {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        display: flex; justify-content: center; align-items: center;
-        color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        user-select: none; z-index: 10; 
-        /* FIXED: Added sufficient padding so it doesn't merge with dashboard */
-        padding-top: 60px; 
-    }
-
-    .game-transform-wrapper {
-        transform-origin: center center;
-        display: flex; justify-content: center; align-items: center;
-        width: 100%; height: 100%;
-        transform: scale(0.95); /* Perfect fit */
-    }
-
-    .game-wrapper {
-        display: flex; flex-direction: row; justify-content: center; align-items: flex-start; /* Aligned Top */
-        gap: 20px; 
-    }
-
-    /* --- SIDE PANELS --- */
-    .control-panel, .hud-panel {
-        width: 300px; 
-        background: rgba(15, 20, 30, 0.95); 
-        padding: 25px;
-        border-radius: 12px;
-        border: 2px solid #00d2ff; 
-        box-shadow: 0 0 25px rgba(0, 210, 255, 0.1), inset 0 0 60px rgba(0,0,0,0.8);
-        display: flex; flex-direction: column; align-items: center;
-        /* FIXED: Reduced height to prevent overlap */
-        height: 640px; 
-    }
-
-    /* Left Panel: Distribute space evenly */
-    .control-panel { justify-content: space-between; }
+    /* --- CORE COCKPIT STYLES --- */
+    body { overflow: hidden; background-color: #050510; margin: 0; }
+    .cockpit-body { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; z-index: 10; padding-top: 60px; }
     
-    /* Right Panel: Force Top/Bottom separation */
+    .game-transform-wrapper { transform-origin: center center; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; transform: scale(0.95); }
+    .game-wrapper { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 20px; }
+
+    /* --- PANELS --- */
+    .control-panel, .hud-panel {
+        width: 300px; background: rgba(15, 20, 30, 0.95); padding: 25px;
+        border-radius: 12px; border: 2px solid #00d2ff;
+        box-shadow: 0 0 25px rgba(0, 210, 255, 0.1), inset 0 0 60px rgba(0,0,0,0.8);
+        display: flex; flex-direction: column; align-items: center; height: 640px;
+    }
+    .control-panel { justify-content: space-between; }
     .hud-panel { justify-content: space-between; }
 
-    .panel-divider {
-        width: 100%; height: 2px; 
-        background: linear-gradient(90deg, transparent, #00d2ff, transparent); 
-        opacity: 0.5; box-shadow: 0 0 5px #00d2ff;
-        margin: 5px 0;
-    }
+    /* NEON DIVIDER (Applied to both panels now) */
+    .panel-divider { width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #00d2ff, transparent); opacity: 0.5; box-shadow: 0 0 5px #00d2ff; margin: 5px 0; }
+    
+    .control-label { font-weight: 800; color: #00d2ff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-size: 0.75rem; text-align: center; width: 100%; display: block; text-shadow: 0 0 5px rgba(0, 210, 255, 0.5); }
 
-    .control-label {
-        font-weight: 800; color: #00d2ff; text-transform: uppercase;
-        letter-spacing: 2px; margin-bottom: 8px; font-size: 0.75rem;
-        text-align: center; width: 100%; display: block;
-        text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
-    }
-
-    /* --- GEARBOX (Refined Size) --- */
-    .shifter-container {
-        position: relative; 
-        width: 160px; /* Wider */
-        height: 230px; /* Taller, but not huge */
-        background: linear-gradient(145deg, #222, #111);
-        border-radius: 10px; border: 2px solid #444;
-        box-shadow: inset 0 0 20px #000; 
-        display: flex; justify-content: center; overflow: hidden;
-        flex-shrink: 0;
-    }
-    .shifter-slot {
-        width: 12px; 
-        height: 190px; /* Internal Slot Size */
-        background: #000; border-radius: 10px; margin-top: 20px;
-        box-shadow: inset 0 0 5px #000; position: relative; z-index: 1;
-    }
+    /* --- GEARBOX --- */
+    .shifter-container { position: relative; width: 160px; height: 230px; background: linear-gradient(145deg, #222, #111); border-radius: 10px; border: 2px solid #444; box-shadow: inset 0 0 20px #000; display: flex; justify-content: center; overflow: hidden; flex-shrink: 0; }
+    .shifter-slot { width: 12px; height: 190px; background: #000; border-radius: 10px; margin-top: 20px; box-shadow: inset 0 0 5px #000; position: relative; z-index: 1; }
     .shifter-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
-    
-    /* Label Positions based on 230px Height */
-    .shift-mark {
-        position: absolute; left: 15px; font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase; transition: color 0.3s;
-    }
-    .mark-3 { top: 30px; }   /* Hard */
-    .mark-2 { top: 95px; }   /* Medium */
-    .mark-1 { top: 160px; }  /* Easy */
-    
+    .shift-mark { position: absolute; left: 15px; font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase; transition: color 0.3s; }
+    .mark-3 { top: 30px; } .mark-2 { top: 95px; } .mark-1 { top: 160px; }
     .active-label { text-shadow: 0 0 10px currentColor; }
-
-    .shifter-stick-assembly {
-        position: absolute; 
-        top: 165px; /* Default Easy Pos */
-        left: 50%; transform: translate(-50%, -50%); 
-        width: 60px; height: 60px; z-index: 10;
-        transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
-        pointer-events: none;
-    }
-    .shifter-rod {
-        position: absolute; top: 50%; left: 50%; width: 6px; 
-        height: 120px; 
-        background: #888; transform: translate(-50%, 0); z-index: -1;
-    }
-    .shifter-knob {
-        width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #444, #111);
-        border-radius: 50%; border: 2px solid #555; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.8);
-        display: flex; justify-content: center; align-items: center;
-    }
+    .shifter-stick-assembly { position: absolute; top: 165px; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; z-index: 10; transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none; }
+    .shifter-rod { position: absolute; top: 50%; left: 50%; width: 6px; height: 120px; background: #888; transform: translate(-50%, 0); z-index: -1; }
+    .shifter-knob { width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #444, #111); border-radius: 50%; border: 2px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; }
     .knob-number { font-size: 1.5rem; font-weight: 900; color: #333; font-family: 'Courier New', monospace; transition: all 0.3s; }
-    
     .click-zone { position: absolute; left: 0; width: 100%; height: 70px; cursor: pointer; z-index: 20; }
-    .zone-3 { top: 0px; } 
-    .zone-2 { top: 76px; } 
-    .zone-1 { top: 152px; }
-
+    .zone-3 { top: 0px; } .zone-2 { top: 76px; } .zone-1 { top: 152px; }
 
     /* --- ROCKERS --- */
-    .rocker-group { display: flex; gap: 10px; justify-content: center; width: 100%; }
+    .rocker-group { display: flex; gap: 10px; justify-content: center; width: 100%; transition: opacity 0.3s; }
     .rocker-input { display: none; }
     .rocker-label { width: 100px; height: 45px; background: linear-gradient(to bottom, #222, #333); border-top: 1px solid #555; border-bottom: 2px solid #000; border-radius: 4px; position: relative; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; transition: all 0.1s; }
     .rocker-light { width: 20px; height: 4px; background: #333; margin-bottom: 5px; box-shadow: inset 0 0 2px #000; transition: all 0.3s; }
@@ -129,49 +48,29 @@
     #math-simple:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
     #math-mixed:checked + .rocker-label .rocker-light { background: #d63384; box-shadow: 0 0 8px #d63384; }
     .rocker-input:checked + .rocker-label .rocker-text { color: #eee; }
-
+    
+    /* Disabled Look */
+    .controls-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); transition: opacity 0.3s; }
 
     /* --- INPUT BUTTONS --- */
     .control-selection-group { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
-
-    .input-mode-btn {
-        width: 100%; height: 60px;
-        background: rgba(0, 10, 20, 0.6); 
-        border: 1px solid rgba(0, 210, 255, 0.3); 
-        border-radius: 8px;
-        color: #557; 
-        display: flex; align-items: center; justify-content: flex-start; padding-left: 20px;
-        cursor: pointer; transition: all 0.2s; position: relative;
-    }
+    .input-mode-btn { width: 100%; height: 60px; background: rgba(0, 10, 20, 0.6); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; color: #557; display: flex; align-items: center; justify-content: flex-start; padding-left: 20px; cursor: pointer; transition: all 0.2s; position: relative; }
     .input-mode-btn .icon { font-size: 1.8rem; margin-right: 15px; opacity: 0.5; transition: 0.3s; }
     .input-mode-btn .text-group { display: flex; flex-direction: column; align-items: flex-start; }
     .input-mode-btn .main-text { font-size: 0.9rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
     .input-mode-btn .sub-text { font-size: 0.55rem; font-weight: normal; text-transform: uppercase; opacity: 0.7; }
-
     .input-mode-btn:hover { background: rgba(0, 210, 255, 0.05); border-color: #00d2ff; }
-    
-    .input-mode-btn.active-mode {
-        background: rgba(0, 210, 255, 0.1); border: 2px solid #00d2ff; color: #fff;
-        box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1);
-    }
-    #btn-mode-voice.active-mode {
-        border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); color: #fff;
-        box-shadow: 0 0 20px rgba(46, 204, 113, 0.2), inset 0 0 10px rgba(46, 204, 113, 0.1);
-    }
+    .input-mode-btn.active-mode { background: rgba(0, 210, 255, 0.1); border: 2px solid #00d2ff; color: #fff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1); }
+    #btn-mode-voice.active-mode { border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); color: #fff; box-shadow: 0 0 20px rgba(46, 204, 113, 0.2), inset 0 0 10px rgba(46, 204, 113, 0.1); }
     .input-mode-btn.active-mode .icon { opacity: 1; text-shadow: 0 0 10px #fff; }
-
-    /* MIC STATUS */
     .mic-indicator { margin-top: 5px; width: 100%; text-align: center; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #444; border: 1px solid #333; padding: 5px; border-radius: 4px; background: #000; opacity: 0; transition: opacity 0.3s; }
     .mic-indicator.visible { opacity: 1; }
     .mic-indicator.listening { color: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.3); }
-
 
     /* --- CENTER STAGE --- */
     .center-stage { display: flex; flex-direction: column; width: 800px; height: 640px; justify-content: space-between; }
     .game-container { position: relative; border: 4px solid #00d2ff; border-radius: 12px; box-shadow: 0 0 40px rgba(0, 210, 255, 0.2); background: #000; width: 100%; height: 530px; flex-shrink: 0; z-index: 5; }
     canvas { display: block; width: 100%; height: 100%; }
-
-    /* --- MISSION CONTROL --- */
     .mission-control { height: 90px; width: 100%; background: rgba(10, 10, 10, 0.8); border: 2px solid #333; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 30px; box-shadow: inset 0 0 30px #000; margin-top: 10px; }
     .ctrl-btn { height: 60px; min-width: 250px; font-family: 'Segoe UI', sans-serif; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); border-radius: 4px; position: relative; overflow: hidden; }
     .btn-initiate { border: 2px solid #2ecc71; color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.2); text-shadow: 0 0 8px #2ecc71; }
@@ -181,20 +80,110 @@
     .btn-abort:hover { background-color: rgba(231, 76, 60, 0.2); box-shadow: 0 0 20px rgba(231, 76, 60, 0.6); }
     .ctrl-btn.btn-disabled { filter: grayscale(100%); opacity: 0.2; pointer-events: none; border-style: dashed; }
 
-    /* --- HUD --- */
+    /* --- HUD & SYSTEM BUTTON --- */
     .digital-display { background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; width: 100%; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
     .digital-value { color: #00d2ff; font-size: 2.5rem; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 0 0 10px rgba(0,210,255,0.5); }
-    
-    .gauge-wrapper { position: relative; width: 220px; height: 220px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #333; margin-top: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.8);}
+    .gauge-wrapper { position: relative; width: 220px; height: 220px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #333; margin-top: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.8);}
     .gauge-arc { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: conic-gradient(from 225deg, #00d2ff 0deg, #0056b3 200deg, transparent 200deg); -webkit-mask: radial-gradient(transparent 65%, black 65%); mask: radial-gradient(transparent 65%, black 65%); }
     .gauge-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 3px; background: #fff; transform-origin: 0% 50%; transform: rotate(225deg); transition: transform 0.1s linear; border-radius: 50%; z-index: 5; box-shadow: 0 0 5px white; }
     .gauge-value { position: absolute; bottom: 50px; left: 0; right: 0; text-align: center; color: white; font-size: 2.5rem; font-weight: bold; z-index: 6; }
     .gauge-unit { font-size: 0.8rem; color: #888; display: block; }
 
+    /* NEW CLASSY SYSTEM BUTTON */
+    .btn-sys-config {
+        width: 100%; height: 50px; margin-top: auto;
+        background: #151515; border: 1px solid #444; border-radius: 6px;
+        color: #888; font-weight: 800; font-size: 0.8rem; letter-spacing: 1px;
+        cursor: pointer; display: flex; justify-content: center; align-items: center; text-align: center;
+        transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .btn-sys-config:hover { 
+        border-color: #00d2ff; color: #fff; 
+        background: rgba(0, 210, 255, 0.1); 
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.3); 
+    }
+    .btn-sys-config:active { transform: translateY(2px); }
+
     /* OVERLAYS */
-    .math-overlay { position: absolute; top: 20px; font-size: 32px; font-weight: 800; color: white; background: rgba(0, 0, 0, 0.85); padding: 10px 20px; border-radius: 8px; border: 2px solid #00d2ff; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    .math-overlay { position: absolute; top: 20px; font-size: 32px; font-weight: 800; color: white; background: rgba(0, 0, 0, 0.85); padding: 10px 20px; border-radius: 8px; border: 2px solid #00d2ff; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.5); min-width: 100px; text-align: center; display: flex; align-items: center; justify-content: center;}
     #question-left { left: 30px; } #question-right { right: 30px; }
+    .shape-svg { filter: drop-shadow(0 0 5px #00d2ff); width: 60px; height: 60px; fill: none; stroke: #fff; stroke-width: 3; }
     #game-over-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
+
+    /* --- POPUP WINDOW --- */
+    #config-modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 100;
+        display: flex; justify-content: center; align-items: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    #config-modal.active { opacity: 1; pointer-events: auto; }
+    
+    .modal-content {
+            width: 700px; 
+            background: rgba(10, 15, 25, 0.98); /* Much darker, solid background */
+            border: 2px solid #00d2ff; /* Strong Neon Border */
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 210, 255, 0.25), inset 0 0 100px rgba(0,0,0,0.8); /* Glass Glow Effect */
+            padding: 20px 30px; position: relative;
+            transform: translateY(50px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+    #config-modal.active .modal-content { transform: translateY(0); }
+    
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+    .modal-title { color: #ccc; margin: 0; font-family: 'Segoe UI', sans-serif; font-weight: 800; letter-spacing: 2px; }
+    .close-btn { color: #555; font-size: 2rem; cursor: pointer; transition: color 0.2s; line-height: 20px; }
+    .close-btn:hover { color: #fff; }
+
+    .config-section { margin-bottom: 15px; }
+    .config-label { color: #888; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; display: block; border-left: 3px solid #f39c12; padding-left: 10px; letter-spacing: 1px; }
+    .toggle-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-items: center; }
+    .toggle-grid.wide { grid-template-columns: repeat(4, 1fr); }
+
+    /* NEON GLASS TILES (Classy, No Red Dot) */
+/* NEON GLASS TILES (Brighter & clearer) */
+    .neon-tile {
+        width: 100%; padding: 12px 5px;
+        background: rgba(0, 210, 255, 0.05); /* Slight blue tint by default */
+        border: 1px solid #444; border-radius: 4px;
+        color: #888; font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.8rem;
+        text-align: center; cursor: pointer; transition: all 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .neon-tile:hover { 
+        border-color: #00d2ff; color: #fff; 
+        background: rgba(0, 210, 255, 0.15); 
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+    }
+    
+    /* Active State - High Visibility */
+    .neon-tile.active {
+        border-color: #00d2ff; 
+        background: #00d2ff; /* Solid Fill */
+        color: #000; /* Black text for high contrast */
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.6); /* bright glow */
+        font-weight: 900;
+        text-shadow: none;
+    }
+
+    /* Confirm Button */
+    .modal-footer { margin-top: 25px; display: flex; justify-content: center; }
+    .btn-confirm {
+        background: #2ecc71; color: #fff; border: none; padding: 12px 40px;
+        font-weight: 800; letter-spacing: 1px; border-radius: 4px; cursor: pointer;
+        box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); transition: all 0.2s;
+    }
+    .btn-confirm:hover { background: #27ae60; transform: scale(1.05); }
+
+    /* TOOLTIP WARNING */
+    #cursor-tooltip {
+        position: fixed; pointer-events: none; z-index: 200;
+        background: rgba(0, 0, 0, 0.9); border: 1px solid #f39c12;
+        color: #f39c12; font-family: 'Segoe UI', sans-serif; font-size: 0.7rem; font-weight: bold;
+        padding: 5px 10px; border-radius: 4px;
+        opacity: 0; transition: opacity 0.2s; transform: translate(15px, 15px);
+    }
+    #cursor-tooltip.visible { opacity: 1; }
 
     /* Scaling */
     @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.85); } }
@@ -205,7 +194,6 @@
         <div class="game-wrapper">
 
             <div class="control-panel">
-                
                 <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
                     <span class="control-label">Transmission</span>
                     <div class="shifter-container">
@@ -226,10 +214,9 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="panel-divider"></div>
-
-                <div style="width:100%">
+                
+                <div id="std-nav-controls" style="width:100%">
                     <span class="control-label">Nav Computer</span>
                     <div class="rocker-group">
                         <div class="rocker-wrapper">
@@ -248,57 +235,39 @@
                 </div>
 
                 <div class="panel-divider"></div>
-
                 <div style="width:100%">
                     <span class="control-label">Control System</span>
                     <div class="control-selection-group">
-                        
                         <div id="btn-mode-key" class="input-mode-btn active-mode" onclick="setControlMode('keyboard')">
                             <div class="icon">⌨️</div>
-                            <div class="text-group">
-                                <span class="main-text">Manual</span>
-                                <span class="sub-text">Keyboard</span>
-                            </div>
+                            <div class="text-group"><span class="main-text">Manual</span><span class="sub-text">Keyboard</span></div>
                         </div>
-
                         <div id="btn-mode-voice" class="input-mode-btn" onclick="setControlMode('voice')">
                             <div class="icon">🎙️</div>
-                            <div class="text-group">
-                                <span class="main-text">Voice</span>
-                                <span class="sub-text">Speech Rec.</span>
-                            </div>
+                            <div class="text-group"><span class="main-text">Voice</span><span class="sub-text">Speech Rec.</span></div>
                         </div>
-
-                        <div id="mic-indicator" class="mic-indicator">
-                            STATUS: <span id="mic-text">STANDBY</span>
-                        </div>
+                        <div id="mic-indicator" class="mic-indicator">STATUS: <span id="mic-text">STANDBY</span></div>
                     </div>
                 </div>
-                
                 <a href="{{ url_for('dashboard') }}" style="display:block; text-align:center; margin-top:10px; color:#555; text-decoration:none; font-size:0.8rem;">&larr; Exit to Hangar</a>
             </div>
 
 
             <div class="center-stage">
-                
                 <div class="game-container">
                     <div id="question-left" class="math-overlay">L: --</div>
                     <div id="question-right" class="math-overlay">R: --</div>
-
                     <canvas id="gameCanvas" width="800" height="600"></canvas>
-
                     <div id="game-over-screen">
                         <h1 id="game-over-title" style="font-size:3rem; margin-bottom:10px; color:#ff4b2b;">CRITICAL FAILURE</h1>
                         <p style="font-size: 1.5rem; color:#ccc;">Distance Traveled: <span id="final-score">0</span>m</p>
                         <button onclick="location.reload()" class="btn btn-primary btn-lg" style="margin-top:30px; font-size:1.5rem;">REBOOT SYSTEM</button>
                     </div>
                 </div>
-
                 <div class="mission-control">
                     <div id="btn-start" class="ctrl-btn btn-initiate">START ENGINE</div>
                     <div id="btn-stop" class="ctrl-btn btn-abort btn-disabled">KILL SWITCH</div>
                 </div>
-
             </div>
 
 
@@ -309,23 +278,74 @@
                         <div class="digital-value"><span id="live-distance">0</span>m</div>
                     </div>
                 </div>
-
+                <div class="panel-divider"></div>
                 <div>
                     <span class="control-label">Velocity</span>
                     <div class="gauge-wrapper">
                         <div class="gauge-arc"></div>
                         <div class="gauge-needle" id="speed-needle"></div>
-                        <div class="gauge-value">
-                            <span id="speed-value">0</span>
-                            <span class="gauge-unit">KM/H</span>
-                        </div>
+                        <div class="gauge-value"><span id="speed-value">0</span><span class="gauge-unit">KM/H</span></div>
                     </div>
+                </div>
+                
+                <div class="panel-divider"></div>
+                <div id="btn-sys-config" class="btn-sys-config">
+                    ADDITIONAL FEATURES
                 </div>
             </div>
 
         </div> 
     </div> 
 </div>
+
+<div id="config-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">SYSTEM CONFIGURATION</h2>
+            <span id="close-modal" class="close-btn">&times;</span>
+        </div>
+
+        <div class="config-section">
+            <span class="config-label">MULTIPLICATION VECTORS</span>
+            <div class="toggle-grid">
+                {% for i in range(2, 12) %}
+                <div class="neon-tile feature-btn" data-type="mult" data-value="{{ i }}">
+                    X{{ i }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="config-section">
+            <span class="config-label">HIGHER ORDER FUNCTIONS</span>
+            <div class="toggle-grid wide">
+                {% for op, label in [('squares', 'SQUARES'), ('cubes', 'CUBES'), ('sqrt', 'SQ. ROOT')] %}
+                <div class="neon-tile feature-btn" data-type="adv" data-value="{{ op }}">
+                    {{ label }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="config-section">
+            <span class="config-label">VISUAL & VOICE RECOGNITION OPS (REQ. VOICE MODE)</span>
+            <div class="toggle-grid wide">
+                {% for op, label in [('shapes', 'SHAPES'), ('diff', 'CALC: DIFF'), ('int', 'CALC: INT'), ('trig', 'TRIG')] %}
+                <div class="neon-tile feature-btn" data-type="voice" data-value="{{ op }}">
+                    {{ label }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-confirm" onclick="document.getElementById('config-modal').classList.remove('active')">CONFIRM</button>
+        </div>
+
+    </div>
+</div>
+
+<div id="cursor-tooltip">WARNING</div>
 
 <script src="{{ url_for('static', filename='single_script.js') }}"></script>
 
