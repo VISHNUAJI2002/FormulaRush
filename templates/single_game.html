@@ -43,11 +43,25 @@
     .rocker-input { display: none; }
     .rocker-label { width: 100px; height: 45px; background: linear-gradient(to bottom, #222, #333); border-top: 1px solid #555; border-bottom: 2px solid #000; border-radius: 4px; position: relative; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; transition: all 0.1s; }
     .rocker-light { width: 20px; height: 4px; background: #333; margin-bottom: 5px; box-shadow: inset 0 0 2px #000; transition: all 0.3s; }
-    .rocker-text { font-size: 0.6rem; font-weight: bold; color: #666; text-transform: uppercase;}
+    .rocker-text {
+    font-size: 1.2rem;              /* Bigger */
+    font-weight: 850;               /* Stronger */
+    color: #eaeaea;                 /* Brighter */
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 
+        0 0 6px rgba(0, 210, 255, 0.6); /* Neon clarity */
+}
     .rocker-input:checked + .rocker-label { background: linear-gradient(to bottom, #111, #222); border-top: 2px solid #000; transform: translateY(2px); }
     #math-simple:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
     #math-mixed:checked + .rocker-label .rocker-light { background: #d63384; box-shadow: 0 0 8px #d63384; }
-    .rocker-input:checked + .rocker-label .rocker-text { color: #eee; }
+    .rocker-input:checked + .rocker-label .rocker-text {
+    color: #ffffff;
+    text-shadow:
+        0 0 8px #00d2ff,
+        0 0 15px rgba(0, 210, 255, 0.8);
+}
+
     
     /* Disabled Look */
     .controls-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); transition: opacity 0.3s; }
@@ -61,7 +75,7 @@
     .input-mode-btn .sub-text { font-size: 0.55rem; font-weight: normal; text-transform: uppercase; opacity: 0.7; }
     .input-mode-btn:hover { background: rgba(0, 210, 255, 0.05); border-color: #00d2ff; }
     .input-mode-btn.active-mode { background: rgba(0, 210, 255, 0.1); border: 2px solid #00d2ff; color: #fff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1); }
-    #btn-mode-voice.active-mode { border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); color: #fff; box-shadow: 0 0 20px rgba(46, 204, 113, 0.2), inset 0 0 10px rgba(46, 204, 113, 0.1); }
+    #btn-mode-voice.active-mode { border-color: #00d2ff; color: #fff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1); }
     .input-mode-btn.active-mode .icon { opacity: 1; text-shadow: 0 0 10px #fff; }
     .mic-indicator { margin-top: 5px; width: 100%; text-align: center; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #444; border: 1px solid #333; padding: 5px; border-radius: 4px; background: #000; opacity: 0; transition: opacity 0.3s; }
     .mic-indicator.visible { opacity: 1; }
@@ -91,38 +105,74 @@
 
     /* NEW CLASSY SYSTEM BUTTON */
 /* SYSTEM CONFIG BUTTON (Heavy Mechanical Look - Neon Text Fix) */
-    .btn-sys-config {
-        width: 100%; height: 50px; margin-top: auto;
-        
-        /* The "Unpressed" Appearance */
-        background: linear-gradient(to bottom, #2a2a2a, #151515);
-        border: 1px solid #444;
-        border-bottom: 4px solid #000; /* 3D height */
-        border-radius: 6px;
-        
-        /* NEON TEXT STYLE - DIMMED */
-        color: rgba(0, 210, 255, 0.6); /* Dim cyan */
-        text-shadow: 0 0 2px rgba(0, 210, 255, 0.3);
-        font-weight: 800; font-size: 0.8rem; letter-spacing: 1px;
-        display: flex; justify-content: center; align-items: center; text-align: center;
-        cursor: pointer; transition: all 0.1s;
-        box-shadow: 0 5px 10px rgba(0,0,0,0.5);
-    }
+/* SYSTEM CONFIG BUTTON — Classy Neon Standard */
+.btn-sys-config {
+    width: 100%;
+    height: 52px;
+    margin-top: auto;
 
-    .btn-sys-config:hover { 
-        background: linear-gradient(to bottom, #333, #1a1a1a);
-        /* NEON GLOW ON HOVER */
-        color: #00d2ff; border-color: #00d2ff;
-        text-shadow: 0 0 8px #00d2ff;
-    }
+    /* Solid, premium base */
+    background: linear-gradient(to bottom, #1c1f26, #0f1116);
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    border-bottom: 4px solid rgba(0, 0, 0, 0.9);
+    border-radius: 8px;
 
-    /* THE WEIGHT EFFECT (Pressed State) */
-    .btn-sys-config:active { 
-        transform: translateY(3px); /* Move down physically */
-        border-bottom-width: 1px;   /* Shrink the bottom border */
-        box-shadow: 0 1px 2px rgba(0,0,0,0.8); /* Remove shadow */
-        color: #fff; /* Flash white on click */
-    }
+    /* Neon typography (controlled, not loud) */
+    color: #7fe9ff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+
+    text-shadow:
+        0 0 4px rgba(0, 210, 255, 0.4),
+        0 0 10px rgba(0, 210, 255, 0.15);
+
+    /* Layout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+
+    /* Depth */
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 6px 14px rgba(0,0,0,0.7);
+
+    transition:
+        transform 0.08s ease,
+        box-shadow 0.08s ease,
+        color 0.15s ease,
+        border-color 0.15s ease,
+        text-shadow 0.15s ease;
+}
+
+.btn-sys-config:hover {
+    color: #ffffff;
+    border-color: #00d2ff;
+
+    text-shadow:
+        0 0 6px #00d2ff,
+        0 0 16px rgba(0, 210, 255, 0.6);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 8px 22px rgba(0, 210, 255, 0.25);
+}
+
+.btn-sys-config:active {
+    transform: translateY(3px);
+    border-bottom-width: 1px;
+
+    box-shadow:
+        inset 0 2px 6px rgba(0,0,0,0.9),
+        0 2px 4px rgba(0,0,0,0.8);
+
+    color: #ffffff;
+    text-shadow:
+        0 0 10px rgba(255,255,255,0.9);
+}
 
     /* OVERLAYS */
     .math-overlay { position: absolute; top: 20px; font-size: 32px; font-weight: 800; color: white; background: rgba(0, 0, 0, 0.85); padding: 10px 20px; border-radius: 8px; border: 2px solid #00d2ff; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.5); min-width: 100px; text-align: center; display: flex; align-items: center; justify-content: center;}
@@ -160,79 +210,153 @@
     .toggle-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-items: center; }
     .toggle-grid.wide { grid-template-columns: repeat(4, 1fr); }
 
-/* NEON TILES (Weighted Toggle Keys - Neon Text Fix) */
-    .neon-tile {
-        width: 100%; padding: 10px 5px;
-        text-align: center; cursor: pointer; position: relative;
-        
-        /* INACTIVE NEON FONT STYLE */
-        font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.8rem; 
-        color: rgba(200, 220, 255, 0.3); /* Very dim bluish-white */
-        text-shadow: 0 0 1px rgba(200, 220, 255, 0.1);
-        
-        /* Physical "OFF" State */
-        background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
-        border: 1px solid #333;
-        border-bottom: 3px solid #000; /* 3D Depth */
-        border-radius: 4px;
-        box-shadow: 0 3px 5px rgba(0,0,0,0.5);
-        transition: all 0.1s;
-    }
+/* NEON TILES — Premium HUD Style */
+.neon-tile {
+    width: 100%;
+    padding: 12px 6px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
 
-    .neon-tile:hover {
-        background: #222; border-color: #555;
-        /* HOVER GLOW START */
-        color: rgba(0, 210, 255, 0.8);
-        text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
-    }
+    /* Typography */
+    font-family: 'Rajdhani', 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+
+    /* Inactive Neon (controlled) */
+    color: rgba(160, 200, 255, 0.45);
+    text-shadow: 0 0 2px rgba(160, 200, 255, 0.25);
+
+    /* Premium base */
+    background: linear-gradient(160deg, #141820, #0b0e14);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 4px solid rgba(0,0,0,0.9);
+    border-radius: 6px;
+
+    /* Depth */
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.04),
+        0 6px 12px rgba(0,0,0,0.65);
+
+    transition:
+        transform 0.08s ease,
+        box-shadow 0.1s ease,
+        background 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease,
+        text-shadow 0.15s ease;
+}
+.neon-tile:hover {
+    background: linear-gradient(160deg, #1b2230, #101521);
+    border-color: rgba(0, 210, 255, 0.4);
+
+    color: #bfefff;
+    text-shadow:
+        0 0 4px rgba(0, 210, 255, 0.6),
+        0 0 10px rgba(0, 210, 255, 0.25);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 8px 18px rgba(0,0,0,0.75);
+}
     
-    /* ACTIVE STATE (Pressed In & Fully Glowing) */
-    .neon-tile.active {
-        /* Physical Movement */
-        transform: translateY(3px); 
-        border-bottom: 1px solid #00d2ff; /* Collapse the depth */
-        
-        /* FULL NEON LIT EFFECT */
-        background: rgba(0, 210, 255, 0.15);
-        border-color: #00d2ff;
-        color: #fff; /* White hot center */
-        text-shadow: 0 0 8px #00d2ff, 0 0 15px #00d2ff; /* Strong Cyan Halo */
-        box-shadow: inset 0 0 15px rgba(0, 210, 255, 0.2);
-    }
+.neon-tile.active {
+    transform: translateY(3px);
+    border-bottom-width: 1px;
+    border-color: #00d2ff;
 
+    background: linear-gradient(160deg, #0f2a36, #081a22);
+
+    color: #ffffff;
+    text-shadow:
+        0 0 6px #00d2ff,
+        0 0 14px rgba(0, 210, 255, 0.7);
+
+    box-shadow:
+        inset 0 2px 10px rgba(0, 210, 255, 0.25),
+        0 3px 6px rgba(0,0,0,0.8);
+}
     /* Confirm Button */
     .modal-footer { margin-top: 25px; display: flex; justify-content: center; }
-/* CONFIRM BUTTON (Heavy Action - Neon Text Fix) */
-    .btn-confirm {
-        /* Size */
-        padding: 12px 50px; border-radius: 6px; cursor: pointer;
-        font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
-        
-        /* Green "Unpressed" Look */
-        background: linear-gradient(to bottom, #27ae60, #1e8449);
-        border: 1px solid #2ecc71;
-        border-bottom: 4px solid #145a32; /* Dark green depth */
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        transition: all 0.1s;
+/* CONFIRM BUTTON — Premium Cyan Glass */
+.btn-confirm {
+    /* Size & typography */
+    padding: 14px 56px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 900;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', 'Segoe UI', sans-serif;
 
-        /* NEON CYBERPUNK TEXT */
-        color: #e0ffff; /* Light Cyan tint instead of plain white */
-        text-shadow: 0 0 5px rgba(224, 255, 255, 0.6);
-    }
+    /* Glass base */
+    background:
+        linear-gradient(
+            160deg,
+            rgba(0, 210, 255, 0.18),
+            rgba(0, 120, 180, 0.12)
+        ),
+        rgba(8, 12, 20, 0.85);
 
-    .btn-confirm:hover { 
-        background: linear-gradient(to bottom, #2ecc71, #27ae60);
-        box-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
-        color: #fff;
-        text-shadow: 0 0 10px #fff;
-    }
+    border: 1px solid rgba(0, 210, 255, 0.45);
+    border-bottom: 4px solid rgba(0, 80, 120, 0.9);
 
-    /* THE WEIGHT EFFECT */
-    .btn-confirm:active { 
-        transform: translateY(3px);
-        border-bottom-width: 1px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.8);
-    }
+    /* Neon typography */
+    color: #e8faff;
+    text-shadow:
+        0 0 4px rgba(0, 210, 255, 0.6),
+        0 0 10px rgba(0, 210, 255, 0.25);
+
+    /* Depth */
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 8px 22px rgba(0,0,0,0.65);
+
+    backdrop-filter: blur(6px);
+
+    transition:
+        transform 0.08s ease,
+        box-shadow 0.12s ease,
+        background 0.15s ease,
+        border-color 0.15s ease,
+        text-shadow 0.15s ease,
+        color 0.15s ease;
+}
+.btn-confirm:hover {
+    background:
+        linear-gradient(
+            160deg,
+            rgba(0, 210, 255, 0.32),
+            rgba(0, 150, 220, 0.22)
+        ),
+        rgba(10, 15, 25, 0.9);
+
+    border-color: #00d2ff;
+
+    color: #ffffff;
+    text-shadow:
+        0 0 6px #00d2ff,
+        0 0 14px rgba(0, 210, 255, 0.75);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        0 12px 30px rgba(0, 210, 255, 0.35);
+}
+.btn-confirm:active {
+    transform: translateY(3px);
+    border-bottom-width: 1px;
+
+    box-shadow:
+        inset 0 3px 10px rgba(0,0,0,0.85),
+        0 3px 6px rgba(0,0,0,0.8);
+
+    color: #ffffff;
+    text-shadow:
+        0 0 10px rgba(255,255,255,0.9);
+}
 
     /* TOOLTIP WARNING */
     #cursor-tooltip {
@@ -281,13 +405,13 @@
                         <div class="rocker-wrapper">
                             <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" checked onchange="updateMathMode()">
                             <label for="math-simple" class="rocker-label">
-                                <div><div class="rocker-light"></div><div class="rocker-text">Add / Sub</div></div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">+  -</div></div>
                             </label>
                         </div>
                         <div class="rocker-wrapper">
                             <input type="radio" name="math" id="math-mixed" value="mixed" class="rocker-input" onchange="updateMathMode()">
                             <label for="math-mixed" class="rocker-label">
-                                <div><div class="rocker-light"></div><div class="rocker-text">All Ops</div></div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">+  -  *  /</div></div>
                             </label>
                         </div>
                     </div>
@@ -406,6 +530,6 @@
 
 <div id="cursor-tooltip">WARNING</div>
 
+<script src="{{ url_for('static', filename='math_data.js') }}"></script>
 <script src="{{ url_for('static', filename='single_script.js') }}"></script>
-
 {% endblock %}
