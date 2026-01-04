@@ -2,6 +2,7 @@ from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import jsonify
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mathracersecretkey'
@@ -88,6 +89,31 @@ def play():
 @login_required
 def single_player():
     return render_template('single_game.html')
+
+@app.route('/submit_score', methods=['POST'])
+@login_required
+def submit_score():
+    data = request.get_json()
+    score = data.get('score')
+    mode = data.get('mode')
+
+    # Accept scores ONLY from single player
+    if mode != 'single':
+        return jsonify({'status': 'ignored'}), 200
+
+    # Safety check
+    if not isinstance(score, int):
+        return jsonify({'status': 'invalid'}), 400
+
+    # Update high score only if higher
+    if score > current_user.high_score:
+        current_user.high_score = score
+        db.session.commit()
+
+    return jsonify({
+        'status': 'ok',
+        'high_score': current_user.high_score
+    }), 200
 
 # --- CREATE DATABASE ---
 if __name__ == '__main__':

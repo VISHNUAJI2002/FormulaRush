@@ -433,6 +433,16 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 function gameOver() {
+    // --- SUBMIT SINGLE PLAYER SCORE ---
+    fetch("/submit_score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            score: gameState.score,
+            mode: "single"
+        })
+    });
+
     gameState.isPlaying = false;
     if (recognition) recognition.stop();
     micIndicator.classList.remove('listening'); micText.innerText = "OFFLINE";
