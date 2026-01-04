@@ -149,37 +149,6 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
     });
 });
 
-/* --- SHAPE SVGs --- */
-const SHAPES = {
-    triangle: `<svg class="shape-svg" viewBox="0 0 100 100"><polygon points="50,15 90,85 10,85" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    square: `<svg class="shape-svg" viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    circle: `<svg class="shape-svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    rectangle: `<svg class="shape-svg" viewBox="0 0 100 100"><rect x="10" y="30" width="80" height="40" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    pentagon: `<svg class="shape-svg" viewBox="0 0 100 100"><polygon points="50,10 90,40 75,90 25,90 10,40" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    hexagon: `<svg class="shape-svg" viewBox="0 0 100 100"><polygon points="50,10 85,30 85,70 50,90 15,70 15,30" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    line: `<svg class="shape-svg" viewBox="0 0 100 100"><line x1="10" y1="90" x2="90" y2="10" stroke="cyan" stroke-width="5"/></svg>`,
-    arc: `<svg class="shape-svg" viewBox="0 0 100 100"><path d="M 10 50 Q 50 10 90 50" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    cube: `<svg class="shape-svg" viewBox="0 0 100 100"><rect x="10" y="30" width="50" height="50" stroke="cyan" fill="none" stroke-width="3"/><rect x="40" y="10" width="50" height="50" stroke="cyan" fill="none" stroke-width="3"/><line x1="10" y1="30" x2="40" y2="10" stroke="cyan" stroke-width="3"/><line x1="60" y1="30" x2="90" y2="10" stroke="cyan" stroke-width="3"/><line x1="10" y1="80" x2="40" y2="60" stroke="cyan" stroke-width="3"/><line x1="60" y1="80" x2="90" y2="60" stroke="cyan" stroke-width="3"/></svg>`,
-    semicircle: `<svg class="shape-svg" viewBox="0 0 100 100"><path d="M 10 50 A 40 40 0 0 1 90 50 Z" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    parallelogram: `<svg class="shape-svg" viewBox="0 0 100 100"><polygon points="25,20 85,20 75,80 15,80" stroke="cyan" fill="none" stroke-width="5"/></svg>`,
-    hemisphere: `<svg class="shape-svg" viewBox="0 0 100 100"><path d="M 10 60 A 40 40 0 0 1 90 60 L 90 60 Z" stroke="cyan" fill="none" stroke-width="5"/><ellipse cx="50" cy="60" rx="40" ry="10" stroke="cyan" fill="none" stroke-width="3"/></svg>`
-};
-
-/* --- DATA POOLS --- */
-const VOICE_DATA = {
-    shapes: [
-        {html: SHAPES.triangle, a:"triangle"}, {html: SHAPES.square, a:"square"}, 
-        {html: SHAPES.circle, a:"circle"}, {html: SHAPES.rectangle, a:"rectangle"},
-        {html: SHAPES.pentagon, a:"pentagon"}, {html: SHAPES.hexagon, a:"hexagon"},
-        {html: SHAPES.line, a:"line"}, {html: SHAPES.arc, a:"arc"},
-        {html: SHAPES.cube, a:"cube"}, {html: SHAPES.semicircle, a:"semicircle"},
-        {html: SHAPES.parallelogram, a:"parallelogram"}, {html: SHAPES.hemisphere, a:"hemisphere"}
-    ],
-    diff: [{t:"d/dx (x²)", a:["2x", "two x"]}, {t:"d/dx (sin x)", a:["cos x", "cost x", "cause x"]}, {t:"d/dx (e^x)", a:["e power x", "e^x", "exponential"]}, {t:"d/dx (ln x)", a:["one by x", "1/x", "one over x"]}],
-    int: [{t:"∫ 2x dx", a:["x squared", "x^2", "x square"]}, {t:"∫ cos x dx", a:["sin x", "sign x", "sine x"]}, {t:"∫ 1/x dx", a:["ln x", "log x", "natural log"]}, {t:"∫ e^x dx", a:["e^x", "e power x"]}],
-    trig: [{t:"sin(0)", a:"0"}, {t:"cos(0)", a:"1"}, {t:"tan(45°)", a:"1"}, {t:"sin(90°)", a:"1"}]
-};
-
 /* --- MATH GENERATION --- */
 function generateTwoProblems() {
     let leftObj = createMathProblem();
