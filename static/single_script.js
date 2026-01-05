@@ -1,4 +1,28 @@
 /* --- CONFIGURATION & STATE --- */
+// ================================
+// PERSISTENT PLAYER CONFIG
+// (DOES NOT RESET ON GAME OVER)
+// ================================
+const playerConfig = {
+    controlMode: 'keyboard',
+    difficulty: 'easy',
+    mathMode: 'simple',
+
+    multipliers: [],
+    advancedOps: {
+        squares: false,
+        cubes: false,
+        sqrt: false
+    },
+    voiceOps: {
+        shapes: false,
+        diff: false,
+        int: false,
+        trig: false
+    },
+    customActive: false
+};
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -17,16 +41,66 @@ const SPEEDS = {
 
 const VOICE_STATS = { base: 0.5, max: 1.5, acceleration: 0.000025, spawnInterval: 3900 };
 
+// ================================
+// GAME RUNTIME STATE
+// (RESETS EVERY GAME)
+// ================================
 let gameState = {
-    isPlaying: false, score: 0, speed: 0, maxSpeed: 0,
-    lane: 2, mathMode: 'simple', difficulty: 'easy', 
-    controlMode: 'keyboard', distance: 0,
-    // Custom Configs
-    multipliers: [],
-    advancedOps: { squares: false, cubes: false, sqrt: false },
-    voiceOps: { shapes: false, diff: false, int: false, trig: false },
-    customActive: false
+    isPlaying: false,
+    score: 0,
+    speed: 0,
+    maxSpeed: 0,
+    lane: 2,
+    distance: 0
 };
+
+function savePlayerConfig() {
+    localStorage.setItem("formulaRushConfig", JSON.stringify(playerConfig));
+}
+
+function loadPlayerConfig() {
+    const saved = localStorage.getItem("formulaRushConfig");
+    if (!saved) return;
+
+    try {
+        const parsed = JSON.parse(saved);
+        Object.assign(playerConfig, parsed);
+
+        // --- RESTORE UI STATE FROM CONFIG ---
+        // 1. Restore Control Mode (Visuals + Logic)
+        if (typeof setControlMode === 'function') setControlMode(playerConfig.controlMode);
+
+        // 2. Restore Difficulty (Visuals: Shifter knob)
+        if (typeof shiftGear === 'function') shiftGear(playerConfig.difficulty);
+
+        // 3. Restore Math Mode (Radio Buttons)
+        const radios = document.getElementsByName('math');
+        for (const radio of radios) {
+            if (radio.value === playerConfig.mathMode) radio.checked = true;
+        }
+
+        // 4. Restore Feature Toggles (Visual Buttons)
+        document.querySelectorAll('.feature-btn').forEach(btn => {
+            const type = btn.dataset.type;
+            const value = btn.dataset.value;
+            let isActive = false;
+            
+            if (type === 'mult') isActive = playerConfig.multipliers.includes(parseInt(value));
+            else if (type === 'adv') isActive = playerConfig.advancedOps[value];
+            else if (type === 'voice') isActive = playerConfig.voiceOps[value];
+
+            if (isActive) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+
+        // 5. Restore Nav Controls State
+        if (playerConfig.customActive) stdNavControls.classList.add('controls-disabled');
+        else stdNavControls.classList.remove('controls-disabled');
+
+    } catch (e) {
+        console.warn("Failed to load saved config", e);
+    }
+}
 
 const playerImg = new Image(); playerImg.src = "/static/car_player.png"; 
 
@@ -81,7 +155,7 @@ btnStart.addEventListener('click', startGame);
 btnStop.addEventListener('click', abortRace);
 document.addEventListener('keydown', (e) => {
     if (!gameState.isPlaying) return;
-    if (gameState.controlMode === 'keyboard') {
+    if (playerConfig.controlMode === 'keyboard') {
         if (e.key >= '0' && e.key <= '9') { checkAnswer(parseInt(e.key)); }
     }
 });
@@ -108,7 +182,7 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
 
         // WARNING 1: Voice Only Check
         if (type === 'voice' && !isActive) {
-            if (gameState.controlMode !== 'voice') {
+            if (playerConfig.controlMode !== 'voice') { // Fixed typo Configplayer -> playerConfig
                 showTooltip(e.clientX, e.clientY, "REQ: VOICE MODE");
                 return;
             }
@@ -121,30 +195,31 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
         // Apply Logic
         if (type === 'mult') {
             const num = parseInt(value);
-            if (isActive) { if (!gameState.multipliers.includes(num)) gameState.multipliers.push(num); }
-            else { gameState.multipliers = gameState.multipliers.filter(n => n !== num); }
+            if (isActive) { if (!playerConfig.multipliers.includes(num)) playerConfig.multipliers.push(num); }
+            else { playerConfig.multipliers = playerConfig.multipliers.filter(n => n !== num); }
         } else if (type === 'adv') {
-            gameState.advancedOps[value] = isActive;
+            playerConfig.advancedOps[value] = isActive;
         } else if (type === 'voice') {
-            gameState.voiceOps[value] = isActive;
+            playerConfig.voiceOps[value] = isActive;
         }
         
         // CHECK MASTER CUSTOM STATE
-        const hasMult = gameState.multipliers.length > 0;
-        const hasAdv = Object.values(gameState.advancedOps).some(x => x);
-        const hasVoice = Object.values(gameState.voiceOps).some(x => x);
-        gameState.customActive = (hasMult || hasAdv || hasVoice);
+        const hasMult = playerConfig.multipliers.length > 0;
+        const hasAdv = Object.values(playerConfig.advancedOps).some(x => x);
+        const hasVoice = Object.values(playerConfig.voiceOps).some(x => x);
+        playerConfig.customActive = (hasMult || hasAdv || hasVoice);
         
         // DISABLE STANDARD NAV COMPUTER
-        if (gameState.customActive) stdNavControls.classList.add('controls-disabled');
+        if (playerConfig.customActive) stdNavControls.classList.add('controls-disabled');
         else stdNavControls.classList.remove('controls-disabled');
 
         // WARNING 2: Gear Suggestion
         // WARNING 2: Gear Suggestion (Only for numeric operations)
-        if (isActive && gameState.customActive && gameState.difficulty === 'easy' && type !== 'voice') {
+        if (isActive && playerConfig.customActive && playerConfig.difficulty === 'easy' && type !== 'voice') {
             showTooltip(e.clientX, e.clientY, "SUGGESTION: SHIFT UP (Answers > 9)");
         }   
 
+        savePlayerConfig(); // Save after toggle change
         if (gameState.isPlaying) generateTwoProblems();
     });
 });
@@ -171,12 +246,12 @@ function generateTwoProblems() {
 
 function createMathProblem() {
     // STANDARD LOGIC
-    if (!gameState.customActive) {
+    if (!playerConfig.customActive) {
         let n1, n2, op, ans, text, isValid=false, safety=0;
         while (!isValid && safety < 50) {
             safety++;
             let operators = ['+', '-'];
-            if (gameState.mathMode === 'mixed') operators.push('*', '/');
+            if (playerConfig.mathMode === 'mixed') operators.push('*', '/');
             op = operators[Math.floor(Math.random() * operators.length)];
             n1 = Math.floor(Math.random()*12)+1; n2 = Math.floor(Math.random()*12)+1;
             
@@ -192,15 +267,15 @@ function createMathProblem() {
 
     // CUSTOM LOGIC
     let pool = [];
-    if (gameState.controlMode === 'voice') {
-        for (const [key, active] of Object.entries(gameState.voiceOps)) {
+    if (playerConfig.controlMode === 'voice') {
+        for (const [key, active] of Object.entries(playerConfig.voiceOps)) {
             if (active) pool.push(...VOICE_DATA[key].map(i => ({text: i.t, html: i.html, answer: i.a, type:'voice'})));
         }
     }
-    if (gameState.advancedOps.squares) pool.push({type: 'square'});
-    if (gameState.advancedOps.cubes) pool.push({type: 'cube'});
-    if (gameState.advancedOps.sqrt) pool.push({type: 'sqrt'});
-    if (gameState.multipliers.length > 0) pool.push({type: 'mult'});
+    if (playerConfig.advancedOps.squares) pool.push({type: 'square'});
+    if (playerConfig.advancedOps.cubes) pool.push({type: 'cube'});
+    if (playerConfig.advancedOps.sqrt) pool.push({type: 'sqrt'});
+    if (playerConfig.multipliers.length > 0) pool.push({type: 'mult'});
 
     if (pool.length === 0) pool.push({type: 'standard'});
 
@@ -214,7 +289,7 @@ function createMathProblem() {
         else if (choice.type === 'cube') { n1 = Math.floor(Math.random()*6)+1; ans = n1*n1*n1; text = `${n1}³`; }
         else if (choice.type === 'sqrt') { n1 = Math.floor(Math.random()*12)+1; ans = n1; text = `√${n1*n1}`; }
         else if (choice.type === 'mult') {
-            n1 = gameState.multipliers[Math.floor(Math.random()*gameState.multipliers.length)];
+            n1 = playerConfig.multipliers[Math.floor(Math.random()*playerConfig.multipliers.length)];
             n2 = Math.floor(Math.random()*12)+1; ans = n1*n2; text = `${n1}x${n2}`;
         }
         else { 
@@ -226,9 +301,9 @@ function createMathProblem() {
 }
 
 function checkDifficulty(ans, op) {
-    if (gameState.difficulty === 'easy' && ans < 10 && ans >= 0) return true;
-    if (gameState.difficulty === 'medium' && ans >= 0 && ans < 100) return true;
-    if (gameState.difficulty === 'hard' && (ans >= 10 || op === '*' || op === '/' || op === 'custom')) return true;
+    if (playerConfig.difficulty === 'easy' && ans < 10 && ans >= 0) return true;
+    if (playerConfig.difficulty === 'medium' && ans >= 0 && ans < 100) return true;
+    if (playerConfig.difficulty === 'hard' && (ans >= 10 || op === '*' || op === '/' || op === 'custom')) return true;
     return false;
 }
 
@@ -307,7 +382,9 @@ function processVoice(input) {
 }
 
 window.setControlMode = function(mode) {
-    gameState.controlMode = mode;
+    playerConfig.controlMode = mode;
+    savePlayerConfig(); // Save after control change
+
     if (mode === 'keyboard') {
         btnModeKey.classList.add('active-mode'); btnModeVoice.classList.remove('active-mode');
         micIndicator.classList.remove('visible'); 
@@ -321,7 +398,7 @@ window.setControlMode = function(mode) {
     if (gameState.isPlaying) {
         applyCurrentPhysics();
         if(spawnTimer) clearInterval(spawnTimer);
-        let interval = (mode === 'voice') ? VOICE_STATS.spawnInterval : SPEEDS[gameState.difficulty].spawnInterval;
+        let interval = (mode === 'voice') ? VOICE_STATS.spawnInterval : SPEEDS[playerConfig.difficulty].spawnInterval;
         spawnTimer = setInterval(() => { if (gameState.isPlaying) spawnEnemy(); }, interval);
     }
 }
@@ -333,12 +410,15 @@ function getSelectedRadio(name) {
 }
 
 function updateMathMode() {
-    gameState.mathMode = getSelectedRadio('math');
+    playerConfig.mathMode = getSelectedRadio('math');
+    savePlayerConfig(); // Save after math mode change
     if (gameState.isPlaying) generateTwoProblems();
 }
 
 function shiftGear(level) {
-    gameState.difficulty = level;
+    playerConfig.difficulty = level;
+    savePlayerConfig(); // Save after gear shift
+
     if (gameState.isPlaying) applyCurrentPhysics();
     [labelEasy, labelMedium, labelHard].forEach(label => { label.classList.remove('active-label'); label.style.color = ""; label.style.textShadow = ""; });
     if (level === 'hard') {
@@ -351,17 +431,21 @@ function shiftGear(level) {
 }
 
 function applyCurrentPhysics() {
-    gameState.maxSpeed = (gameState.controlMode === 'voice') ? VOICE_STATS.max : SPEEDS[gameState.difficulty].max;
+    gameState.maxSpeed = (playerConfig.controlMode === 'voice') ? VOICE_STATS.max : SPEEDS[playerConfig.difficulty].max;
 }
 
 /* --- GAME ENGINE --- */
 function startGame() {
     if (gameState.isPlaying) return;
     btnStart.classList.add('btn-disabled'); btnStop.classList.remove('btn-disabled');
-    gameState.mathMode = getSelectedRadio('math');
+    
+    // Ensure math mode is synced with UI/Config before start
+    playerConfig.mathMode = getSelectedRadio('math');
+    savePlayerConfig();
+
     applyCurrentPhysics();
     gameState.speed = 0.5; gameState.isPlaying = true; gameState.lane = 2; gameState.score = 0; gameState.distance = 0; enemies = [];
-    if (gameState.controlMode === 'voice') {
+    if (playerConfig.controlMode === 'voice') {
         if (!recognition) initSpeech();
         try { recognition.start(); } catch(e){}
         micIndicator.classList.add('listening'); micText.innerText = "LISTENING...";
@@ -369,7 +453,7 @@ function startGame() {
     generateTwoProblems();
     requestAnimationFrame(gameLoop);
     if(spawnTimer) clearInterval(spawnTimer);
-    let interval = (gameState.controlMode === 'voice') ? VOICE_STATS.spawnInterval : SPEEDS[gameState.difficulty].spawnInterval;
+    let interval = (playerConfig.controlMode === 'voice') ? VOICE_STATS.spawnInterval : SPEEDS[playerConfig.difficulty].spawnInterval;
     spawnTimer = setInterval(() => { if (gameState.isPlaying) spawnEnemy(); }, interval);
 }
 function abortRace() {
@@ -422,7 +506,7 @@ function gameLoop() {
     drawCar(playerImg, playerX, playerY, CONFIG.playerWidth, CONFIG.playerHeight, "cyan");
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
-        const trafficMultiplier = (gameState.controlMode === 'voice') ? 0.5 : 0.8;
+        const trafficMultiplier = (playerConfig.controlMode === 'voice') ? 0.5 : 0.8;
         e.y += (gameState.speed * trafficMultiplier * e.type.speedMultiplier) + e.speedOffset;
         const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth / 2) - (e.type.width / 2);
         drawCar(enemyImages[e.type.name], ex, e.y, e.type.width, e.type.height, "red");
@@ -451,3 +535,6 @@ function gameOver() {
     gameOverScreen.style.display = 'flex';
     btnStop.classList.add('btn-disabled');
 }
+
+// Load saved config and update UI elements immediately
+loadPlayerConfig();
