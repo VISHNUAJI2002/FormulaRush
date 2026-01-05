@@ -41,12 +41,11 @@ window.VOICE_DATA = {
         {html: window.SHAPES.trapezium, a:["trapezium", "trapezoid"]}, 
         {html: window.SHAPES.angle, a:["angle", "angel", "ankle"]},
         // 3D Shapes
-        {html: window.SHAPES.cube, a:"cube"}, 
+        {html: window.SHAPES.cube, a:["cube", "cute", "kube"]}, 
         {html: window.SHAPES.semicircle, a:"semicircle"},
         {html: window.SHAPES.hemisphere, a:"hemisphere"},
-        {html: window.SHAPES.sphere, a:["sphere", "spear", "fear"]},
         {html: window.SHAPES.cylinder, a:"cylinder"},
-        {html: window.SHAPES.cone, a:["cone", "corn", "bone"]}
+        {html: window.SHAPES.cone, a:["cone", "corn", "bone", "kaun"]}
     ], 
     // DIFFERENTIATION
     diff: [
@@ -74,17 +73,30 @@ window.VOICE_DATA = {
         {t:"∫ 5 dx", a:["5x", "five x", "5 times x", "five into x", "five times ex"]},
         {t:"∫ sec²x dx", a:["tan x", "tangent"]}
     ],
-    // TRIGONOMETRY
+// TRIGONOMETRY (Expanded: 0, 30, 45, 60, 90)
     trig: [
-        {t:"sin(0)", a:"0"}, 
-        {t:"cos(0)", a:"1"}, 
-        {t:"tan(45°)", a:"1"}, 
-        {t:"sin(90°)", a:"1"},
-        {t:"cos(90°)", a:"0"},
-        {t:"sin(180°)", a:"0"},
-        {t:"cos(180°)", a:["-1", "minus one", "negative one"]},
-        {t:"tan(0)", a:"0"},
-        {t:"sin(30°)", a:["0.5", "point five", "half", "one by two","zero point five"]},
-        {t:"cos(60°)", a:["0.5", "point five", "half", "one by two","zero point five"]}
+        // 0 Degrees
+        {t:"sin(0°)", a:["0", "zero","hero"]}, 
+        {t:"cos(0°)", a:["1", "one"]}, 
+        {t:"tan(0°)", a:["0", "zero","hero"]},
+        // 30 Degrees
+        {t:"sin(30°)", a:["0.5", "point five", "half", "one by two", "1/2"]},
+        {t:"cos(30°)", a:["root three by two", "root 3 by 2", "0.866"]},
+        {t:"tan(30°)", a:["one by root three", "1/root 3", "one over root three", "0.577"]},
+        // 45 Degrees
+        {t:"sin(45°)", a:["one by root two", "1/root 2", "one over root two", "0.707"]},
+        {t:"cos(45°)", a:["one by root two", "1/root 2", "one over root two", "0.707"]},
+        {t:"tan(45°)", a:["1", "one"]},
+        // 60 Degrees
+        {t:"sin(60°)", a:["root three by two", "root 3 by 2", "0.866"]},
+        {t:"cos(60°)", a:["0.5", "point five", "half", "one by two", "1/2"]},
+        {t:"tan(60°)", a:["root three", "root 3", "1.732"]},
+        // 90 Degrees
+        {t:"sin(90°)", a:["1", "one"]},
+        {t:"cos(90°)", a:["0", "zero"]},
+        {t:"tan(90°)", a:["undefined", "infinity", "infinite", "not defined"]},
+        // Bonus (180 for completeness)
+        {t:"sin(180°)", a:["0", "zero","hero"]},
+        {t:"cos(180°)", a:["-1", "minus one", "negative one"]}
     ]
 };
