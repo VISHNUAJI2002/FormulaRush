@@ -144,6 +144,9 @@ const labelMedium = document.getElementById('label-medium');
 const labelHard = document.getElementById('label-hard');
 const stdNavControls = document.getElementById('std-nav-controls');
 
+const leftMathValue  = questionLeftEl.querySelector('.math-value');
+const rightMathValue = questionRightEl.querySelector('.math-value');
+
 // Modal & Tooltip Elements
 const btnSysConfig = document.getElementById('btn-sys-config');
 const configModal = document.getElementById('config-modal');
@@ -240,8 +243,8 @@ function generateTwoProblems() {
         rightDigit: (typeof expectedRight === 'number') ? expectedRight % 10 : null
     };
 
-    questionLeftEl.innerHTML = leftObj.html || leftObj.text; 
-    questionRightEl.innerHTML = rightObj.html || rightObj.text; 
+    leftMathValue.innerHTML  = leftObj.html || leftObj.text;
+    rightMathValue.innerHTML = rightObj.html || rightObj.text;
 }
 
 function createMathProblem() {

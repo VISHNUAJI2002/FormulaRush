@@ -175,7 +175,54 @@
 }
 
     /* OVERLAYS */
-    .math-overlay { position: absolute; top: 20px; font-size: 32px; font-weight: 800; color: white; background: rgba(0, 0, 0, 0.85); padding: 10px 20px; border-radius: 8px; border: 2px solid #00d2ff; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.5); min-width: 100px; text-align: center; display: flex; align-items: center; justify-content: center;}
+.math-overlay {
+    position: absolute;
+    top: 22px;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    background: rgba(0, 0, 0, 0.85);
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 2px solid #00d2ff;
+
+    font-weight: 800;
+    font-size: 1.6rem;
+    color: #ffffff;
+
+    box-shadow:
+        0 0 15px rgba(0, 210, 255, 0.35),
+        inset 0 0 20px rgba(0,0,0,0.6);
+
+    z-index: 12;
+    min-width: 150px;
+}
+
+/* Left & Right positioning */
+.math-overlay.left {
+    left: 30px;
+}
+.math-overlay.right {
+    right: 30px;
+}
+
+/* LEFT / RIGHT label */
+.lr-label {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: #00d2ff;
+    opacity: 0.9;
+    text-transform: uppercase;
+}
+
+/* Actual math content */
+.math-value {
+    font-size: 1.6rem;
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+}
     #question-left { left: 30px; } #question-right { right: 30px; }
     .shape-svg { filter: drop-shadow(0 0 5px #00d2ff); width: 60px; height: 60px; fill: none; stroke: #fff; stroke-width: 3; }
     #game-over-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
@@ -438,8 +485,15 @@
 
             <div class="center-stage">
                 <div class="game-container">
-                    <div id="question-left" class="math-overlay">L: --</div>
-                    <div id="question-right" class="math-overlay">R: --</div>
+                    <div id="question-left" class="math-overlay left">
+                        <span class="lr-label">LEFT</span>
+                        <span class="math-value">--</span>
+                    </div>
+
+                    <div id="question-right" class="math-overlay right">
+                        <span class="lr-label">RIGHT</span>
+                        <span class="math-value">--</span>
+                    </div>
                     <canvas id="gameCanvas" width="800" height="600"></canvas>
                     <div id="game-over-screen">
                         <h1 id="game-over-title" style="font-size:3rem; margin-bottom:10px; color:#ff4b2b;">CRITICAL FAILURE</h1>
