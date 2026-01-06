@@ -1,0 +1,11 @@
+# Ignore runtime database
+instance/database.db
+
+# Python cache
+__pycache__/
+
+# SQLite
+*.db
+
+# Environment files
+.env
