@@ -433,9 +433,18 @@
                             <div class="shift-mark mark-2" id="label-medium">Medium</div>
                             <div class="shift-mark mark-1 active-label" id="label-easy">Easy</div>
                         </div>
-                        <div class="click-zone zone-3" onclick="shiftGear('hard')"></div>
-                        <div class="click-zone zone-2" onclick="shiftGear('medium')"></div>
-                        <div class="click-zone zone-1" onclick="shiftGear('easy')"></div>
+                        <div class="click-zone zone-1"
+                            onclick="shiftGear('easy')"
+                            data-tooltip="Easy gear keeps speed low and uses single-digit answers.">
+                        </div>
+                        <div class="click-zone zone-2"
+                            onclick="shiftGear('medium')"
+                            data-tooltip="Medium gear increases speed and allows two-digit answers.">
+                        </div>
+                        <div class="click-zone zone-3"
+                            onclick="shiftGear('hard')"
+                            data-tooltip="Hard gear enables maximum speed and complex math.">
+                        </div>
                         <div class="shifter-stick-assembly" id="shifter-assembly">
                             <div class="shifter-knob">
                                 <span class="knob-number" id="knob-number" style="color:#00d2ff; text-shadow:0 0 15px #00d2ff;">1</span>
@@ -451,13 +460,13 @@
                     <div class="rocker-group">
                         <div class="rocker-wrapper">
                             <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" checked onchange="updateMathMode()">
-                            <label for="math-simple" class="rocker-label">
+                            <label for="math-simple" class="rocker-label" data-tooltip="Basic arithmetic mode. Only addition and subtraction. Best for quick reactions and early gameplay.">
                                 <div><div class="rocker-light"></div><div class="rocker-text">+  -</div></div>
                             </label>
                         </div>
                         <div class="rocker-wrapper">
                             <input type="radio" name="math" id="math-mixed" value="mixed" class="rocker-input" onchange="updateMathMode()">
-                            <label for="math-mixed" class="rocker-label">
+                            <label for="math-mixed" class="rocker-label" data-tooltip="Advanced math mode. Includes multiplication and division. Increases difficulty and reaction demand.">
                                 <div><div class="rocker-light"></div><div class="rocker-text">+  -  *  /</div></div>
                             </label>
                         </div>
@@ -468,11 +477,17 @@
                 <div style="width:100%">
                     <span class="control-label">Control System</span>
                     <div class="control-selection-group">
-                        <div id="btn-mode-key" class="input-mode-btn active-mode" onclick="setControlMode('keyboard')">
+                    <div id="btn-mode-key"
+                        class="input-mode-btn"
+                        onclick="setControlMode('keyboard')"
+                        data-tooltip="Answer questions using keyboard digits.">
                             <div class="icon">⌨️</div>
                             <div class="text-group"><span class="main-text">Manual</span><span class="sub-text">Keyboard</span></div>
                         </div>
-                        <div id="btn-mode-voice" class="input-mode-btn" onclick="setControlMode('voice')">
+                        <div id="btn-mode-voice"
+                            class="input-mode-btn"
+                            onclick="setControlMode('voice')"
+                            data-tooltip="Answer questions using speech recognition.">
                             <div class="icon">🎙️</div>
                             <div class="text-group"><span class="main-text">Voice</span><span class="sub-text">Speech Rec.</span></div>
                         </div>
@@ -546,7 +561,10 @@
             <span class="config-label">MULTIPLICATION VECTORS</span>
             <div class="toggle-grid">
                 {% for i in range(2, 12) %}
-                <div class="neon-tile feature-btn" data-type="mult" data-value="{{ i }}">
+                <div class="neon-tile feature-btn"
+                    data-type="mult"
+                    data-value="4"
+                    data-tooltip="Enable multiplication table of 4 only.">
                     X{{ i }}
                 </div>
                 {% endfor %}

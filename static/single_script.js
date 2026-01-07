@@ -152,6 +152,27 @@ const btnSysConfig = document.getElementById('btn-sys-config');
 const configModal = document.getElementById('config-modal');
 const closeModal = document.getElementById('close-modal');
 const cursorTooltip = document.getElementById('cursor-tooltip');
+document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest('[data-tooltip]');
+    if (!el) return;
+
+    cursorTooltip.innerText = el.dataset.tooltip;
+    cursorTooltip.style.left = e.clientX + 15 + 'px';
+    cursorTooltip.style.top = e.clientY + 15 + 'px';
+    cursorTooltip.classList.add('visible');
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!cursorTooltip.classList.contains('visible')) return;
+    cursorTooltip.style.left = e.clientX + 15 + 'px';
+    cursorTooltip.style.top = e.clientY + 15 + 'px';
+});
+
+document.addEventListener('mouseout', (e) => {
+    if (e.target.closest('[data-tooltip]')) {
+        cursorTooltip.classList.remove('visible');
+    }
+});
 
 /* --- EVENT LISTENERS --- */
 btnStart.addEventListener('click', startGame);
