@@ -152,26 +152,40 @@ const btnSysConfig = document.getElementById('btn-sys-config');
 const configModal = document.getElementById('config-modal');
 const closeModal = document.getElementById('close-modal');
 const cursorTooltip = document.getElementById('cursor-tooltip');
+let tooltipTimer = null;
+let activeTooltipEl = null;
+
 document.addEventListener('mouseover', (e) => {
     const el = e.target.closest('[data-tooltip]');
     if (!el) return;
 
-    cursorTooltip.innerText = el.dataset.tooltip;
-    cursorTooltip.style.left = e.clientX + 15 + 'px';
-    cursorTooltip.style.top = e.clientY + 15 + 'px';
-    cursorTooltip.classList.add('visible');
+    activeTooltipEl = el;
+
+    tooltipTimer = setTimeout(() => {
+        if (activeTooltipEl !== el) return;
+
+        cursorTooltip.innerText = el.dataset.tooltip;
+        cursorTooltip.style.left = e.clientX + 15 + 'px';
+        cursorTooltip.style.top = e.clientY + 15 + 'px';
+        cursorTooltip.classList.add('visible');
+    }, 1000); // 1 second delay
 });
 
 document.addEventListener('mousemove', (e) => {
     if (!cursorTooltip.classList.contains('visible')) return;
+
     cursorTooltip.style.left = e.clientX + 15 + 'px';
     cursorTooltip.style.top = e.clientY + 15 + 'px';
 });
 
 document.addEventListener('mouseout', (e) => {
-    if (e.target.closest('[data-tooltip]')) {
-        cursorTooltip.classList.remove('visible');
+    if (tooltipTimer) {
+        clearTimeout(tooltipTimer);
+        tooltipTimer = null;
     }
+
+    activeTooltipEl = null;
+    cursorTooltip.classList.remove('visible');
 });
 
 /* --- EVENT LISTENERS --- */
