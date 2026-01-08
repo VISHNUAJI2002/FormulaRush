@@ -153,39 +153,80 @@ const configModal = document.getElementById('config-modal');
 const closeModal = document.getElementById('close-modal');
 const cursorTooltip = document.getElementById('cursor-tooltip');
 let tooltipTimer = null;
-let activeTooltipEl = null;
 
-document.addEventListener('mouseover', (e) => {
-    const el = e.target.closest('[data-tooltip]');
-    if (!el) return;
+document.querySelectorAll('.feature-btn, .click-zone, .rocker-label, .input-mode-btn').forEach(el => {
 
-    activeTooltipEl = el;
+    el.addEventListener('mouseenter', (e) => {
 
-    tooltipTimer = setTimeout(() => {
-        if (activeTooltipEl !== el) return;
+        // Freeze values immediately (NO DOM ACCESS LATER)
+        const type = el.dataset.type || null;
+        const value = el.dataset.value || null;
+        const rect = el.getBoundingClientRect();
 
-        cursorTooltip.innerText = el.dataset.tooltip;
-        cursorTooltip.style.left = e.clientX + 15 + 'px';
-        cursorTooltip.style.top = e.clientY + 15 + 'px';
-        cursorTooltip.classList.add('visible');
-    }, 1000); // 1 second delay
-});
+        tooltipTimer = setTimeout(() => {
+            let text = "";
 
-document.addEventListener('mousemove', (e) => {
-    if (!cursorTooltip.classList.contains('visible')) return;
+            // MULTIPLICATION TABLES
+            if (type === 'mult') {
+                text = `Enable multiplication table of ${value} only`;
+            }
 
-    cursorTooltip.style.left = e.clientX + 15 + 'px';
-    cursorTooltip.style.top = e.clientY + 15 + 'px';
-});
+            // ADVANCED OPS
+            else if (type === 'adv') {
+                if (value === 'squares') text = "Enable square numbers (x²)";
+                if (value === 'cubes') text = "Enable cube numbers (x³)";
+                if (value === 'sqrt') text = "Enable square root problems";
+            }
 
-document.addEventListener('mouseout', (e) => {
-    if (tooltipTimer) {
+            // VOICE OPS
+            else if (type === 'voice') {
+                if (value === 'shapes') text = "Identify shapes using voice input";
+                if (value === 'diff') text = "Solve basic differentiation problems";
+                if (value === 'int') text = "Solve basic integration problems";
+                if (value === 'trig') text = "Answer trigonometry questions by voice";
+            }
+
+            // GEARS
+            else if (el.classList.contains('zone-1')) {
+                text = "Easy gear: slow speed, single-digit answers";
+            }
+            else if (el.classList.contains('zone-2')) {
+                text = "Medium gear: faster speed, multi-digit answers may appear";
+            }
+            else if (el.classList.contains('zone-3')) {
+                text = "Hard gear: maximum speed and complex questions";
+            }
+
+            // MATH MODE ROCKERS
+            else if (el.htmlFor === 'math-simple') {
+                text = "Basic arithmetic: addition and subtraction only";
+            }
+            else if (el.htmlFor === 'math-mixed') {
+                text = "Advanced arithmetic: +, −, ×, ÷";
+            }
+
+            // CONTROL MODE
+            else if (el.id === 'btn-mode-key') {
+                text = "Keyboard input for numeric answers";
+            }
+            else if (el.id === 'btn-mode-voice') {
+                text = "Voice input for spoken answers";
+            }
+
+            if (!text) return;
+
+            cursorTooltip.innerText = text;
+            cursorTooltip.style.left = (rect.left + rect.width / 2) + "px";
+            cursorTooltip.style.top = (rect.top - 12) + "px";
+            cursorTooltip.classList.add('visible');
+
+        }, 1000); // 1 second delay
+    });
+
+    el.addEventListener('mouseleave', () => {
         clearTimeout(tooltipTimer);
-        tooltipTimer = null;
-    }
-
-    activeTooltipEl = null;
-    cursorTooltip.classList.remove('visible');
+        cursorTooltip.classList.remove('visible');
+    });
 });
 
 /* --- EVENT LISTENERS --- */
