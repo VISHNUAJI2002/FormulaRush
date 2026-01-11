@@ -39,7 +39,14 @@ const SPEEDS = {
     hard:   { base: 0.5, max: 3.0, acceleration: 0.00005, spawnInterval: 1800 }
 };
 
-const VOICE_STATS = { base: 0.5, max: 1.5, acceleration: 0.000025, spawnInterval: 3900 };
+const VOICE_STATS = { base: 0.2, max: 1.2, acceleration: 0.000025, spawnInterval: 3900 };
+
+const GESTURE_STATS = { 
+    base: 0.2,       // Very slow start
+    max: 0.8,        // Low top speed (easy to react)
+    acceleration: 0.00001, // Very slow acceleration
+    spawnInterval: 5000    // Enemies appear rarely (every 5 seconds)
+};
 
 // ================================
 // GAME RUNTIME STATE
@@ -160,6 +167,19 @@ const stdNavControls = document.getElementById('std-nav-controls');
 
 const leftMathValue  = questionLeftEl.querySelector('.math-value');
 const rightMathValue = questionRightEl.querySelector('.math-value');
+
+// GESTURE UI ELEMENTS
+const btnModeGesture = document.getElementById('btn-mode-gesture');
+const cameraContainer = document.getElementById('camera-container');
+const videoElement = document.getElementById('gesture-video');
+const canvasElement = document.getElementById('gesture-canvas');
+const canvasCtx = canvasElement.getContext('2d');
+
+// AI STATE
+let hands = null;
+let camera = null;
+let lastDetectedFingerCount = -1;
+let gestureDebounceTimer = null;
 
 // Modal & Tooltip Elements
 const btnSysConfig = document.getElementById('btn-sys-config');
@@ -474,24 +494,181 @@ function processVoice(input) {
     setTimeout(() => { isProcessingSpeech = false; if(gameState.isPlaying) micText.innerText = "LISTENING..."; }, 1200);
 }
 
+function countFingers(landmarks, handedness) {
+    let count = 0;
+    const label = handedness.label; // "Left" or "Right"
+
+    // --- 1. THUMB LOGIC (Side-dependent) ---
+    // Landmark 4 = Thumb Tip, 3 = Thumb IP (Knuckle)
+    // For Right Hand: Thumb opens to the Left (smaller X)
+    // For Left Hand: Thumb opens to the Right (larger X)
+    if (label === 'Right') {
+        // If Tip is to the left of the knuckle, it's open
+        if (landmarks[4].x < landmarks[3].x - 0.03) count++; 
+    } else {
+        // If Tip is to the right of the knuckle, it's open
+        if (landmarks[4].x > landmarks[3].x + 0.03) count++;
+    }
+
+    // --- 2. FINGER LOGIC (Distance Method) ---
+    // Instead of checking Y-coordinates (which fails if hand is tilted),
+    // we check distance from the WRIST (Landmark 0).
+    // If (Distance Wrist->Tip) > (Distance Wrist->PIP_Joint), finger is open.
+    
+    const wrist = landmarks[0];
+    
+    // Indices: [Index, Middle, Ring, Pinky]
+    // Tips: [8, 12, 16, 20]
+    // PIP Joints (Lower Knuckle): [6, 10, 14, 18]
+    const fingerTips = [8, 12, 16, 20];
+    const fingerPIPs = [6, 10, 14, 18];
+
+    for (let i = 0; i < 4; i++) {
+        const tip = landmarks[fingerTips[i]];
+        const pip = landmarks[fingerPIPs[i]];
+
+        // Calculate Distance Squared (a² + b²) to Wrist
+        // (We don't need square root for comparison, keeps it fast)
+        const distTip = Math.pow(tip.x - wrist.x, 2) + Math.pow(tip.y - wrist.y, 2);
+        const distPip = Math.pow(pip.x - wrist.x, 2) + Math.pow(pip.y - wrist.y, 2);
+
+        // If tip is further from wrist than the knuckle is, it's open
+        if (distTip > distPip) {
+            count++;
+        }
+    }
+
+    return count;
+}
+// --- OPTIMIZED AI INITIALIZATION ---
+function initMediaPipe() {
+    if (hands) return; 
+
+    hands = new Hands({locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+    }});
+
+    hands.setOptions({
+        maxNumHands: 2,
+        // CHANGED: 0 = Lite (Fastest), 1 = Full (Default). 
+        // 0 is much better for gaming performance!
+        modelComplexity: 0, 
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+
+    hands.onResults(onHandsResults);
+
+    // CHANGED: Throttling Logic
+    let lastProcessTime = 0;
+    const processInterval = 150; // Only check hands every 150ms (approx 6-7 FPS)
+
+    camera = new Camera(videoElement, {
+        onFrame: async () => {
+            if (playerConfig.controlMode === 'gesture') {
+                const now = Date.now();
+                // Only send to AI if enough time has passed
+                if (now - lastProcessTime > processInterval) {
+                    lastProcessTime = now;
+                    await hands.send({image: videoElement});
+                }
+            }
+        },
+        width: 320,
+        height: 240
+    });
+    
+    console.log("AI Vision System Loaded (Lite Mode)");
+    camera.start();
+}
+
+function onHandsResults(results) {
+    // 1. Clear previous drawings
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
+    // Draw the video frame
+    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+    let totalFingers = 0;
+
+    // 2. Process Hands
+    if (results.multiHandLandmarks && results.multiHandedness) {
+        // Loop through all detected hands
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+            const landmarks = results.multiHandLandmarks[i];
+            const handedness = results.multiHandedness[i]; // Get "Left" or "Right" logic
+
+            // Draw Skeleton
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00d2ff', lineWidth: 2});
+            drawLandmarks(canvasCtx, landmarks, {color: '#ff0000', lineWidth: 1});
+            
+            // Count using the new smart logic
+            totalFingers += countFingers(landmarks, handedness);
+        }
+
+        // 3. Debounce Logic (Wait for stability)
+        if (totalFingers !== lastDetectedFingerCount) {
+            lastDetectedFingerCount = totalFingers;
+            
+            // Visual Feedback instantly
+            micText.innerText = `SCANNING: ${totalFingers}`; 
+            micText.style.color = "#f39c12"; // Orange while scanning
+
+            // Wait 0.5s for the hand to stay still before locking in the answer
+            clearTimeout(gestureDebounceTimer);
+            gestureDebounceTimer = setTimeout(() => {
+                if (playerConfig.controlMode === 'gesture' && gameState.isPlaying) {
+                    micText.innerText = `LOCKED: ${totalFingers}`;
+                    micText.style.color = "#2ecc71"; // Green when locked
+                    checkAnswer(totalFingers);
+                }
+            }, 500); // Reduced delay to 500ms for snappier feel
+        }
+    }
+    canvasCtx.restore();
+}
+
 window.setControlMode = function(mode) {
     playerConfig.controlMode = mode;
-    savePlayerConfig(); // Save after control change
+    savePlayerConfig();
+
+    // Reset UI
+    btnModeKey.classList.remove('active-mode');
+    btnModeVoice.classList.remove('active-mode');
+    btnModeGesture.classList.remove('active-mode'); 
+    micIndicator.classList.remove('visible');
+    cameraContainer.classList.remove('active'); 
+
+    // Stop Systems
+    if (recognition) try { recognition.stop(); } catch(e){}
 
     if (mode === 'keyboard') {
-        btnModeKey.classList.add('active-mode'); btnModeVoice.classList.remove('active-mode');
-        micIndicator.classList.remove('visible'); 
-        if (recognition) recognition.stop();
-    } else {
-        btnModeVoice.classList.add('active-mode'); btnModeKey.classList.remove('active-mode');
-        micIndicator.classList.add('visible'); 
+        btnModeKey.classList.add('active-mode');
+    } 
+    else if (mode === 'voice') {
+        btnModeVoice.classList.add('active-mode');
+        micIndicator.classList.add('visible');
         if (!recognition) initSpeech();
-        if (gameState.isPlaying) { try { recognition.start(); } catch(e){} micIndicator.classList.add('listening'); micText.innerText = "LISTENING..."; }
+        if (gameState.isPlaying) try { recognition.start(); } catch(e){}
+    } 
+    else if (mode === 'gesture') {
+        btnModeGesture.classList.add('active-mode');
+        cameraContainer.classList.add('active'); 
+        micIndicator.classList.add('visible');
+        micText.innerText = "CAMERA ACTIVE";
+        initMediaPipe(); 
     }
+
     if (gameState.isPlaying) {
         applyCurrentPhysics();
         if(spawnTimer) clearInterval(spawnTimer);
-        let interval = (mode === 'voice') ? VOICE_STATS.spawnInterval : SPEEDS[playerConfig.difficulty].spawnInterval;
+        
+        let interval;
+        if (mode === 'voice') interval = VOICE_STATS.spawnInterval;
+        else if (mode === 'gesture') interval = GESTURE_STATS.spawnInterval;
+        else interval = SPEEDS[playerConfig.difficulty].spawnInterval;
+
         spawnTimer = setInterval(() => { if (gameState.isPlaying) spawnEnemy(); }, interval);
     }
 }
@@ -524,31 +701,64 @@ function shiftGear(level) {
 }
 
 function applyCurrentPhysics() {
-    gameState.maxSpeed = (playerConfig.controlMode === 'voice') ? VOICE_STATS.max : SPEEDS[playerConfig.difficulty].max;
+    if (playerConfig.controlMode === 'voice') {
+        gameState.maxSpeed = VOICE_STATS.max;
+        // You can also apply specific acceleration here if you want
+    } else if (playerConfig.controlMode === 'gesture') {
+        gameState.maxSpeed = GESTURE_STATS.max;
+    } else {
+        // Keyboard Mode (Uses Gears)
+        gameState.maxSpeed = SPEEDS[playerConfig.difficulty].max;
+    }
 }
 
-/* --- GAME ENGINE --- */
 function startGame() {
     if (gameState.isPlaying) return;
-    btnStart.classList.add('btn-disabled'); btnStop.classList.remove('btn-disabled');
     
-    // Ensure math mode is synced with UI/Config before start
+    // UI Updates
+    btnStart.classList.add('btn-disabled'); 
+    btnStop.classList.remove('btn-disabled');
+    
+    // Sync Math Mode
     playerConfig.mathMode = getSelectedRadio('math');
     savePlayerConfig();
 
+    // Reset Game State
     applyCurrentPhysics();
-    gameState.speed = 0.5; gameState.isPlaying = true; gameState.lane = 2; gameState.score = 0; gameState.distance = 0; enemies = [];
+    gameState.speed = 0.5; 
+    gameState.isPlaying = true; 
+    gameState.lane = 2; 
+    gameState.score = 0; 
+    gameState.distance = 0; 
+    enemies = [];
+
+    // Initialize Control Systems
     if (playerConfig.controlMode === 'voice') {
         if (!recognition) initSpeech();
         try { recognition.start(); } catch(e){}
         micIndicator.classList.add('listening'); micText.innerText = "LISTENING...";
+    } else if (playerConfig.controlMode === 'gesture') {
+        // Ensure camera is ready if starting directly in gesture mode
+        initMediaPipe();
     }
+
+    // Generate First Question
     generateTwoProblems();
+    
+    // Start Animation Loop
     requestAnimationFrame(gameLoop);
+
+    // Start Enemy Spawning
     if(spawnTimer) clearInterval(spawnTimer);
-    let interval = (playerConfig.controlMode === 'voice') ? VOICE_STATS.spawnInterval : SPEEDS[playerConfig.difficulty].spawnInterval;
+    
+    let interval;
+    if (playerConfig.controlMode === 'voice') interval = VOICE_STATS.spawnInterval;
+    else if (playerConfig.controlMode === 'gesture') interval = GESTURE_STATS.spawnInterval;
+    else interval = SPEEDS[playerConfig.difficulty].spawnInterval;
+
     spawnTimer = setInterval(() => { if (gameState.isPlaying) spawnEnemy(); }, interval);
 }
+
 function abortRace() {
     if (!gameState.isPlaying) return;
     gameState.isPlaying = false;
@@ -568,8 +778,20 @@ function spawnEnemy() {
     enemies.push({ lane: lane, y: -150, type: chosenType, speedOffset: Math.random() * 0.5 });
 }
 function updatePhysics() {
-    if (gameState.speed < gameState.maxSpeed) gameState.speed += 0.01;
-    if (gameState.speed > gameState.maxSpeed) gameState.speed -= 0.02;
+    // 1. Determine which stats to use
+    let currentStats;
+    if (playerConfig.controlMode === 'voice') currentStats = VOICE_STATS;
+    else if (playerConfig.controlMode === 'gesture') currentStats = GESTURE_STATS;
+    else currentStats = SPEEDS[playerConfig.difficulty];
+
+    // 2. Apply Acceleration
+    if (gameState.speed < gameState.maxSpeed) {
+        gameState.speed += currentStats.acceleration; // Use mode-specific accel
+    }
+    if (gameState.speed > gameState.maxSpeed) {
+        gameState.speed -= 0.02; // Decelerate if over limit
+    }
+
     gameState.distance += gameState.speed;
     gameState.score = Math.floor(gameState.distance / 10);
     liveDistanceEl.innerText = gameState.score;
