@@ -103,6 +103,20 @@ function loadPlayerConfig() {
 }
 
 const playerImg = new Image(); playerImg.src = "/static/car_player.png"; 
+// GARAGE INTEGRATION: OVERRIDE DEFAULT IF SELECTED
+// ADDED: CAR DIMENSION REGISTRY
+const CAR_REGISTRY = {
+    'car_default': { width: 130, height: 110, src: 'car_default.png' },
+    'car_bronze':  { width: 72, height: 123, src: 'car_bronze.png' },
+    'car_silver':  { width: 75, height: 145, src: 'car_silver.png' },
+    'car_gold':    { width: 120, height: 120, src: 'car_gold.png' }
+};
+const storedCar = localStorage.getItem('formulaRush_selectedCar');
+if (storedCar && CAR_REGISTRY[storedCar]) {
+    playerImg.src = "/static/" + CAR_REGISTRY[storedCar].src;
+    CONFIG.playerWidth = CAR_REGISTRY[storedCar].width;
+    CONFIG.playerHeight = CAR_REGISTRY[storedCar].height;
+}
 
 // Traffic Logic
 const TRAFFIC_TYPES = [
@@ -596,6 +610,12 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 function gameOver() {
+    // --- GARAGE UPDATE: SAVE HIGH SCORE FOR UNLOCKS ---
+    const currentHigh = parseInt(localStorage.getItem('formulaRush_highScore') || '0');
+    if (gameState.score > currentHigh) {
+        localStorage.setItem('formulaRush_highScore', gameState.score);
+    }
+
     // --- SUBMIT SINGLE PLAYER SCORE ---
     fetch("/submit_score", {
         method: "POST",

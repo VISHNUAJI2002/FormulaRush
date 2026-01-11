@@ -1,6 +1,96 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    /* --- GARAGE SYSTEM STYLES (ADDED) --- */
+    .garage-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(5px);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+    .garage-modal-overlay.active { display: flex; }
+    .garage-container {
+        background: #0a0a12;
+        border: 2px solid #00f260;
+        box-shadow: 0 0 20px rgba(0, 242, 96, 0.2);
+        border-radius: 15px;
+        padding: 20px;
+        width: 90%;
+        max-width: 800px;
+        text-align: center;
+        position: relative;
+    }
+    .garage-header {
+        font-size: 2rem;
+        color: #fff;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        letter-spacing: 2px;
+        text-shadow: 0 0 10px #00f260;
+    }
+    .garage-grid {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .car-card {
+        background: #1a1a24;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 15px;
+        width: 160px;
+        height: 240px; /* Fixed height for alignment */
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        
+        /* Flex alignment to fix jumping text */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; 
+        align-items: center;
+    }
+    .car-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+    .car-card.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(100%); }
+    .car-card.selected { border: 2px solid #00f260; box-shadow: 0 0 15px rgba(0, 242, 96, 0.4); }
+    
+    .car-preview { 
+        width: 100%; 
+        height: 140px; 
+        object-fit: contain; /* Prevents stretching */
+        object-position: center;
+        margin-bottom: 10px; 
+        filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+    }
+    
+    .car-name { color: #fff; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold; }
+    .unlock-req { color: #ff4b2b; font-size: 0.7rem; font-weight: bold; }
+    .lock-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        display: flex; justify-content: center; align-items: center;
+        font-size: 2rem; color: #ff4b2b; text-shadow: 0 0 5px #000;
+        display: none;
+    }
+    .car-card.locked .lock-overlay { display: flex; }
+    .btn-close-garage {
+        margin-top: 20px;
+        background: transparent;
+        border: 1px solid #fff;
+        color: #fff;
+        padding: 10px 30px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s;
+    }
+    .btn-close-garage:hover { background: #fff; color: #000; }
+</style>
+
 <div class="dashboard-container">
     <div class="profile-card">
         
@@ -30,8 +120,97 @@
                 <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">RACE AGAINST RIVALS</div>
             </a>
 
+            <button id="btn-garage" class="btn btn-primary btn-large" style="width: 100%; display: block; background: linear-gradient(90deg, #ff0099, #493240); border: none; cursor: pointer;">
+                <div style="font-size: 1.2rem; font-weight: bold;">🔧 GARAGE</div>
+                <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">UNLOCK & CUSTOMIZE</div>
+            </button>
+
         </div>
 
     </div>
 </div>
+
+<div id="garage-modal" class="garage-modal-overlay">
+    <div class="garage-container">
+        <div class="garage-header">SHOWROOM</div>
+        <div class="garage-grid" id="garage-grid">
+            </div>
+        <button id="close-garage" class="btn-close-garage">PREPARE FOR RACE</button>
+    </div>
+</div>
+
+<script>
+    /* --- GARAGE LOGIC --- */
+    // Updated with Real World Names
+    const CAR_DB = [
+        { id: 'car_default', name: 'Crown Vic',       img: 'car_default.png', unlockScore: 0 },
+        { id: 'car_bronze',  name: 'Continental GT',  img: 'car_bronze.png',  unlockScore: 500 },
+        { id: 'car_silver',  name: '300 SL Roadster', img: 'car_silver.png',  unlockScore: 1000 },
+        { id: 'car_gold',    name: 'Nissan Skyline GT-R',    img: 'car_gold.png',    unlockScore: 2000 }
+    ];
+
+    const btnGarage = document.getElementById('btn-garage');
+    const modalGarage = document.getElementById('garage-modal');
+    const btnCloseGarage = document.getElementById('close-garage');
+    const gridGarage = document.getElementById('garage-grid');
+
+    function initGarage() {
+        // --- CRITICAL FIX: TRUST SERVER SCORE ONLY ---
+        // We inject the Jinja2 variable directly into JS.
+        // This ensures the Garage sees the ACCOUNT score, not the Browser Cache score.
+        const serverScore = {{ score if score else 0 }};
+        
+        // SYNC: Update localStorage so the game engine (single_script.js) knows the real score too
+        localStorage.setItem('formulaRush_highScore', serverScore);
+
+        const highScore = serverScore;
+        let currentSelection = localStorage.getItem('formulaRush_selectedCar') || 'car_default';
+        
+        // --- SECURITY CHECK: REVOKE ILLEGAL CARS ---
+        // If user has a high-tier car selected but their score is too low (new account), reset them.
+        const selectedCarObj = CAR_DB.find(c => c.id === currentSelection);
+        if (selectedCarObj && highScore < selectedCarObj.unlockScore) {
+            console.log("Detected illegal car selection. Revoking access.");
+            currentSelection = 'car_default';
+            localStorage.setItem('formulaRush_selectedCar', 'car_default');
+        }
+
+        gridGarage.innerHTML = ''; // Clear current
+
+        CAR_DB.forEach(car => {
+            const isLocked = highScore < car.unlockScore;
+            const isSelected = currentSelection === car.id;
+            
+            const card = document.createElement('div');
+            card.className = `car-card ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}`;
+            
+            // Only allow click if unlocked
+            card.onclick = () => { if(!isLocked) selectCar(car.id); };
+
+            const imgPath = `/static/${car.img}`;
+            
+            card.innerHTML = `
+                <div class="lock-overlay">🔒</div>
+                <img src="${imgPath}" class="car-preview" alt="${car.name}">
+                <div class="car-name">${car.name}</div>
+                <div class="unlock-req">${isLocked ? 'UNLOCK: ' + car.unlockScore + 'm' : 'UNLOCKED'}</div>
+            `;
+            gridGarage.appendChild(card);
+        });
+    }
+
+    function selectCar(carId) {
+        localStorage.setItem('formulaRush_selectedCar', carId);
+        initGarage(); // Re-render to update selection UI
+    }
+
+    btnGarage.addEventListener('click', () => {
+        initGarage();
+        modalGarage.classList.add('active');
+    });
+
+    btnCloseGarage.addEventListener('click', () => {
+        modalGarage.classList.remove('active');
+    });
+</script>
 {% endblock %}
