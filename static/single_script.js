@@ -33,20 +33,46 @@ const CONFIG = {
     laneWidth: 800 / 5
 };
 
+/* --- PHYSICS CONSTANTS --- */
+// 1. KEYBOARD MODE (Standard)
 const SPEEDS = {
-    easy:   { base: 0.5, max: 2.0, acceleration: 0.00005, spawnInterval: 2500 },
-    medium: { base: 0.5, max: 2.5, acceleration: 0.00005, spawnInterval: 2000 },
-    hard:   { base: 0.5, max: 3.0, acceleration: 0.00005, spawnInterval: 1800 }
+    easy:   { base: 0.8, max: 1.8, acceleration: 0.0009, spawnInterval: 2500 },
+    medium: { base: 1.9, max: 2.8, acceleration: 0.0009, spawnInterval: 2000 },
+    hard:   { base: 2.9, max: 5.0, acceleration: 0.002, spawnInterval: 1200 }
 };
 
-const VOICE_STATS = { base: 0.2, max: 1.2, acceleration: 0.000025, spawnInterval: 3900 };
+// 2. VOICE MODE (Generally Slower - Speaking takes time)
+const VOICE_STATS = { 
+    easy:   { base: 0.2, max: 1.2, acceleration: 0.01, spawnInterval: 4000 },
+    medium: { base: 0.5, max: 2.0, acceleration: 0.015, spawnInterval: 3500 },
+    hard:   { base: 1.0, max: 3.0, acceleration: 0.02, spawnInterval: 3000 }
+};
 
+// 3. GESTURE MODE (needs high base speed to clear safety gap)
 const GESTURE_STATS = { 
-    base: 0.2,       // Very slow start
-    max: 0.8,        // Low top speed (easy to react)
-    acceleration: 0.00001, // Very slow acceleration
-    spawnInterval: 5000    // Enemies appear rarely (every 5 seconds)
+    easy:   { base: 0.5, max: 1.5, acceleration: 0.003, spawnInterval: 2500 },
+    medium: { base: 1.7, max: 2.1, acceleration: 0.004, spawnInterval: 2000 }, // Your "Sweet Spot"
+    hard:   { base: 1.8, max: 3.0, acceleration: 0.005, spawnInterval: 1500 }
 };
+// --- HELPER: GET CURRENT PHYSICS STATS ---
+// --- HELPER: GET CURRENT PHYSICS STATS ---
+function getCurrentStats() {
+    // 1. Determine which "Profile" to use based on Control Mode
+    let profile;
+    if (playerConfig.controlMode === 'voice') {
+        profile = VOICE_STATS;
+    } 
+    else if (playerConfig.controlMode === 'gesture') {
+        profile = GESTURE_STATS;
+    } 
+    else {
+        profile = SPEEDS; // Keyboard
+    }
+
+    // 2. Return the specific stats for the current Gear
+    // (difficulty is 'easy', 'medium', or 'hard')
+    return profile[playerConfig.difficulty];
+}
 
 // ================================
 // GAME RUNTIME STATE
@@ -113,7 +139,7 @@ const playerImg = new Image(); playerImg.src = "/static/car_player.png";
 // GARAGE INTEGRATION: OVERRIDE DEFAULT IF SELECTED
 // ADDED: CAR DIMENSION REGISTRY
 const CAR_REGISTRY = {
-    'car_default': { width: 130, height: 110, src: 'car_default.png' },
+    'car_default': { width: 120, height: 105, src: 'car_default.png' },
     'car_bronze':  { width: 72, height: 123, src: 'car_bronze.png' },
     'car_silver':  { width: 75, height: 145, src: 'car_silver.png' },
     'car_gold':    { width: 120, height: 120, src: 'car_gold.png' }
@@ -127,9 +153,9 @@ if (storedCar && CAR_REGISTRY[storedCar]) {
 
 // Traffic Logic
 const TRAFFIC_TYPES = [
-    { name: "normal", img: "/static/normal.png", width: 95, height: 105, speedMultiplier: 0.9, spawnWeight: 15 },
-    { name: "taxi", img: "/static/car_enemy.png", width: 45, height: 90, speedMultiplier: 0.9, spawnWeight: 45 },    
-    { name: "bike", img: "/static/bike.png", width: 73, height: 100, speedMultiplier: 0.6, spawnWeight: 10 },
+    { name: "normal", img: "/static/normal.png", width: 95, height: 105, speedMultiplier: 1.0, spawnWeight: 15 },
+    { name: "taxi", img: "/static/car_enemy.png", width: 45, height: 90, speedMultiplier: 0.85, spawnWeight: 45 },    
+    { name: "bike", img: "/static/bike.png", width: 73, height: 100, speedMultiplier: 0.9, spawnWeight: 10 },
     { name: "redcar", img: "/static/car1.png", width: 80, height: 115, speedMultiplier: 0.8, spawnWeight: 30 }
 ];
 const enemyImages = {};
@@ -640,9 +666,10 @@ window.setControlMode = function(mode) {
     micIndicator.classList.remove('visible');
     cameraContainer.classList.remove('active'); 
 
-    // Stop Systems
+    // Stop Systems (Clean up)
     if (recognition) try { recognition.stop(); } catch(e){}
 
+    // Activate New Mode
     if (mode === 'keyboard') {
         btnModeKey.classList.add('active-mode');
     } 
@@ -660,16 +687,19 @@ window.setControlMode = function(mode) {
         initMediaPipe(); 
     }
 
+    // --- CRITICAL: UPDATE PHYSICS & SPAWNER INSTANTLY ---
     if (gameState.isPlaying) {
-        applyCurrentPhysics();
-        if(spawnTimer) clearInterval(spawnTimer);
+        // 1. Get new stats
+        const stats = getCurrentStats();
         
-        let interval;
-        if (mode === 'voice') interval = VOICE_STATS.spawnInterval;
-        else if (mode === 'gesture') interval = GESTURE_STATS.spawnInterval;
-        else interval = SPEEDS[playerConfig.difficulty].spawnInterval;
+        // 2. Update Max Speed immediately (Acceleration will follow in updatePhysics)
+        gameState.maxSpeed = stats.max;
 
-        spawnTimer = setInterval(() => { if (gameState.isPlaying) spawnEnemy(); }, interval);
+        // 3. Reset Spawn Timer to new interval
+        if(spawnTimer) clearInterval(spawnTimer);
+        spawnTimer = setInterval(() => { 
+            if (gameState.isPlaying) spawnEnemy(); 
+        }, stats.spawnInterval);
     }
 }
 
@@ -687,16 +717,47 @@ function updateMathMode() {
 
 function shiftGear(level) {
     playerConfig.difficulty = level;
-    savePlayerConfig(); // Save after gear shift
+    savePlayerConfig(); 
 
-    if (gameState.isPlaying) applyCurrentPhysics();
-    [labelEasy, labelMedium, labelHard].forEach(label => { label.classList.remove('active-label'); label.style.color = ""; label.style.textShadow = ""; });
+    // 1. VISUALS
+    [labelEasy, labelMedium, labelHard].forEach(label => { 
+        label.classList.remove('active-label'); 
+        label.style.color = ""; 
+        label.style.textShadow = ""; 
+    });
+
     if (level === 'hard') {
-        shifterAssembly.style.top = "30px"; knobNumber.innerText = "3"; knobNumber.style.color = "#dc3545"; knobNumber.style.textShadow = "0 0 15px #dc3545"; labelHard.classList.add('active-label'); labelHard.style.color = "#dc3545";
+        shifterAssembly.style.top = "30px"; knobNumber.innerText = "3"; 
+        knobNumber.style.color = "#dc3545"; knobNumber.style.textShadow = "0 0 15px #dc3545"; 
+        labelHard.classList.add('active-label'); labelHard.style.color = "#dc3545";
     } else if (level === 'medium') {
-        shifterAssembly.style.top = "95px"; knobNumber.innerText = "2"; knobNumber.style.color = "#ffc107"; knobNumber.style.textShadow = "0 0 15px #ffc107"; labelMedium.classList.add('active-label'); labelMedium.style.color = "#ffc107";
+        shifterAssembly.style.top = "95px"; knobNumber.innerText = "2"; 
+        knobNumber.style.color = "#ffc107"; knobNumber.style.textShadow = "0 0 15px #ffc107"; 
+        labelMedium.classList.add('active-label'); labelMedium.style.color = "#ffc107";
     } else { 
-        shifterAssembly.style.top = "165px"; knobNumber.innerText = "1"; knobNumber.style.color = "#00d2ff"; knobNumber.style.textShadow = "0 0 15px #00d2ff"; labelEasy.classList.add('active-label'); labelEasy.style.color = "#00d2ff";
+        shifterAssembly.style.top = "165px"; knobNumber.innerText = "1"; 
+        knobNumber.style.color = "#00d2ff"; knobNumber.style.textShadow = "0 0 15px #00d2ff"; 
+        labelEasy.classList.add('active-label'); labelEasy.style.color = "#00d2ff";
+    }
+
+    // 2. PHYSICS UPDATE
+    if (gameState.isPlaying) {
+        const stats = getCurrentStats();
+        
+        // Update Limits
+        gameState.maxSpeed = stats.max;
+        
+        // --- THE FIX: INSTANT BOOST ---
+        // If current speed is lower than the new gear's base speed, jump to base.
+        if (gameState.speed < stats.base) {
+            gameState.speed = stats.base;
+        }
+
+        // Restart Spawner
+        if(spawnTimer) clearInterval(spawnTimer);
+        spawnTimer = setInterval(() => { 
+            if (gameState.isPlaying) spawnEnemy(); 
+        }, stats.spawnInterval);
     }
 }
 
@@ -715,7 +776,7 @@ function applyCurrentPhysics() {
 function startGame() {
     if (gameState.isPlaying) return;
     
-    // UI Updates
+    // UI Setup
     btnStart.classList.add('btn-disabled'); 
     btnStop.classList.remove('btn-disabled');
     
@@ -723,40 +784,37 @@ function startGame() {
     playerConfig.mathMode = getSelectedRadio('math');
     savePlayerConfig();
 
-    // Reset Game State
-    applyCurrentPhysics();
-    gameState.speed = 0.5; 
+    // 1. GET CORRECT STATS
+    const stats = getCurrentStats();
+
+    // 2. APPLY INITIAL PHYSICS
+    gameState.maxSpeed = stats.max;
+    gameState.speed = stats.base; // Start at the correct base speed immediately
+    
+    // Reset State
     gameState.isPlaying = true; 
     gameState.lane = 2; 
     gameState.score = 0; 
     gameState.distance = 0; 
     enemies = [];
 
-    // Initialize Control Systems
+    // Initialize Inputs
     if (playerConfig.controlMode === 'voice') {
         if (!recognition) initSpeech();
         try { recognition.start(); } catch(e){}
         micIndicator.classList.add('listening'); micText.innerText = "LISTENING...";
     } else if (playerConfig.controlMode === 'gesture') {
-        // Ensure camera is ready if starting directly in gesture mode
         initMediaPipe();
     }
 
-    // Generate First Question
     generateTwoProblems();
-    
-    // Start Animation Loop
     requestAnimationFrame(gameLoop);
 
-    // Start Enemy Spawning
+    // 3. SET SPAWN TIMER (Only once!)
     if(spawnTimer) clearInterval(spawnTimer);
-    
-    let interval;
-    if (playerConfig.controlMode === 'voice') interval = VOICE_STATS.spawnInterval;
-    else if (playerConfig.controlMode === 'gesture') interval = GESTURE_STATS.spawnInterval;
-    else interval = SPEEDS[playerConfig.difficulty].spawnInterval;
-
-    spawnTimer = setInterval(() => { if (gameState.isPlaying) spawnEnemy(); }, interval);
+    spawnTimer = setInterval(() => { 
+        if (gameState.isPlaying) spawnEnemy(); 
+    }, stats.spawnInterval);
 }
 
 function abortRace() {
@@ -770,28 +828,42 @@ function abortRace() {
     btnStop.classList.add('btn-disabled');
 }
 function spawnEnemy() {
+    // --- CHANGED: MINIMAL SAFETY CHECK ---
+    // only check 90px (just the height of a car) 
+    if (enemies.length > 0) {
+        const lastEnemy = enemies[enemies.length - 1];
+        if (lastEnemy.y < 90) {
+            return; // Wait just a split second so sprites don't overlap
+        }
+    }
+    // Standard Spawn Logic
     const lane = Math.floor(Math.random() * CONFIG.laneCount);
     const totalWeight = TRAFFIC_TYPES.reduce((sum, t) => sum + t.spawnWeight, 0);
     let rand = Math.random() * totalWeight;
     let chosenType = TRAFFIC_TYPES[0];
-    for (let t of TRAFFIC_TYPES) { rand -= t.spawnWeight; if (rand <= 0) { chosenType = t; break; } }
+    for (let t of TRAFFIC_TYPES) { 
+        rand -= t.spawnWeight; 
+        if (rand <= 0) { chosenType = t; break; } 
+    }
     enemies.push({ lane: lane, y: -150, type: chosenType, speedOffset: Math.random() * 0.5 });
 }
 function updatePhysics() {
-    // 1. Determine which stats to use
-    let currentStats;
-    if (playerConfig.controlMode === 'voice') currentStats = VOICE_STATS;
-    else if (playerConfig.controlMode === 'gesture') currentStats = GESTURE_STATS;
-    else currentStats = SPEEDS[playerConfig.difficulty];
+    // 1. Get the correct stats for the current moment
+    const stats = getCurrentStats();
 
     // 2. Apply Acceleration
-    if (gameState.speed < gameState.maxSpeed) {
-        gameState.speed += currentStats.acceleration; // Use mode-specific accel
+    // If we haven't reached the mode's Max Speed yet, speed up!
+    if (gameState.speed < stats.max) {
+        gameState.speed += stats.acceleration; 
     }
-    if (gameState.speed > gameState.maxSpeed) {
-        gameState.speed -= 0.02; // Decelerate if over limit
+    
+    // 3. Decelerate if we are too fast 
+    // (e.g. Switched from Gesture [Max 4.0] to Voice [Max 1.2])
+    if (gameState.speed > stats.max) {
+        gameState.speed -= 0.01; // Smooth braking
     }
 
+    // 4. Move the car
     gameState.distance += gameState.speed;
     gameState.score = Math.floor(gameState.distance / 10);
     liveDistanceEl.innerText = gameState.score;
@@ -821,7 +893,9 @@ function gameLoop() {
     drawCar(playerImg, playerX, playerY, CONFIG.playerWidth, CONFIG.playerHeight, "cyan");
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
-        const trafficMultiplier = (playerConfig.controlMode === 'voice') ? 0.5 : 0.8;
+        // Treat Gesture mode same as Voice mode (0.5 relative speed)
+        const isSlowMode = (playerConfig.controlMode === 'voice' || playerConfig.controlMode === 'gesture');
+        const trafficMultiplier = isSlowMode ? 0.5 : 0.8;
         e.y += (gameState.speed * trafficMultiplier * e.type.speedMultiplier) + e.speedOffset;
         const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth / 2) - (e.type.width / 2);
         drawCar(enemyImages[e.type.name], ex, e.y, e.type.width, e.type.height, "red");
