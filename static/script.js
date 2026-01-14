@@ -26,7 +26,7 @@ const DIFFICULTY = {
 
 // --- GAME STATE ---
 let active = false;
-let timeLeft = 60;
+let timeLeft = 60; // Will be overwritten by initGame()
 let timerInt;
 let obstacles = [];
 
@@ -178,14 +178,12 @@ function genProblem(playerObj) {
     else { minAns = 100; maxAns = 999; }
 
     // 3. GENERATION LOOP
-    // We keep retrying until we find numbers that fit the rules
     while (!isValid && safety < 100) {
         safety++;
         isValid = true;
         
         // Pick Operator
         let operators = ['+', '-'];
-        // FIXED: Added '/' to operators if mixed mode is selected
         if (playerObj.mathMode === 'mixed') operators.push('*', '/');
         
         op = operators[Math.floor(Math.random() * operators.length)];
@@ -200,7 +198,6 @@ function genProblem(playerObj) {
         // --- SUBTRACTION ---
         else if (op === '-') {
             ans = rand(minAns, maxAns);
-            // If Hard mode, use larger subtractors so it looks harder
             let subtractorMax = (playerObj.gear === 'hard') ? 50 : 20;
             n2 = rand(1, subtractorMax);
             n1 = ans + n2;
@@ -208,17 +205,14 @@ function genProblem(playerObj) {
         } 
         // --- MULTIPLICATION ---
         else if (op === '*') {
-            // Logic: Pick n1 and n2 such that n1*n2 is within minAns/maxAns
-            // Simplified: Pick n1, check limits for n2
             let limit = Math.floor(Math.sqrt(maxAns));
             let start = (targetDigits === 1) ? 1 : 2; 
             n1 = rand(start, limit + 2); 
             
-            // Calculate valid range for n2
             let n2Min = Math.ceil(minAns / n1);
             let n2Max = Math.floor(maxAns / n1);
             
-            if (n2Max < n2Min) { isValid = false; continue; } // Retry if no valid n2 exists
+            if (n2Max < n2Min) { isValid = false; continue; } 
             
             n2 = rand(n2Min, n2Max);
             ans = n1 * n2;
@@ -226,29 +220,22 @@ function genProblem(playerObj) {
         }
         // --- DIVISION ---
         else if (op === '/') {
-            // Logic: Generate multiplication in reverse
-            // ans = n1 / n2  --> n1 = ans * n2
             ans = rand(minAns, maxAns);
-            n2 = rand(2, 9); // Keep divisor single digit for mental math
+            n2 = rand(2, 9); 
             n1 = ans * n2;
             text = `${n1}/${n2}`;
         }
 
         // --- VALIDATION STEPS ---
-
-        // 1. Strict Easy Mode Check
-        // Easy Mode inputs must be single digit (0-9)
         if (playerObj.gear === 'easy') {
             if (n1 > 9 || n2 > 9) isValid = false;
         }
 
-        // 2. Division Cleanliness Check (Just in case)
         if (op === '/') {
             if (n1 % n2 !== 0) isValid = false;
-            if (n1 > 999) isValid = false; // Cap massive division inputs
+            if (n1 > 999) isValid = false; 
         }
         
-        // 3. Negative check
         if (n1 < 0 || n2 < 0 || ans < 0) isValid = false;
     }
 
@@ -263,8 +250,6 @@ function refreshMath(mathData, playerObj) {
     let l = genProblem(playerObj);
     let r = genProblem(playerObj);
     
-    // Ensure answers are different (checking Last Digit uniqueness)
-    // We don't want both answers ending in '7' (e.g. 17 and 37)
     let safe = 0;
     while (r.lastDigit === l.lastDigit && safe < 50) {
         r = genProblem(playerObj);
@@ -290,41 +275,33 @@ function refreshMath(mathData, playerObj) {
    ========================================= */
 
 function updatePhysics(p) {
-    // 1. Get stats based on Gear
     const stats = DIFFICULTY[p.gear];
     
-    // 2. Base Speed Logic (NEW)
-    // If speed is below baseSpeed (e.g. start or crash recovery), accelerate FAST.
     if (p.speed < stats.baseSpeed) {
         p.speed += stats.accel * 10; 
     }
-    // 3. Normal Acceleration (approaching Max)
     else if (p.speed < stats.maxSpeed) {
         p.speed += stats.accel;
     }
     
-    // 4. Cap Speed (e.g. if player downshifted gears while going fast)
     if (p.speed > stats.maxSpeed) {
-        p.speed *= 0.98; // Smooth deceleration
+        p.speed *= 0.98; 
     }
 
-    // 5. Lane Movement (Smooth Interpolation)
     let roadOffset = (p.id === 1) ? 20 : HALF_WIDTH + 20;
     let targetX = roadOffset + (p.lane * LANE_WIDTH) + (LANE_WIDTH/2) - 25;
     
     p.x += (targetX - p.x) * 0.2;
 
-    // 6. Distance & Animation
     p.dist += p.speed / 10;
     p.laneOffset = (p.laneOffset + p.speed) % 60;
     
-    // 7. Invulnerability Timer (Visual Flicker only)
     if (p.invuln > 0) p.invuln--;
 }
 
 function updateSpeedometers() {
     [p1, p2].forEach(p => {
-        let pct = p.speed / 15; // 15 is visual max
+        let pct = p.speed / 15; 
         if(pct > 1) pct = 1;
         let angle = 225 + (pct * 270);
         
@@ -332,7 +309,7 @@ function updateSpeedometers() {
         let valText = (p.id === 1) ? uiRefs.p1SpeedVal : uiRefs.p2SpeedVal;
         
         needle.style.transform = `rotate(${angle}deg)`;
-        valText.innerText = Math.floor(p.speed * 20); // Scale to nicer number
+        valText.innerText = Math.floor(p.speed * 20); 
     });
 }
 
@@ -349,12 +326,10 @@ function spawnObstacle() {
         lane: lane, roadId: targetP.id, hit: false
     });
     
-    // Average delay between P1 and P2 settings
     let delay1 = DIFFICULTY[p1.gear].trafficFreq;
     let delay2 = DIFFICULTY[p2.gear].trafficFreq;
     let delay = (delay1 + delay2) / 2;
     
-    // Randomize slightly
     delay = delay * (0.8 + Math.random() * 0.4); 
     
     setTimeout(spawnObstacle, delay);
@@ -368,14 +343,13 @@ function updateGame() {
     for (let i = 0; i < obstacles.length; i++) {
         let o = obstacles[i];
         
-        // Move obstacle based on player speed on that road
         let speed = (o.roadId === 1) ? p1.speed : p2.speed;
         o.y += speed;
 
         let p = (o.roadId === 1) ? p1 : p2;
         
         // Collision Logic
-        if (!o.hit && p.invuln === 0) { // Check invulnerability
+        if (!o.hit && p.invuln === 0) { 
             if (
                 p.x < o.x + o.w &&
                 p.x + 50 > o.x &&
@@ -383,9 +357,9 @@ function updateGame() {
                 450 + 90 > o.y
             ) {
                 // COLLISION EVENT
-                p.speed = 1; // Drop speed to 1, physics will ramp it back to baseSpeed
-                p.invuln = 60; // 60 frames of invulnerability (approx 1 sec)
-                o.hit = true;  // Mark obstacle as hit
+                p.speed = 1; 
+                p.invuln = 60; 
+                o.hit = true;  
             }
         }
 
@@ -430,7 +404,6 @@ function drawGame() {
     });
 
     // Players (Blink if invulnerable)
-    // Checks current time vs invuln frames to create blink effect
     if (!(p1.invuln > 0 && Math.floor(Date.now()/50)%2===0))
         ctx.drawImage(imgP1, p1.x, 450, 50, 90);
     
@@ -457,13 +430,19 @@ function gameTimer() {
    PART 5: INIT & END
    ========================================= */
 
+// --- NEW HELPER: GET URL PARAMS ---
+function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
+
 function initGame() {
     // Reset Everything
     p1.x = 20 + LANE_WIDTH + LANE_WIDTH/2 - 25;
     p2.x = HALF_WIDTH + 20 + LANE_WIDTH + LANE_WIDTH/2 - 25;
     p1.lane = 1; p2.lane = 1;
     
-    // NEW: Initialize with base speed for the current gear
+    // Initialize with base speed for the current gear
     p1.speed = DIFFICULTY[p1.gear].baseSpeed;
     p2.speed = DIFFICULTY[p2.gear].baseSpeed;
     
@@ -471,12 +450,18 @@ function initGame() {
     p1.invuln = 0; p2.invuln = 0;
     obstacles = [];
     active = true;
-    timeLeft = 60;
+    
+    // --- UPDATED TIMER LOGIC ---
+    // Read duration from URL, default to 60 if missing
+    const durationParam = getQueryParam('duration');
+    timeLeft = durationParam ? parseInt(durationParam) : 60;
     
     uiRefs.gameOverScreen.classList.add('hidden');
     uiRefs.btnStart.classList.add('disabled');
     uiRefs.btnAbort.classList.remove('disabled');
-    uiRefs.timerDisplay.innerText = "60s";
+    
+    // Update display immediately
+    uiRefs.timerDisplay.innerText = timeLeft + "s";
     
     refreshMath(p1Math, p1);
     refreshMath(p2Math, p2);
@@ -492,7 +477,7 @@ function endGame(aborted) {
     clearInterval(timerInt);
     
     let txt = "DRAW!";
-    let winnerColor = "#fff"; // Default white for Draw/Abort
+    let winnerColor = "#fff"; 
 
     if (p1.dist > p2.dist) {
         txt = "PILOT 1 WINS!";
@@ -506,7 +491,7 @@ function endGame(aborted) {
     if (aborted) {
         uiRefs.winnerText.innerText = "RACE ABORTED";
         uiRefs.winnerText.style.color = "#ffc107";
-        winnerColor = "#ffed4eff"; // Yellow for abort
+        winnerColor = "#ffed4eff"; 
     } else {
         uiRefs.winnerText.innerText = txt;
         uiRefs.winnerText.style.color = "#fff";
@@ -514,12 +499,11 @@ function endGame(aborted) {
 
     uiRefs.finalScores.innerText = `P1: ${Math.floor(p1.dist)}m  vs  P2: ${Math.floor(p2.dist)}m`;
     
-    // --- NEW CODE: CHANGE BORDER COLOR DYNAMICALLY ---
     const panel = document.querySelector('.glass-panel');
-    panel.style.borderColor = winnerColor;
-    // Optional: Change the glow effect color too
-    panel.style.boxShadow = `0 0 50px ${winnerColor}`; 
-    // -------------------------------------------------
+    if(panel) {
+        panel.style.borderColor = winnerColor;
+        panel.style.boxShadow = `0 0 50px ${winnerColor}`; 
+    }
 
     uiRefs.gameOverScreen.classList.remove('hidden');
     
@@ -527,5 +511,9 @@ function endGame(aborted) {
     uiRefs.btnAbort.classList.add('disabled');
 }
 
-// Initial Draw
+// Initial Draw & Initial Timer Set (Visual Only)
+// Check param on load so the "60s" circle shows the right time before start
+const initialDuration = getQueryParam('duration');
+if(initialDuration) uiRefs.timerDisplay.innerText = initialDuration + "s";
+
 drawGame();

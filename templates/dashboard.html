@@ -89,6 +89,133 @@
         transition: 0.2s;
     }
     .btn-close-garage:hover { background: #fff; color: #000; }
+
+/* --- PREMIUM RACE PROTOCOL STYLES (FIXED) --- */
+    .protocol-container {
+        max-width: 550px !important;
+        background: radial-gradient(circle at top, #1a1a24, #0a0a12) !important;
+        /* RESTORED NEON BORDER */
+        border: 2px solid #00f260 !important;
+        box-shadow: 0 0 30px rgba(0, 242, 96, 0.2) !important;
+    }
+
+    .protocol-label {
+        color: #888;
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        display: block;
+        text-align: center;
+    }
+
+    .tech-toggle-group {
+        display: flex;
+        justify-content: center;
+        background: #050508;
+        border: 1px solid #333;
+        border-radius: 4px;
+        padding: 4px;
+        margin: 0 auto 30px auto;
+        width: fit-content;
+    }
+
+    .btn-tech-opt {
+        background: transparent;
+        border: none;
+        color: #666;
+        padding: 10px 25px;
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+        letter-spacing: 1px;
+    }
+
+    .btn-tech-opt:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+
+    .btn-tech-opt.active {
+        background: #00f260;
+        color: #000;
+        box-shadow: 0 0 20px rgba(0, 242, 96, 0.3);
+    }
+
+    /* CUSTOM INPUT WRAPPER (To show 's') */
+    .custom-input-wrapper {
+        display: none; /* Hidden by default */
+        justify-content: center;
+        align-items: baseline;
+        margin-bottom: 20px;
+    }
+    .custom-input-tech {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid #00f260;
+        color: #fff;
+        font-size: 2rem;
+        text-align: right; /* Align number to right */
+        width: 80px;
+        font-family: monospace;
+        padding-right: 5px;
+    }
+    .custom-input-tech:focus { outline: none; }
+    .input-unit {
+        color: #00f260;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-left: 5px;
+    }
+
+    /* ACTION BUTTONS */
+    .btn-action-primary {
+        width: 100%; 
+        padding: 15px;
+        background: linear-gradient(90deg, #00f260, #00b347);
+        border: none;
+        color: #000;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: 0.3s;
+        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    }
+    .btn-action-primary:hover { filter: brightness(1.1); box-shadow: 0 0 30px rgba(0, 242, 96, 0.4); }
+
+    .btn-action-secondary {
+        margin-top: 15px;
+        background: transparent;
+        border: 1px solid #444;
+        color: #666;
+        padding: 10px 20px;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: 0.2s;
+        text-transform: uppercase;
+    }
+    .btn-action-secondary:hover { border-color: #fff; color: #fff; }
+
+/* --- ERROR MESSAGE STYLE --- */
+    .error-display {
+        color: #ff4b2b;
+        font-family: monospace;
+        font-size: 0.85rem;
+        margin-top: 15px;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-shadow: 0 0 8px rgba(255, 75, 43, 0.6);
+        display: none; /* Hidden by default */
+        animation: flashError 0.5s ease-in-out;
+    }
+
+    @keyframes flashError {
+        0% { opacity: 0; transform: translateY(-5px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
 </style>
 
 <div class="dashboard-container">
@@ -115,10 +242,10 @@
                 <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">5-LANE SURVIVAL MODE</div>
             </a>
 
-            <a href="{{ url_for('play') }}" class="btn btn-primary btn-large" style="width: 100%; display: block; background: linear-gradient(90deg, #1cb5e0, #000851); border: none;">
+            <button id="btn-multiplayer" class="btn btn-primary btn-large" style="width: 100%; display: block; background: linear-gradient(90deg, #1cb5e0, #000851); border: none; cursor: pointer;">
                 <div style="font-size: 1.2rem; font-weight: bold;">🌐 MULTIPLAYER</div>
                 <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">RACE AGAINST RIVALS</div>
-            </a>
+            </button>
 
             <button id="btn-garage" class="btn btn-primary btn-large" style="width: 100%; display: block; background: linear-gradient(90deg, #ff0099, #493240); border: none; cursor: pointer;">
                 <div style="font-size: 1.2rem; font-weight: bold;">🔧 GARAGE</div>
@@ -136,6 +263,41 @@
         <div class="garage-grid" id="garage-grid">
             </div>
         <button id="close-garage" class="btn-close-garage">PREPARE FOR RACE</button>
+    </div>
+</div>
+
+<div id="multiplayer-modal" class="garage-modal-overlay">
+    <div class="garage-container protocol-container">
+        
+        <div class="garage-header" style="font-size: 1.5rem; border-bottom: 1px solid #333; padding-bottom: 15px;">
+            RACE CONFIGURATION
+        </div>
+        
+        <div style="padding: 20px 0;">
+            <span class="protocol-label">TIME LIMIT</span>
+
+            <div class="tech-toggle-group">
+                <button class="btn-tech-opt active" onclick="selectTime(60, this)">60s</button>
+                <button class="btn-tech-opt" onclick="selectTime(90, this)">90s</button>
+                <button class="btn-tech-opt" onclick="selectTime(120, this)">120s</button>
+                <button class="btn-tech-opt" onclick="toggleCustomTime(this)">CUSTOM</button>
+            </div>
+
+            <div id="custom-wrapper" class="custom-input-wrapper">
+                <input type="number" id="custom-time" class="custom-input-tech" placeholder="00" min="30" max="600">
+                <span class="input-unit">s</span>
+            </div>
+
+            <div id="multi-error-msg" class="error-display"></div>
+        </div>
+
+        <button id="btn-initiate-multi" class="btn-action-primary">
+            INITIATE SEQUENCE
+        </button>
+
+        <button id="close-multi" class="btn-action-secondary">
+            CANCEL OPERATION
+        </button>
     </div>
 </div>
 
@@ -211,6 +373,86 @@
 
     btnCloseGarage.addEventListener('click', () => {
         modalGarage.classList.remove('active');
+    });
+
+/* --- MULTIPLAYER MODAL LOGIC (FINAL WITH ERROR HANDLING) --- */
+    const btnMulti = document.getElementById('btn-multiplayer');
+    const modalMulti = document.getElementById('multiplayer-modal');
+    const closeMulti = document.getElementById('close-multi');
+    const btnStartMulti = document.getElementById('btn-initiate-multi');
+    
+    // IDs
+    const customInput = document.getElementById('custom-time');
+    const customWrapper = document.getElementById('custom-wrapper');
+    const errorDisplay = document.getElementById('multi-error-msg'); // New Error Ref
+    
+    let selectedDuration = 60; // Default
+
+    // Open Modal
+    btnMulti.addEventListener('click', () => {
+        modalMulti.classList.add('active');
+        errorDisplay.style.display = 'none'; // Clear errors on open
+    });
+
+    // Close Modal
+    closeMulti.addEventListener('click', () => {
+        modalMulti.classList.remove('active');
+    });
+
+    // Helper: Reset buttons
+    function resetActiveButtons() {
+        const allButtons = document.querySelectorAll('.tech-toggle-group button');
+        allButtons.forEach(b => b.classList.remove('active'));
+    }
+
+    // Time Selection Logic
+    window.selectTime = function(seconds, btn) {
+        selectedDuration = seconds;
+        customWrapper.style.display = 'none';
+        errorDisplay.style.display = 'none'; // Clear error
+        
+        resetActiveButtons();
+        btn.classList.add('active');
+    };
+
+    // Custom Time Logic
+    window.toggleCustomTime = function(btn) {
+        resetActiveButtons();
+        btn.classList.add('active');
+        
+        customWrapper.style.display = 'flex';
+        customInput.focus();
+        selectedDuration = 'custom';
+        errorDisplay.style.display = 'none'; // Clear error
+    };
+
+    // Start Game Redirect
+    btnStartMulti.addEventListener('click', () => {
+        let finalTime = selectedDuration;
+
+        // If custom is selected, validate input
+        if (selectedDuration === 'custom') {
+            const val = parseInt(customInput.value);
+            
+            // CHECK 1: Valid Number and Minimum
+            if (!val || val < 30) { 
+                errorDisplay.innerText = "⚠ SYSTEM ERROR: MINIMUM DURATION IS 30s";
+                errorDisplay.style.display = 'block';
+                return; 
+            }
+            
+            // CHECK 2: Maximum Limit
+            if (val > 600) {
+                errorDisplay.innerText = "⚠ SYSTEM ERROR: MAXIMUM DURATION IS 600s";
+                errorDisplay.style.display = 'block';
+                return;
+            }
+            
+            finalTime = val;
+        }
+
+        // Redirect to game with duration parameter
+        window.location.href = "{{ url_for('play') }}?duration=" + finalTime;
     });
 </script>
 {% endblock %}
