@@ -1,457 +1,458 @@
 {% extends "base.html" %}
 
 {% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+
 <style>
-    /* --- GARAGE SYSTEM STYLES (ADDED) --- */
-    .garage-modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(5px);
-        z-index: 9999;
-        justify-content: center;
-        align-items: center;
+    /* --- 1. GLOBAL VARIABLES & RESET --- */
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --primary-accent: #00d2ff;
+        --secondary-accent: #7b2cbf;
+        --text-main: #ffffff;
+        --text-muted: #a0a0c0;
     }
-    .garage-modal-overlay.active { display: flex; }
-    .garage-container {
-        background: #0a0a12;
-        border: 2px solid #00f260;
-        box-shadow: 0 0 20px rgba(0, 242, 96, 0.2);
-        border-radius: 15px;
-        padding: 20px;
-        width: 90%;
-        max-width: 800px;
-        text-align: center;
+
+    body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden; /* Force no scroll on body */
+        background: #0f0c29;
+        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        font-family: 'Rajdhani', sans-serif;
+        color: var(--text-main);
+    }
+
+    /* BACKGROUND ANIMATION */
+    .bg-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        z-index: 0;
+        opacity: 0.4;
+        animation: floatOrb 10s infinite ease-in-out;
+    }
+    .orb-1 { width: 500px; height: 500px; background: #7b2cbf; top: -10%; left: -10%; }
+    .orb-2 { width: 400px; height: 400px; background: #00d2ff; bottom: -5%; right: -5%; animation-delay: -5s; }
+    
+    @keyframes floatOrb {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(30px, 50px); }
+    }
+
+    /* --- 2. LAYOUT GRID --- */
+    .app-grid {
+        display: grid;
+        /* CHANGED: Significantly wider sidebar (450px) */
+        grid-template-columns: 450px 1fr; 
+        height: 100vh;
+        width: 100vw;
         position: relative;
+        z-index: 1;
     }
-    .garage-header {
-        font-size: 2rem;
-        color: #fff;
-        text-transform: uppercase;
-        margin-bottom: 20px;
-        letter-spacing: 2px;
-        text-shadow: 0 0 10px #00f260;
-    }
-    .garage-grid {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-    .car-card {
-        background: #1a1a24;
-        border: 1px solid #333;
-        border-radius: 10px;
-        padding: 15px;
-        width: 160px;
-        height: 240px; /* Fixed height for alignment */
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-        
-        /* Flex alignment to fix jumping text */
+
+    /* --- 3. SIDEBAR --- */
+    .sidebar {
+        background: rgba(15, 12, 41, 0.6);
+        backdrop-filter: blur(20px);
+        border-right: 1px solid var(--glass-border);
+        padding: 30px 40px; /* Wider padding for wider look */
         display: flex;
         flex-direction: column;
-        justify-content: space-between; 
-        align-items: center;
-    }
-    .car-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-    .car-card.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(100%); }
-    .car-card.selected { border: 2px solid #00f260; box-shadow: 0 0 15px rgba(0, 242, 96, 0.4); }
-    
-    .car-preview { 
-        width: 100%; 
-        height: 140px; 
-        object-fit: contain; /* Prevents stretching */
-        object-position: center;
-        margin-bottom: 10px; 
-        filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
-    }
-    
-    .car-name { color: #fff; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold; }
-    .unlock-req { color: #ff4b2b; font-size: 0.7rem; font-weight: bold; }
-    .lock-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        display: flex; justify-content: center; align-items: center;
-        font-size: 2rem; color: #ff4b2b; text-shadow: 0 0 5px #000;
-        display: none;
-    }
-    .car-card.locked .lock-overlay { display: flex; }
-    .btn-close-garage {
-        margin-top: 20px;
-        background: transparent;
-        border: 1px solid #fff;
-        color: #fff;
-        padding: 10px 30px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: 0.2s;
-    }
-    .btn-close-garage:hover { background: #fff; color: #000; }
-
-/* --- PREMIUM RACE PROTOCOL STYLES (FIXED) --- */
-    .protocol-container {
-        max-width: 550px !important;
-        background: radial-gradient(circle at top, #1a1a24, #0a0a12) !important;
-        /* RESTORED NEON BORDER */
-        border: 2px solid #00f260 !important;
-        box-shadow: 0 0 30px rgba(0, 242, 96, 0.2) !important;
+        justify-content: space-between;
     }
 
-    .protocol-label {
-        color: #888;
-        font-size: 0.75rem;
+    .brand-logo {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 2.2rem; 
+        font-weight: 900;
         letter-spacing: 2px;
-        text-transform: uppercase;
-        margin-bottom: 10px;
-        display: block;
-        text-align: center;
+        background: linear-gradient(90deg, #fff, #00d2ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 40px; 
     }
 
-    .tech-toggle-group {
+    .nav-menu { display: flex; flex-direction: column; gap: 15px; }
+
+    .nav-item {
+        display: flex; align-items: center; padding: 15px 20px; border-radius: 12px;
+        color: var(--text-muted); text-decoration: none; font-size: 1.2rem; /* Slightly larger text */
+        font-weight: 600; transition: all 0.3s ease; border: 1px solid transparent; cursor: pointer;
+    }
+
+    .nav-item:hover, .nav-item.active {
+        background: var(--glass-bg); color: #fff; border-color: var(--glass-border);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); transform: translateX(5px);
+    }
+    
+    .nav-icon { margin-right: 15px; width: 25px; text-align: center; }
+
+    /* --- 4. MAIN CONTENT AREA (COMPACT MODE) --- */
+    .main-stage {
+        /* CHANGED: Reduced padding to save space */
+        padding: 20px 30px; 
+        display: grid;
+        grid-template-rows: auto auto 1fr; /* Header, Hero, Modes fills rest */
+        gap: 15px; /* Reduced gap from 20px */
+        height: 100vh;
+        box-sizing: border-box;
+    }
+
+    .header-bar {
         display: flex;
+        justify-content: space-between;
+        align-items: center;
+        /* Ensure header doesn't take too much height */
+        height: 60px; 
+    }
+    .user-welcome h2 { margin: 0; font-family: 'Orbitron'; font-size: 1.8rem; }
+    .user-welcome span { color: var(--primary-accent); letter-spacing: 1px; }
+    .rank-badge { 
+        background: var(--glass-bg); padding: 6px 14px; border-radius: 20px; 
+        font-size: 0.8rem; border: 1px solid var(--glass-border); color: #ffd700;
+    }
+
+    /* HERO CARD (COMPACT) */
+    .hero-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        position: relative;
+        display: flex;
+        align-items: center;
         justify-content: center;
-        background: #050508;
-        border: 1px solid #333;
-        border-radius: 4px;
-        padding: 4px;
-        margin: 0 auto 30px auto;
-        width: fit-content;
+        overflow: hidden;
+        /* CHANGED: Much shorter to fit screen */
+        height: 250px; 
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+    
+    .hero-glow {
+        position: absolute;
+        width: 300px; height: 300px; /* Smaller glow */
+        background: radial-gradient(circle, rgba(0, 210, 255, 0.2) 0%, transparent 70%);
+        border-radius: 50%;
+        top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
 
-    .btn-tech-opt {
-        background: transparent;
-        border: none;
-        color: #666;
-        padding: 10px 25px;
-        font-family: inherit;
-        font-weight: bold;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border-radius: 2px;
-        letter-spacing: 1px;
+    .hero-car-img {
+        position: relative; z-index: 2;
+        max-width: 50%; max-height: 90%; /* Adjusted for new box size */
+        filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
+        transition: transform 0.4s ease;
+    }
+    .hero-card:hover .hero-car-img { transform: scale(1.05) rotate(-2deg); }
+
+    .hero-details { position: absolute; bottom: 20px; left: 30px; z-index: 3; }
+    .hero-label { color: var(--text-muted); font-size: 0.8rem; letter-spacing: 2px; }
+    .hero-title { font-size: 1.8rem; font-family: 'Orbitron'; margin: 0; }
+
+    /* GAME MODES (COMPACT) */
+    .modes-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        /* CHANGED: Reduced height to ensure fit */
+        height: 180px; 
+        margin-bottom: 0; /* Remove extra margin */
     }
 
-    .btn-tech-opt:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
-
-    .btn-tech-opt.active {
-        background: #00f260;
-        color: #000;
-        box-shadow: 0 0 20px rgba(0, 242, 96, 0.3);
+    .game-card {
+        background: linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        /* CHANGED: Less padding */
+        padding: 20px; 
+        display: flex; flex-direction: column; justify-content: center;
+        text-decoration: none; position: relative; overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
-    /* CUSTOM INPUT WRAPPER (To show 's') */
-    .custom-input-wrapper {
-        display: none; /* Hidden by default */
-        justify-content: center;
-        align-items: baseline;
-        margin-bottom: 20px;
+    .game-card::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        transform: translateX(-100%); transition: 0.5s;
     }
-    .custom-input-tech {
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid #00f260;
-        color: #fff;
-        font-size: 2rem;
-        text-align: right; /* Align number to right */
-        width: 80px;
-        font-family: monospace;
-        padding-right: 5px;
-    }
-    .custom-input-tech:focus { outline: none; }
-    .input-unit {
-        color: #00f260;
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-left: 5px;
-    }
+    .game-card:hover::before { transform: translateX(100%); }
+    .game-card:hover { transform: translateY(-3px); border-color: var(--primary-accent); }
+    .game-card.multi:hover { border-color: var(--secondary-accent); }
 
-    /* ACTION BUTTONS */
-    .btn-action-primary {
-        width: 100%; 
-        padding: 15px;
-        background: linear-gradient(90deg, #00f260, #00b347);
-        border: none;
-        color: #000;
-        font-weight: 800;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: 0.3s;
-        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-    }
-    .btn-action-primary:hover { filter: brightness(1.1); box-shadow: 0 0 30px rgba(0, 242, 96, 0.4); }
+    /* CHANGED: Smaller fonts for compact cards */
+    .card-title { font-family: 'Orbitron'; font-size: 1.5rem; margin-bottom: 5px; color: #fff; }
+    .card-sub { color: var(--text-muted); font-size: 0.9rem; }
+    .card-icon { position: absolute; right: 20px; bottom: 20px; font-size: 2.5rem; opacity: 0.2; }
 
-    .btn-action-secondary {
-        margin-top: 15px;
-        background: transparent;
-        border: 1px solid #444;
-        color: #666;
-        padding: 10px 20px;
-        font-size: 0.8rem;
-        letter-spacing: 1px;
-        cursor: pointer;
-        transition: 0.2s;
-        text-transform: uppercase;
+    /* STATS WIDGET */
+    .stats-widget {
+        background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px;
+        margin-top: auto; border: 1px solid var(--glass-border);
     }
-    .btn-action-secondary:hover { border-color: #fff; color: #fff; }
+    .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .stat-val { font-weight: 700; color: #fff; }
 
-/* --- ERROR MESSAGE STYLE --- */
-    .error-display {
-        color: #ff4b2b;
-        font-family: monospace;
-        font-size: 0.85rem;
-        margin-top: 15px;
-        margin-bottom: 5px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        text-shadow: 0 0 8px rgba(255, 75, 43, 0.6);
-        display: none; /* Hidden by default */
-        animation: flashError 0.5s ease-in-out;
+    /* --- MODALS --- */
+    .garage-modal-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(15px); z-index: 9999;
+        justify-content: center; align-items: center;
     }
+    .garage-modal-overlay.active { display: flex; }
+    
+    .garage-container {
+        background: #1c1c2e; border: 1px solid var(--glass-border);
+        border-radius: 20px; padding: 30px; width: 90%; max-width: 900px;
+        text-align: center; color: white;
+    }
+    
+    .garage-grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 25px 0; }
+    
+    .car-card {
+        background: #252538; border: 1px solid #333; border-radius: 12px;
+        width: 160px; height: 240px; padding: 10px;
+        cursor: pointer; transition: 0.2s; position: relative;
+        display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    }
+    .car-card:hover { transform: translateY(-5px); background: #2f2f45; }
+    .car-card.selected { border: 2px solid var(--primary-accent); box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
+    .car-card.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+    
+    .car-preview { width: 100%; height: 100px; object-fit: contain; }
+    .car-name { font-family: 'Orbitron'; font-size: 0.85rem; margin-top: 10px; }
+    .lock-overlay { position: absolute; top: 40%; font-size: 2rem; display: none; }
+    .car-card.locked .lock-overlay { display: block; }
 
-    @keyframes flashError {
-        0% { opacity: 0; transform: translateY(-5px); }
-        100% { opacity: 1; transform: translateY(0); }
+    .btn-action {
+        background: var(--primary-accent); color: #000; border: none; padding: 10px 25px;
+        font-family: 'Rajdhani'; font-weight: 700; font-size: 1rem; border-radius: 6px;
+        cursor: pointer; text-transform: uppercase; transition: 0.2s;
     }
+    .btn-action:hover { filter: brightness(1.2); transform: scale(1.05); }
+
+    .protocol-container { background: #1c1c2e !important; border: 1px solid var(--glass-border) !important; }
+    .btn-tech-opt.active { background: var(--secondary-accent); color: white; }
+    .btn-action-primary { background: linear-gradient(90deg, #7b2cbf, #9d4edd); color: white; }
 </style>
 
-<div class="dashboard-container">
-    <div class="profile-card">
-        
-        <div class="pilot-header">
-            <h1 class="pilot-name">{{ current_user.username }}</h1>
-            <div class="pilot-rank">Formula Rush Pilot</div>
-        </div>
+<div class="bg-orb orb-1"></div>
+<div class="bg-orb orb-2"></div>
 
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-label">Career Personal Best</div>
-                <div class="stat-value">
-                    {{ score if score else 0 }}<span class="stat-unit">m</span>
+<div class="app-grid">
+    
+    <nav class="sidebar">
+        <div>
+            <div class="brand-logo">FORMULA RUSH</div>
+            
+            <div class="nav-menu">
+                <a class="nav-item active">
+                    <span class="nav-icon">🏠</span> Dashboard
+                </a>
+                
+                <div class="nav-item" onclick="alert('Pilot Profile: ACCESS DENIED. (Feature in Development)')">
+                    <span class="nav-icon">📊</span> Pilot Career
                 </div>
+                
+                <div class="nav-item" id="btn-garage-sidebar">
+                    <span class="nav-icon">🔧</span> Garage
+                </div>
+
+                <a href="{{ url_for('logout') }}" class="nav-item">
+                    <span class="nav-icon">🚪</span> Logout
+                </a>
             </div>
         </div>
 
-        <div class="mode-select-container" style="margin-top: 25px; display: flex; flex-direction: column; gap: 15px;">
-            
-            <a href="{{ url_for('single_player') }}" class="btn btn-primary btn-large"style="width: 100%; display: block; background: linear-gradient(90deg, #00f260, #0575e6); border: none;">
-                <div style="font-size: 1.2rem; font-weight: bold;">🏎️ SINGLE PLAYER</div>
-                <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">5-LANE SURVIVAL MODE</div>
-            </a>
+        <div class="stats-widget">
+            <div class="stat-row">
+                <span style="color: #aaa;">High Score</span>
+                <span class="stat-val" style="color: var(--primary-accent);">{{ score if score else 0 }}m</span>
+            </div>
+            <div class="stat-row">
+                <span style="color: #aaa;">Status</span>
+                <span class="stat-val" style="color: #2ecc71;">ONLINE</span>
+            </div>
+        </div>
+    </nav>
 
-            <button id="btn-multiplayer" class="btn btn-primary btn-large" style="width: 100%; display: block; background: linear-gradient(90deg, #1cb5e0, #000851); border: none; cursor: pointer;">
-                <div style="font-size: 1.2rem; font-weight: bold;">🌐 MULTIPLAYER</div>
-                <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">RACE AGAINST RIVALS</div>
-            </button>
-
-            <button id="btn-garage" class="btn btn-primary btn-large" style="width: 100%; display: block; background: linear-gradient(90deg, #ff0099, #493240); border: none; cursor: pointer;">
-                <div style="font-size: 1.2rem; font-weight: bold;">🔧 GARAGE</div>
-                <div style="font-size: 0.8rem; opacity: 0.9; font-weight: normal; letter-spacing: 1px;">UNLOCK & CUSTOMIZE</div>
-            </button>
-
+    <main class="main-stage">
+        
+        <div class="header-bar">
+            <div class="user-welcome">
+                <h2>WELCOME BACK, <span>{{ current_user.username }}</span></h2>
+                <div style="color: var(--text-muted); margin-top: 2px; font-size: 0.9rem;">Ready to dominate the track?</div>
+            </div>
+            <div class="rank-badge">🏆 RANK: PILOT</div>
         </div>
 
-    </div>
+        <div class="hero-card">
+            <div class="hero-glow"></div>
+            <img id="dashboard-hero-car" src="/static/car_default.png" class="hero-car-img" alt="Active Car">
+            
+            <div class="hero-details">
+                <div class="hero-label">ACTIVE VEHICLE</div>
+                <h3 class="hero-title" id="hero-car-name">CROWN VIC</h3>
+            </div>
+        </div>
+
+        <div class="modes-row">
+            <a href="{{ url_for('single_player') }}" class="game-card">
+                <div class="card-title">SINGLE PLAYER</div>
+                <div class="card-sub">Survival Mode</div>
+                <div class="card-icon">🏎️</div>
+            </a>
+
+            <div id="btn-multiplayer" class="game-card multi" style="cursor: pointer;">
+                <div class="card-title">MULTIPLAYER</div>
+                <div class="card-sub">1v1 Race • Real-time Rivals</div>
+                <div class="card-icon">⚔️</div> 
+            </div>
+        </div>
+
+    </main>
 </div>
 
 <div id="garage-modal" class="garage-modal-overlay">
     <div class="garage-container">
-        <div class="garage-header">SHOWROOM</div>
-        <div class="garage-grid" id="garage-grid">
-            </div>
-        <button id="close-garage" class="btn-close-garage">PREPARE FOR RACE</button>
+        <h2 style="font-family: 'Orbitron'; margin-bottom: 5px;">VEHICLE SELECTOR</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Choose your machine</p>
+        
+        <div class="garage-grid" id="garage-grid"></div>
+        
+        <button id="close-garage" class="btn-action" style="background: transparent; border: 1px solid white; color: white;">Close Garage</button>
     </div>
 </div>
 
 <div id="multiplayer-modal" class="garage-modal-overlay">
     <div class="garage-container protocol-container">
+        <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">RACE CONFIGURATION</h2>
         
-        <div class="garage-header" style="font-size: 1.5rem; border-bottom: 1px solid #333; padding-bottom: 15px;">
-            RACE CONFIGURATION
-        </div>
-        
-        <div style="padding: 20px 0;">
-            <span class="protocol-label">TIME LIMIT</span>
-
-            <div class="tech-toggle-group">
+        <div style="padding: 15px 0;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px;">SET DURATION</p>
+            
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
                 <button class="btn-tech-opt active" onclick="selectTime(60, this)">60s</button>
                 <button class="btn-tech-opt" onclick="selectTime(90, this)">90s</button>
                 <button class="btn-tech-opt" onclick="selectTime(120, this)">120s</button>
                 <button class="btn-tech-opt" onclick="toggleCustomTime(this)">CUSTOM</button>
             </div>
 
-            <div id="custom-wrapper" class="custom-input-wrapper">
-                <input type="number" id="custom-time" class="custom-input-tech" placeholder="00" min="30" max="600">
-                <span class="input-unit">s</span>
+            <div id="custom-wrapper" style="display:none; justify-content:center; align-items: baseline; margin-bottom: 15px;">
+                <input type="number" id="custom-time" style="background:transparent; border:none; border-bottom:2px solid var(--secondary-accent); color:white; font-size:1.5rem; width:80px; text-align:center;" placeholder="00">
+                <span style="font-weight:bold; color:var(--secondary-accent);">s</span>
             </div>
-
-            <div id="multi-error-msg" class="error-display"></div>
+            
+            <div id="multi-error-msg" style="color: #ff4b2b; display:none; margin-bottom: 10px;"></div>
         </div>
 
-        <button id="btn-initiate-multi" class="btn-action-primary">
-            INITIATE SEQUENCE
-        </button>
-
-        <button id="close-multi" class="btn-action-secondary">
-            CANCEL OPERATION
-        </button>
+        <button id="btn-initiate-multi" class="btn-action btn-action-primary" style="width:100%;">FIND MATCH</button>
+        <button id="close-multi" class="btn-action" style="background:transparent; color:#aaa; font-size:0.8rem; margin-top:10px;">CANCEL</button>
     </div>
 </div>
 
 <script>
-    /* --- GARAGE LOGIC --- */
-    // Updated with Real World Names
+    // --- JS LOGIC SAME AS BEFORE ---
     const CAR_DB = [
-        { id: 'car_default', name: 'Crown Vic',       img: 'car_default.png', unlockScore: 0 },
-        { id: 'car_bronze',  name: 'Continental GT',  img: 'car_bronze.png',  unlockScore: 500 },
-        { id: 'car_silver',  name: '300 SL Roadster', img: 'car_silver.png',  unlockScore: 1000 },
-        { id: 'car_gold',    name: 'Nissan Skyline GT-R',    img: 'car_gold.png',    unlockScore: 2000 }
+        { id: 'car_default', name: 'CROWN VIC',       img: 'car_default.png', unlockScore: 0 },
+        { id: 'car_bronze',  name: 'CONTINENTAL GT',  img: 'car_bronze.png',  unlockScore: 500 },
+        { id: 'car_silver',  name: '300 SL ROADSTER', img: 'car_silver.png',  unlockScore: 1000 },
+        { id: 'car_gold',    name: 'SKYLINE GT-R',    img: 'car_gold.png',    unlockScore: 2000 }
     ];
 
-    const btnGarage = document.getElementById('btn-garage');
+    function updateHero() {
+        const savedId = localStorage.getItem('formulaRush_selectedCar') || 'car_default';
+        const car = CAR_DB.find(c => c.id === savedId) || CAR_DB[0];
+        document.getElementById('dashboard-hero-car').src = `/static/${car.img}`;
+        document.getElementById('hero-car-name').innerText = car.name;
+    }
+    updateHero();
+
+    const btnGarageSide = document.getElementById('btn-garage-sidebar');
     const modalGarage = document.getElementById('garage-modal');
     const btnCloseGarage = document.getElementById('close-garage');
     const gridGarage = document.getElementById('garage-grid');
 
     function initGarage() {
-        // --- CRITICAL FIX: TRUST SERVER SCORE ONLY ---
-        // We inject the Jinja2 variable directly into JS.
-        // This ensures the Garage sees the ACCOUNT score, not the Browser Cache score.
         const serverScore = {{ score if score else 0 }};
-        
-        // SYNC: Update localStorage so the game engine (single_script.js) knows the real score too
         localStorage.setItem('formulaRush_highScore', serverScore);
-
         const highScore = serverScore;
         let currentSelection = localStorage.getItem('formulaRush_selectedCar') || 'car_default';
-        
-        // --- SECURITY CHECK: REVOKE ILLEGAL CARS ---
-        // If user has a high-tier car selected but their score is too low (new account), reset them.
+
         const selectedCarObj = CAR_DB.find(c => c.id === currentSelection);
         if (selectedCarObj && highScore < selectedCarObj.unlockScore) {
-            console.log("Detected illegal car selection. Revoking access.");
             currentSelection = 'car_default';
             localStorage.setItem('formulaRush_selectedCar', 'car_default');
+            updateHero();
         }
 
-        gridGarage.innerHTML = ''; // Clear current
-
+        gridGarage.innerHTML = '';
         CAR_DB.forEach(car => {
             const isLocked = highScore < car.unlockScore;
             const isSelected = currentSelection === car.id;
-            
             const card = document.createElement('div');
             card.className = `car-card ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}`;
             
-            // Only allow click if unlocked
-            card.onclick = () => { if(!isLocked) selectCar(car.id); };
-
-            const imgPath = `/static/${car.img}`;
+            card.onclick = () => {
+                if(!isLocked) {
+                    localStorage.setItem('formulaRush_selectedCar', car.id);
+                    initGarage();
+                    updateHero(); 
+                }
+            };
             
             card.innerHTML = `
                 <div class="lock-overlay">🔒</div>
-                <img src="${imgPath}" class="car-preview" alt="${car.name}">
+                <img src="/static/${car.img}" class="car-preview">
                 <div class="car-name">${car.name}</div>
-                <div class="unlock-req">${isLocked ? 'UNLOCK: ' + car.unlockScore + 'm' : 'UNLOCKED'}</div>
+                <div style="font-size:0.7rem; color:${isLocked?'#ff4b2b':'#2ecc71'}; font-weight:bold;">
+                    ${isLocked ? `UNLOCK: ${car.unlockScore}m` : 'OWNED'}
+                </div>
             `;
             gridGarage.appendChild(card);
         });
     }
 
-    function selectCar(carId) {
-        localStorage.setItem('formulaRush_selectedCar', carId);
-        initGarage(); // Re-render to update selection UI
-    }
+    btnGarageSide.addEventListener('click', () => { initGarage(); modalGarage.classList.add('active'); });
+    btnCloseGarage.addEventListener('click', () => { modalGarage.classList.remove('active'); });
 
-    btnGarage.addEventListener('click', () => {
-        initGarage();
-        modalGarage.classList.add('active');
-    });
-
-    btnCloseGarage.addEventListener('click', () => {
-        modalGarage.classList.remove('active');
-    });
-
-/* --- MULTIPLAYER MODAL LOGIC (FINAL WITH ERROR HANDLING) --- */
     const btnMulti = document.getElementById('btn-multiplayer');
     const modalMulti = document.getElementById('multiplayer-modal');
     const closeMulti = document.getElementById('close-multi');
     const btnStartMulti = document.getElementById('btn-initiate-multi');
-    
-    // IDs
     const customInput = document.getElementById('custom-time');
     const customWrapper = document.getElementById('custom-wrapper');
-    const errorDisplay = document.getElementById('multi-error-msg'); // New Error Ref
-    
-    let selectedDuration = 60; // Default
+    const errorDisplay = document.getElementById('multi-error-msg');
+    let selectedDuration = 60;
 
-    // Open Modal
-    btnMulti.addEventListener('click', () => {
-        modalMulti.classList.add('active');
-        errorDisplay.style.display = 'none'; // Clear errors on open
-    });
+    btnMulti.addEventListener('click', () => { modalMulti.classList.add('active'); errorDisplay.style.display='none'; });
+    closeMulti.addEventListener('click', () => { modalMulti.classList.remove('active'); });
 
-    // Close Modal
-    closeMulti.addEventListener('click', () => {
-        modalMulti.classList.remove('active');
-    });
-
-    // Helper: Reset buttons
-    function resetActiveButtons() {
-        const allButtons = document.querySelectorAll('.tech-toggle-group button');
-        allButtons.forEach(b => b.classList.remove('active'));
-    }
-
-    // Time Selection Logic
     window.selectTime = function(seconds, btn) {
         selectedDuration = seconds;
         customWrapper.style.display = 'none';
-        errorDisplay.style.display = 'none'; // Clear error
-        
-        resetActiveButtons();
+        document.querySelectorAll('.btn-tech-opt').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
     };
 
-    // Custom Time Logic
     window.toggleCustomTime = function(btn) {
-        resetActiveButtons();
+        selectedDuration = 'custom';
+        document.querySelectorAll('.btn-tech-opt').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
         customWrapper.style.display = 'flex';
         customInput.focus();
-        selectedDuration = 'custom';
-        errorDisplay.style.display = 'none'; // Clear error
     };
 
-    // Start Game Redirect
     btnStartMulti.addEventListener('click', () => {
         let finalTime = selectedDuration;
-
-        // If custom is selected, validate input
         if (selectedDuration === 'custom') {
             const val = parseInt(customInput.value);
-            
-            // CHECK 1: Valid Number and Minimum
-            if (!val || val < 30) { 
-                errorDisplay.innerText = "⚠ SYSTEM ERROR: MINIMUM DURATION IS 30s";
-                errorDisplay.style.display = 'block';
-                return; 
-            }
-            
-            // CHECK 2: Maximum Limit
-            if (val > 600) {
-                errorDisplay.innerText = "⚠ SYSTEM ERROR: MAXIMUM DURATION IS 600s";
+            if (!val || val < 30 || val > 600) {
+                errorDisplay.innerText = "INVALID DURATION (30s - 600s)";
                 errorDisplay.style.display = 'block';
                 return;
             }
-            
             finalTime = val;
         }
-
-        // Redirect to game with duration parameter
         window.location.href = "{{ url_for('play') }}?duration=" + finalTime;
     });
 </script>
