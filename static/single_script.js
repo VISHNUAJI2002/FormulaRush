@@ -3,6 +3,22 @@
 // PERSISTENT PLAYER CONFIG
 // (DOES NOT RESET ON GAME OVER)
 // ================================
+// --- 0. CAREER TRACKING INIT ---
+let raceSession = {
+    startTime: Date.now(),
+    mistakes: {},
+    difficulty: 'easy',     // Will sync with playerConfig
+    controlMethod: 'keyboard',
+    inputStats: { total: 0 }
+};
+
+function logMistake(questionText) {
+    if (!raceSession.mistakes[questionText]) {
+        raceSession.mistakes[questionText] = 0;
+    }
+    raceSession.mistakes[questionText]++;
+}
+
 const playerConfig = {
     controlMode: 'keyboard',
     difficulty: 'easy',
@@ -447,11 +463,21 @@ function checkDifficulty(ans, op) {
 }
 
 function checkAnswer(input) {
+    // 1. TRACK ATTEMPT
+    raceSession.inputStats.total++; 
+
     let correct = false;
+    
     // Number Check
     if (typeof input === 'number' && currentQuestion.leftDigit !== null) {
-        if (input === currentQuestion.leftDigit) { if (gameState.lane > 0) gameState.lane--; correct = true; }
-        else if (input === currentQuestion.rightDigit) { if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; correct = true; }
+        if (input === currentQuestion.leftDigit) { 
+            if (gameState.lane > 0) gameState.lane--; 
+            correct = true; 
+        }
+        else if (input === currentQuestion.rightDigit) { 
+            if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; 
+            correct = true; 
+        }
     } 
     // String Check (Voice)
     else if (typeof input === 'string') {
@@ -460,9 +486,23 @@ function checkAnswer(input) {
             if (Array.isArray(expected)) return expected.some(val => input.includes(val.toLowerCase()));
             return String(expected).toLowerCase().includes(input);
         };
-        if (checkMatch(expectedLeft)) { if (gameState.lane > 0) gameState.lane--; correct = true; }
-        else if (checkMatch(expectedRight)) { if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; correct = true; }
+        if (checkMatch(expectedLeft)) { 
+            if (gameState.lane > 0) gameState.lane--; 
+            correct = true; 
+        }
+        else if (checkMatch(expectedRight)) { 
+            if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; 
+            correct = true; 
+        }
     }
+
+    // 2. LOG MISTAKE IF WRONG
+    if (!correct) {
+        // Log the text of both questions visible on screen as the context
+        let context = `${leftMathValue.innerText} | ${rightMathValue.innerText}`;
+        logMistake(context);
+    }
+
     if (correct) generateTwoProblems();
 }
 
@@ -775,7 +815,14 @@ function applyCurrentPhysics() {
 
 function startGame() {
     if (gameState.isPlaying) return;
-    
+    // --- RESET CAREER TRACKER ---
+    raceSession = {
+        startTime: Date.now(),
+        mistakes: {},
+        difficulty: playerConfig.difficulty,
+        controlMethod: playerConfig.controlMode,
+        inputStats: { total: 0 }
+    };
     // UI Setup
     btnStart.classList.add('btn-disabled'); 
     btnStop.classList.remove('btn-disabled');
@@ -911,17 +958,31 @@ function gameOver() {
     if (gameState.score > currentHigh) {
         localStorage.setItem('formulaRush_highScore', gameState.score);
     }
-
-    // --- SUBMIT SINGLE PLAYER SCORE ---
+    // --- PREPARE CAREER DATA ---
+    const duration = (Date.now() - raceSession.startTime) / 1000;
+    // Convert playerConfig settings into a list of topics for the DB
+    let activeTopics = [];
+    if (playerConfig.multipliers.length > 0) activeTopics.push(`Mult: ${playerConfig.multipliers.join(',')}`);
+    for (let [k, v] of Object.entries(playerConfig.advancedOps)) { if(v) activeTopics.push(k); }
+    for (let [k, v] of Object.entries(playerConfig.voiceOps)) { if(v) activeTopics.push(k); }
+    // --- SUBMIT FULL SCORE & TELEMETRY ---
     fetch("/submit_score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             score: gameState.score,
-            mode: "single"
+            mode: "single",
+            duration: Math.floor(duration),
+            car: localStorage.getItem('formulaRush_selectedCar') || 'car_default',
+            
+            // New Context Data
+            difficulty: playerConfig.difficulty,
+            controlMethod: playerConfig.controlMode,
+            activeTopics: activeTopics,
+            mistakes: raceSession.mistakes,
+            inputStats: raceSession.inputStats
         })
     });
-
     gameState.isPlaying = false;
     if (recognition) recognition.stop();
     micIndicator.classList.remove('listening'); micText.innerText = "OFFLINE";

@@ -1,21 +1,53 @@
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import jsonify
+from datetime import datetime # NEW: To track when a game was played
+import json # NEW: To store mistakes as text
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'mathracersecretkey'
+app.config['SECRET_KEY'] = 'formularush_secure_key_2026'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
 db = SQLAlchemy(app)
 
 # --- DATABASE MODELS ---
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), nullable=False, unique=True)
     password = db.Column(db.String(150), nullable=False)
     high_score = db.Column(db.Integer, default=0)
+    # NEW: Relationship to access all races by this user (e.g., current_user.races)
+    races = db.relationship('RaceSession', backref='player', lazy=True)
+
+# NEW: The Table for Pilot Career Data
+# THE UPGRADED TABLE
+class RaceSession(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date_played = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # --- PERFORMANCE METRICS ---
+    score = db.Column(db.Integer)        # Distance (meters)
+    duration = db.Column(db.Integer)     # Time survived (seconds)
+    
+    # --- CONFIGURATION (CONTEXT) ---
+    mode = db.Column(db.String(20))      # 'single' or 'multi'
+    car_used = db.Column(db.String(50))  # 'car_gold', 'car_default'
+    difficulty = db.Column(db.String(20)) # 'easy', 'medium', 'hard' (The Gear)
+    control_method = db.Column(db.String(20)) # 'keyboard', 'voice', 'gesture'
+    
+    # --- MATH SETTINGS ---
+    # Stores what was enabled: e.g. "['2x', '3x', 'squares', 'shapes']"
+    active_topics = db.Column(db.Text, default="[]") 
+    
+    # --- TELEMETRY ---
+    # Stores specific errors: '{"7x8": 2, "square_root_16": 1}'
+    mistakes = db.Column(db.Text, default="{}") 
+    
+    # Stores input telemetry: '{"avg_reaction": 1.4, "panic_brakes": 3}'
+    input_stats = db.Column(db.Text, default="{}")
 
 # --- LOGIN MANAGER SETUP ---
 login_manager = LoginManager()
@@ -75,44 +107,159 @@ def dashboard():
 def logout():
     logout_user()
     return redirect(url_for('home'))
+# --- CAREER ROUTE ---
+@app.route('/career')
+@login_required
+def career():
+    # 1. Fetch Data
+    races = RaceSession.query.filter_by(user_id=current_user.id).order_by(RaceSession.date_played.desc()).all()
+    
+    # 2. Stats
+    total_races = len(races)
+    total_distance = sum(r.score for r in races) if races else 0
+    total_seconds = sum(r.duration for r in races) if races else 0
+    flight_hours = round(total_seconds / 3600, 2)
+    avg_distance = int(total_distance / total_races) if total_races > 0 else 0
+    
+    # 3. Rank System (Updated for 0-50k Scale)
+    rank_title = "ROOKIE"
+    next_rank = "AMATEUR"
+    
+    if total_distance > 50000:
+        rank_title = "LEGEND"
+        next_rank = "MAX RANK"
+    elif total_distance > 15000:
+        rank_title = "PRO RACER"
+        next_rank = "LEGEND"
+    elif total_distance > 5000:
+        rank_title = "AMATEUR"
+        next_rank = "PRO RACER"
+        
+    # LOGIC FIX: Bar now fills from 0 to 50,000 (The Ultimate Goal)
+    # If you have 5,000m, the bar is 10% full.
+    target_goal = 50000 
+    progress_percent = (total_distance / target_goal) * 100
+    progress_percent = min(100, max(0, progress_percent))
 
+    # 4. Favorite Car
+    favorite_car = "None"
+    if races:
+        all_cars = [r.car_used for r in races]
+        favorite_car = max(set(all_cars), key=all_cars.count).replace('car_', '').upper()
+
+    # 5. Graph & Heatmap Data
+    mistake_counts = {i: 0 for i in range(2, 13)}
+    usage_counts = {i: 0 for i in range(2, 13)}
+
+    for r in races:
+        # Usage
+        try:
+            topics = json.loads(r.active_topics)
+            for t in topics:
+                if t.startswith("Mult:"):
+                    for n in t.replace("Mult: ", "").split(","):
+                        if n.isdigit(): usage_counts[int(n)] += 1
+        except: pass
+        # Mistakes
+        try:
+            mistakes = json.loads(r.mistakes)
+            for prob, count in mistakes.items():
+                if 'x' in prob:
+                    for p in prob.split('x'):
+                        if p.isdigit() and int(p) in mistake_counts:
+                            mistake_counts[int(p)] += count
+        except: pass
+
+    # Prepare return data
+    chart_labels = list(range(2, 13))
+    chart_mistakes = [mistake_counts[i] for i in chart_labels]
+    chart_usage = [usage_counts[i] for i in chart_labels]
+    
+    weakest_num = max(mistake_counts, key=mistake_counts.get)
+    if mistake_counts[weakest_num] == 0: weakest_num = "NONE"
+    
+    most_used_num = max(usage_counts, key=usage_counts.get)
+    if usage_counts[most_used_num] == 0: most_used_num = "NONE"
+
+    return render_template('career.html', 
+                           races=races, 
+                           total_races=total_races,
+                           avg_distance=avg_distance,
+                           total_distance=total_distance,
+                           flight_hours=flight_hours,
+                           rank_title=rank_title,
+                           next_rank=next_rank,
+                           progress_percent=progress_percent, # Now scaled 0-50k
+                           favorite_car=favorite_car,
+                           chart_labels=chart_labels,
+                           chart_mistakes=chart_mistakes,
+                           chart_usage=chart_usage,
+                           weakest_num=weakest_num,
+                           most_used_num=most_used_num)
 # --- GAME ROUTES ---
 
-# 1. EXISTING MULTIPLAYER MODE (Kept exactly as it was)
 @app.route('/play')
 @login_required
 def play():
     return render_template('game.html')
 
-# 2. NEW SINGLE PLAYER MODE (Added)
 @app.route('/single_player')
 @login_required
 def single_player():
     return render_template('single_game.html')
 
+# UPDATED: This now records detailed stats AND high score
 @app.route('/submit_score', methods=['POST'])
 @login_required
 def submit_score():
     data = request.get_json()
-    score = data.get('score')
-    mode = data.get('mode')
+    
+    # 1. Extract Basic Data
+    score = data.get('score', 0)
+    mode = data.get('mode', 'single')
+    duration = data.get('duration', 0)
+    car = data.get('car', 'car_default')
+    
+    # 2. Extract New Context Data (with defaults just in case)
+    difficulty_gear = data.get('difficulty', 'medium') 
+    control_type = data.get('controlMethod', 'keyboard')
+    
+    # 3. Extract Complex Data (Lists/Dicts)
+    # We use json.dumps() to turn the list/object into a String for the database
+    topics_list = json.dumps(data.get('activeTopics', [])) 
+    mistakes_dict = json.dumps(data.get('mistakes', {}))
+    telemetry_dict = json.dumps(data.get('inputStats', {}))
+    
+    # 4. Create the Record
+    new_race = RaceSession(
+        user_id=current_user.id,
+        mode=mode,
+        score=score,
+        duration=duration,
+        car_used=car,
+        difficulty=difficulty_gear,       # Saved: 'easy'/'medium'/'hard'
+        control_method=control_type,      # Saved: 'keyboard'/'voice'
+        active_topics=topics_list,        # Saved: "['2x', 'squares']"
+        mistakes=mistakes_dict,
+        input_stats=telemetry_dict
+    )
+    db.session.add(new_race)
 
-    # Accept scores ONLY from single player
-    if mode != 'single':
-        return jsonify({'status': 'ignored'}), 200
-
-    # Safety check
-    if not isinstance(score, int):
-        return jsonify({'status': 'invalid'}), 400
-
-    # Update high score only if higher
-    if score > current_user.high_score:
-        current_user.high_score = score
-        db.session.commit()
+    # 5. Update High Score (Standard Logic)
+    updated_high = False
+    if mode == 'single':
+        if score > current_user.high_score:
+            current_user.high_score = score
+            updated_high = True
+            db.session.commit() # Commit high score update immediately
+            
+    # Commit the new race session
+    db.session.commit()
 
     return jsonify({
         'status': 'ok',
-        'high_score': current_user.high_score
+        'high_score': current_user.high_score,
+        'new_record': updated_high
     }), 200
 
 # --- CREATE DATABASE ---

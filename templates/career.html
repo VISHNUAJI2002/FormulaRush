@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    /* --- VARIABLES --- */
+    :root {
+        --glass-dark: rgba(13, 16, 26, 0.92); /* Slightly darker/richer */
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --neon-cyan: #00d2ff;
+        --neon-purple: #9d4edd;
+        --neon-red: #ff4b2b;
+        --neon-green: #2ecc71;
+        --neon-gold: #ffd700;
+        --text-muted: #8892b0;
+    }
+
+    body {
+        /* RICHER BACKGROUND: Deep blue/purple void */
+        background: #050510;
+        background-image: 
+            radial-gradient(circle at 15% 50%, rgba(30, 0, 60, 0.2), transparent 50%),
+            radial-gradient(circle at 85% 30%, rgba(0, 40, 80, 0.2), transparent 50%);
+        color: #fff; font-family: 'Rajdhani', sans-serif; height: 100vh; overflow-y: auto;
+    }
+
+    .career-wrapper {
+        max-width: 1600px; margin: 0 auto; padding: 50px;
+        display: grid; grid-template-columns: 2.5fr 1fr; gap: 40px;
+    }
+
+    /* PANELS */
+    .panel-box {
+        background: var(--glass-dark); border: 1px solid var(--glass-border);
+        border-radius: 12px; padding: 25px; margin-bottom: 25px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    }
+    .panel-header {
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 15px; margin-bottom: 20px;
+    }
+    .panel-title { font-family: 'Orbitron'; color: var(--neon-cyan); font-size: 1.1rem; letter-spacing: 1px; }
+
+    /* --- COMPACT LAYOUT FOR PANEL A --- */
+    .overview-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr; /* Rank gets more width */
+        gap: 20px;
+    }
+    
+    .stats-column {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Two small buttons side-by-side */
+        grid-template-rows: auto auto;  /* Top row (small), Bottom row (wide) */
+        gap: 15px;
+    }
+
+    .stat-tile { 
+        background: rgba(255,255,255,0.03); border-radius: 8px; text-align: center;
+        border: 1px solid transparent; transition: 0.2s;
+        display: flex; flex-direction: column; justify-content: center;
+    }
+    .stat-tile:hover { border-color: var(--neon-cyan); background: rgba(0, 210, 255, 0.05); transform:translateY(-2px); }
+
+    /* Specific Tile Styles */
+    .tile-rank {
+        padding: 30px; /* RESTORED: Big padding for the rank info */
+        justify-content: space-between;
+    }
+    .tile-compact { padding: 15px; }
+    .tile-wide {
+        grid-column: span 2; 
+        padding: 15px 30px;
+        flex-direction: row; align-items: center; justify-content: space-between;
+    }
+
+    .tile-val { font-family: 'Orbitron'; font-size: 1.8rem; color: #fff; margin: 5px 0; }
+    .tile-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; }
+
+    /* RANK PROGRESS */
+    .rank-progress-container { margin-top: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; }
+    .progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; }
+    .progress-track { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--neon-gold); box-shadow: 0 0 10px var(--neon-gold); width: 0%; transition: width 1s ease-out; }
+    .rank-tooltip { 
+        font-size: 0.7rem; color: #666; margin-top: 8px; text-align: center; 
+        font-style: italic; letter-spacing: 0.5px;
+    }
+
+    /* BLACK BOX */
+    .blackbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .radar-wrapper { position: relative; height: 350px; width: 100%; }
+    .chart-toggles { display: flex; gap: 10px; margin-bottom: 15px; justify-content: flex-end; }
+    .btn-toggle { background: transparent; border: 1px solid #555; color: #888; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
+    .btn-toggle.active-weakness { border-color: var(--neon-red); color: var(--neon-red); box-shadow: 0 0 10px rgba(255, 75, 43, 0.2); }
+    .btn-toggle.active-usage { border-color: var(--neon-green); color: var(--neon-green); box-shadow: 0 0 10px rgba(46, 204, 113, 0.2); }
+
+    /* TACTICAL READOUT */
+    .tactical-readout { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
+    .intel-row { background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; display: flex; align-items: center; gap: 20px; border-left: 3px solid #555; }
+    .intel-row.danger { border-left-color: var(--neon-red); }
+    .intel-row.power { border-left-color: var(--neon-green); }
+    .intel-icon { font-size: 2rem; }
+    .intel-data h4 { margin: 0; font-family: 'Orbitron'; font-size: 1.4rem; }
+    .intel-data p { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+
+    .timeline-wrapper { height: 250px; }
+    .ai-panel { height: 100%; border: 1px solid var(--neon-purple); background: linear-gradient(180deg, rgba(25, 15, 35, 0.9), rgba(10, 5, 15, 0.95)); display: flex; flex-direction: column; }
+    .btn-return { display: block; text-align: center; padding: 15px; border: 1px solid #444; color: #888; text-decoration: none; border-radius: 6px; margin-top: auto; transition: 0.2s; }
+    .btn-return:hover { border-color: #fff; color: #fff; }
+
+</style>
+
+<div class="career-wrapper">
+
+    <div class="left-col">
+        <div class="panel-box">
+            <div class="panel-header">
+                <span class="panel-title">PILOT STATUS</span>
+                <span style="color:#666">ID: FR-{{ "%04d" | format(current_user.id) }}</span>
+            </div>
+            
+            <div class="overview-grid">
+                
+                <div class="stat-tile tile-rank">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                        <div>
+                            <div class="tile-label">CURRENT RANK</div>
+                            <div class="tile-val rank-text" style="color:var(--neon-gold)">{{ rank_title }}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="tile-label">NEXT PROMOTION</div>
+                            <div class="tile-val" style="font-size:1.2rem; color:#888">{{ next_rank }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="rank-progress-container">
+                        <div class="progress-labels">
+                            <span>TOTAL: {{ total_distance }}m</span>
+                            <span>GOAL: 50,000m</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: {{ progress_percent }}%;"></div>
+                        </div>
+                        <div class="rank-tooltip">
+                            Criteria: Rookie (0m) • Amateur (5k) • Pro (15k) • Legend (50k)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-column">
+                    <div class="stat-tile tile-compact">
+                        <div class="tile-label">AVG distance/game</div>
+                        <div class="tile-val" style="font-size:1.5rem">{{ avg_distance }}<span style="font-size:0.9rem">m</span></div>
+                    </div>
+                    <div class="stat-tile tile-compact">
+                        <div class="tile-label">FLIGHT TIME</div>
+                        <div class="tile-val" style="font-size:1.5rem">{{ flight_hours }}<span style="font-size:0.9rem">h</span></div>
+                    </div>
+
+                    <div class="stat-tile tile-wide">
+                        <div style="text-align:left">
+                            <div class="tile-label">PREFERRED UNIT</div>
+                            <div class="tile-val" style="color:var(--neon-cyan); font-size:1.4rem; margin:0;">{{ favorite_car }}</div>
+                        </div>
+                        <div style="font-size:2rem;">🏎️</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="panel-box">
+            <div class="panel-header">
+                <span class="panel-title">BLACK BOX: SKILL ANALYSIS</span>
+                <div class="chart-toggles">
+                    <button class="btn-toggle active-weakness" onclick="updateRadar('mistakes', this)">WEAKNESS</button>
+                    <button class="btn-toggle" onclick="updateRadar('usage', this)">USAGE</button>
+                </div>
+            </div>
+            
+            <div class="blackbox-grid">
+                <div class="radar-wrapper"><canvas id="skillRadar"></canvas></div>
+                <div class="tactical-readout">
+                    <div class="intel-row danger">
+                        <div class="intel-icon">⚠️</div>
+                        <div class="intel-data">
+                            <h4 style="color:var(--neon-red)">{{ weakest_num }}x TABLE</h4>
+                            <p>CRITICAL WEAKNESS (Highest Error Rate)</p>
+                        </div>
+                    </div>
+                    <div class="intel-row power">
+                        <div class="intel-icon">🔋</div>
+                        <div class="intel-data">
+                            <h4 style="color:var(--neon-green)">{{ most_used_num }}x TABLE</h4>
+                            <p>MOST FREQUENTLY DEPLOYED</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-box">
+            <div class="panel-header">
+                <span class="panel-title">PERFORMANCE TIMELINE (Score History)</span>
+            </div>
+            <div class="timeline-wrapper"><canvas id="historyChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="right-col">
+        <div class="panel-box ai-panel">
+            <div class="panel-header" style="border-color:var(--neon-purple)">
+                <span class="panel-title" style="color:var(--neon-purple)">NEURAL LINK</span>
+            </div>
+            <div style="flex-grow:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px;">
+                <div style="font-size:3rem; margin-bottom:20px; animation:spin 10s linear infinite">🧠</div>
+                <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+                <h3 style="font-family:'Orbitron'; color:var(--neon-purple)">CALIBRATING...</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.6;">
+                    System is gathering combat telemetry. <br><br>
+                    Win-Rate Prediction Confidence: <span style="color:#555">LOW</span>
+                </p>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn-return">&larr; HANGAR</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- SKILL RADAR ---
+    const labels = {{ chart_labels | tojson }};
+    const mistakeData = {{ chart_mistakes | tojson }};
+    const usageData = {{ chart_usage | tojson }};
+    const ctxRadar = document.getElementById('skillRadar').getContext('2d');
+    
+    const configMistakes = { label: 'Error Volume', data: mistakeData, borderColor: '#ff4b2b', backgroundColor: 'rgba(255, 75, 43, 0.2)', pointBackgroundColor: '#ff4b2b' };
+    const configUsage = { label: 'Usage Frequency', data: usageData, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.2)', pointBackgroundColor: '#2ecc71' };
+
+    let radarChart = new Chart(ctxRadar, {
+        type: 'radar',
+        data: { labels: labels, datasets: [configMistakes] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' }, grid: { color: 'rgba(255,255,255,0.05)' }, pointLabels: { color: '#00d2ff', font: { size: 12, family: 'Orbitron' } }, ticks: { display: false, backdropColor: 'transparent' } } },
+            plugins: { legend: { display: true, labels: { color: '#888' } } }
+        }
+    });
+
+    window.updateRadar = function(mode, btn) {
+        document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active-weakness', 'active-usage'));
+        if (mode === 'mistakes') { radarChart.data.datasets[0] = configMistakes; btn.classList.add('active-weakness'); } 
+        else { radarChart.data.datasets[0] = configUsage; btn.classList.add('active-usage'); }
+        radarChart.update();
+    }
+
+    // --- HISTORY GRAPH ---
+    const ctxHistory = document.getElementById('historyChart').getContext('2d');
+    const historyData = [
+        {% for race in races|reverse %}
+            { x: "{{ race.date_played.strftime('%m/%d') }}", y: {{ race.score }} },
+        {% endfor %}
+    ].slice(-15);
+
+    new Chart(ctxHistory, {
+        type: 'line',
+        data: { labels: historyData.map(d => d.x), datasets: [{ label: 'Distance', data: historyData.map(d => d.y), borderColor: '#00d2ff', backgroundColor: 'rgba(0, 210, 255, 0.1)', borderWidth: 2, tension: 0.3, fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }, x: { grid: { display: false }, ticks: { color: '#888', maxRotation: 0, autoSkip: true } } } }
+    });
+</script>
+
+{% endblock %}
