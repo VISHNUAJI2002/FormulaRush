@@ -256,7 +256,9 @@
                 <div class="nav-item" id="btn-garage-sidebar">
                     <span class="nav-icon">🔧</span> Garage
                 </div>
-
+            <a href="{{ url_for('academy') }}" class="nav-item">
+                <span class="nav-icon">📚</span> Flight Academy
+            </a>
                 <a href="{{ url_for('logout') }}" class="nav-item">
                     <span class="nav-icon">🚪</span> Logout
                 </a>
@@ -277,13 +279,34 @@
 
     <main class="main-stage">
         
-        <div class="header-bar">
-            <div class="user-welcome">
-                <h2>WELCOME BACK, <span>{{ current_user.username }}</span></h2>
-                <div style="color: var(--text-muted); margin-top: 2px; font-size: 0.9rem;">Ready to dominate the track?</div>
-            </div>
-            <div class="rank-badge">🏆 RANK: PILOT</div>
+<style>
+    /* Add these mini-styles locally for the header stats */
+    .header-right { display: flex; gap: 20px; align-items: center; }
+    .mini-stat { text-align: right; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); }
+    .mini-label { font-size: 0.7rem; color: #888; letter-spacing: 1px; font-weight: bold; }
+    .mini-val { font-family: 'Orbitron'; font-size: 1.2rem; color: #00d2ff; }
+    .mini-val.gold { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+</style>
+
+<div class="header-bar" style="display: flex; justify-content: space-between; align-items: center;">
+    
+    <div class="user-welcome">
+        <h2>WELCOME BACK, <span style="color:#00d2ff">{{ current_user.username }}</span></h2>
+        <div style="color: var(--text-muted); margin-top: 2px; font-size: 0.9rem;">Ready to dominate the track?</div>
+    </div>
+
+    <div class="header-right">
+        <div class="mini-stat">
+            <div class="mini-label">CURRENT RANK</div>
+            <div class="mini-val gold">{{ rank }}</div>
         </div>
+        <div class="mini-stat">
+            <div class="mini-label">HIGH SCORE</div>
+            <div class="mini-val">{{ score }}</div>
+        </div>
+    </div>
+
+</div>
 
         <div class="hero-card">
             <div class="hero-glow"></div>

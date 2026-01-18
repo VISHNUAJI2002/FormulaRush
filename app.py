@@ -97,10 +97,32 @@ def register():
             
     return render_template('register.html')
 
+# --- UPDATED DASHBOARD ROUTE ---
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html', name=current_user.username, score=current_user.high_score)
+    # 1. Calculate Rank Logic (Same as Career)
+    races = RaceSession.query.filter_by(user_id=current_user.id).all()
+    total_distance = sum(r.score for r in races) if races else 0
+    
+    rank_title = "ROOKIE"
+    if total_distance > 50000: rank_title = "LEGEND"
+    elif total_distance > 15000: rank_title = "PRO RACER"
+    elif total_distance > 5000: rank_title = "AMATEUR"
+
+    # 2. Pass these to the template
+    return render_template('dashboard.html', 
+                           name=current_user.username, 
+                           score=current_user.high_score, # This is the High Score
+                           rank=rank_title)               # This is the Real Rank
+
+# --- NEW ACADEMY ROUTE ---
+@app.route('/academy')
+@login_required
+def academy():
+    # We can pass an optional parameter to open a specific tab (e.g., if coming from weakness)
+    focus_area = request.args.get('focus', 'tables') 
+    return render_template('academy.html', focus=focus_area)
 
 @app.route('/logout')
 @login_required
