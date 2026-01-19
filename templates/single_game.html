@@ -528,16 +528,23 @@
 
             <div class="center-stage">
                 <div class="game-container">
-                    <div id="question-left" class="math-overlay left">
+                    <div id="question-left" class="math-overlay left" style="display: flex; align-items: center; gap: 8px; min-width: auto;">
                         <span class="lr-label">LEFT</span>
-                        <span class="math-value">--</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                            <span class="math-value">--</span>
+                            <span class="ai-hint" style="color: #ffd700; font-size: 0.75rem; margin-top: -8px; font-family: 'Rajdhani', sans-serif;"></span>
+                        </div>
                     </div>
 
-                    <div id="question-right" class="math-overlay right">
+                    <div id="question-right" class="math-overlay right" style="display: flex; align-items: center; gap: 8px; min-width: auto;">
                         <span class="lr-label">RIGHT</span>
-                        <span class="math-value">--</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                            <span class="math-value">--</span>
+                            <span class="ai-hint" style="color: #ffd700; font-size: 0.75rem; margin-top: -8px; font-family: 'Rajdhani', sans-serif;"></span>
+                        </div>
                     </div>
-                    <canvas id="gameCanvas" width="800" height="600"></canvas>
+                        
+                        <canvas id="gameCanvas" width="800" height="600"></canvas>
                     <div id="game-over-screen">
                         <h1 id="game-over-title" style="font-size:3rem; margin-bottom:10px; color:#ff4b2b;">CRITICAL FAILURE</h1>
                         <p style="font-size: 1.5rem; color:#ccc;">Distance Traveled: <span id="final-score">0</span>m</p>

@@ -347,6 +347,9 @@ document.addEventListener('keydown', (e) => {
     if (playerConfig.controlMode === 'keyboard') {
         if (e.key >= '0' && e.key <= '9') { checkAnswer(parseInt(e.key)); }
     }
+    if (e.code === 'Space' && activeLoadout.copilot) {
+        activateCoPilot();
+    }
 });
 
 // Modal Logic
@@ -1008,51 +1011,105 @@ function drawCar(img, x, y, w, h, color) {
 function gameLoop() {
     if (!gameState.isPlaying) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updatePhysics(); updateSpeedometer();
-    ctx.fillStyle = "#222"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; ctx.lineWidth = 4;
+    
+    updatePhysics(); 
+    updateSpeedometer();
+
+    // --- NITRO HUD AUTO-CLEANUP ---
+    // If nitro was active, once the blast speed settles, remove the icon
+    if (activeLoadout.nitro && gameState.speed <= gameState.maxSpeed + 0.2) {
+        activeLoadout.nitro = false;
+        updateLoadoutHUD();
+    }
+
+// --- AI CO-PILOT VISUAL HIGHLIGHTER ---
+    const leftHintEl = questionLeftEl.querySelector('.ai-hint');
+    const rightHintEl = questionRightEl.querySelector('.ai-hint');
+
+    if (coPilotActive && currentQuestion) {
+        const glowAlpha = 0.4 + Math.abs(Math.sin(Date.now() / 200)) * 0.5;
+        const glowStyle = `0 0 25px rgba(255, 215, 0, ${glowAlpha})`;
+        
+        questionLeftEl.style.boxShadow = glowStyle;
+        questionRightEl.style.boxShadow = glowStyle;
+        questionLeftEl.style.borderColor = "#ffd700";
+        questionRightEl.style.borderColor = "#ffd700";
+
+        // SHOW THE ANSWERS
+        // We display the single digit the player needs to press
+        if (leftHintEl) leftHintEl.innerText = `PRESS: ${currentQuestion.leftDigit}`;
+        if (rightHintEl) rightHintEl.innerText = `PRESS: ${currentQuestion.rightDigit}`;
+    } else {
+        // Reset Visuals
+        questionLeftEl.style.boxShadow = "";
+        questionRightEl.style.boxShadow = "";
+        questionLeftEl.style.borderColor = "";
+        questionRightEl.style.borderColor = "";
+        
+        // Hide Hints
+        if (leftHintEl) leftHintEl.innerText = "";
+        if (rightHintEl) rightHintEl.innerText = "";
+    }
+
+    // --- DRAWING THE ROAD ---
+    ctx.fillStyle = "#222"; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; 
+    ctx.lineWidth = 4;
     ctx.setLineDash([30, 30]);
     const lineOffset = gameState.distance % 60;
     ctx.beginPath();
-    for (let i = 1; i < CONFIG.laneCount; i++) { let x = i * CONFIG.laneWidth; ctx.moveTo(x, -60 + lineOffset); ctx.lineTo(x, canvas.height + lineOffset); }
+    for (let i = 1; i < CONFIG.laneCount; i++) { 
+        let x = i * CONFIG.laneWidth; 
+        ctx.moveTo(x, -60 + lineOffset); 
+        ctx.lineTo(x, canvas.height + lineOffset); 
+    }
     ctx.stroke();
+
+    // --- DRAWING PLAYER ---
     const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.playerWidth/2);
     const playerY = canvas.height - 150;
     drawCar(playerImg, playerX, playerY, CONFIG.playerWidth, CONFIG.playerHeight, "cyan");
+
+    // --- PROCESSING TRAFFIC & COLLISIONS ---
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
-        // Treat Gesture mode same as Voice mode (0.5 relative speed)
         const isSlowMode = (playerConfig.controlMode === 'voice' || playerConfig.controlMode === 'gesture');
         const trafficMultiplier = isSlowMode ? 0.5 : 0.8;
+        
         e.y += (gameState.speed * trafficMultiplier * e.type.speedMultiplier) + e.speedOffset;
         const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth / 2) - (e.type.width / 2);
+        
         drawCar(enemyImages[e.type.name], ex, e.y, e.type.width, e.type.height, "red");
+        
         const p = 10; 
         // COLLISION CHECK
-        if (playerX + p < ex + e.type.width - p && playerX + CONFIG.playerWidth - p > ex + p && playerY + p < e.y + e.type.height - p && playerY + CONFIG.playerHeight - p > e.y + p) { 
-            // --- SHIELD LOGIC ---
+        if (playerX + p < ex + e.type.width - p && 
+            playerX + CONFIG.playerWidth - p > ex + p && 
+            playerY + p < e.y + e.type.height - p && 
+            playerY + CONFIG.playerHeight - p > e.y + p) { 
+            
             if (activeLoadout.shield) {
-                // 1. Break Shield
                 activeLoadout.shield = false; 
-                updateLoadoutHUD(); // Remove icon
-                
-                // 2. Remove the enemy immediately (Crash effect)
+                updateLoadoutHUD(); 
                 enemies.splice(i, 1);
                 i--;
-                
-                // 3. Optional: Flash Screen or Sound
                 document.body.style.backgroundColor = "cyan";
                 setTimeout(() => document.body.style.backgroundColor = "#050505", 100);
-                
-                console.log("SHIELD DEPLOYED - COLLISION BLOCKED");
+                console.log("SHIELD DEPLOYED");
             } else {
-                // No Shield? Game Over.
                 console.log("CRASH! Calling GameOver...");
                 gameOver(); 
+                return; // Stop the loop immediately
             }
         }
-        if (e.y > canvas.height) { enemies.splice(i, 1); i--; }
+        
+        if (e.y > canvas.height) { 
+            enemies.splice(i, 1); 
+            i--; 
+        }
     }
+    
     requestAnimationFrame(gameLoop);
 }
 function gameOver() {
@@ -1148,6 +1205,23 @@ if (!document.getElementById('anim-style')) {
     style.id = 'anim-style';
     style.innerHTML = `@keyframes spin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }`;
     document.head.appendChild(style);
+}
+// --- AI CO-PILOT SYSTEM ---
+let coPilotActive = false;
+
+function activateCoPilot() {
+    if (coPilotActive || !activeLoadout.copilot) return;
+
+    coPilotActive = true;
+    console.log("AI CO-PILOT: ACTIVE");
+
+    // Start 10-second countdown
+    setTimeout(() => {
+        coPilotActive = false;
+        activeLoadout.copilot = false; // Item is consumed
+        updateLoadoutHUD(); // Remove icon
+        console.log("AI CO-PILOT: OFFLINE");
+    }, 10000);
 }
 
 // Load saved config and update UI elements immediately

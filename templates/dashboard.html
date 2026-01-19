@@ -14,7 +14,7 @@
             <div>
                 <div style="margin-bottom: 20px;">
                     <div class="mini-label">DEPLOYMENT UNIT</div>
-                    <div style="font-family:'Orbitron'; font-size:1.4rem; color:#fff;">CROWN VIC</div>
+                    <div id="modal-car-name" style="font-family:'Orbitron'; font-size:1.4rem; color:#fff;">CROWN VIC</div>
                 </div>
                 
                 <div>
@@ -38,7 +38,7 @@
                     <div class="shop-icon">🛡️</div>
                     <div style="flex-grow:1;">
                         <div class="shop-name">HULL SHIELD</div>
-                        <div class="shop-desc">Blocks 1 Collision/Error</div>
+                        <div class="shop-desc">Blocks 1 Collision</div>
                     </div>
                     <div class="shop-price">150</div>
                 </div>
@@ -56,7 +56,7 @@
                     <div class="shop-icon">🧠</div>
                     <div style="flex-grow:1;">
                         <div class="shop-name">AI CO-PILOT</div>
-                        <div class="shop-desc">Auto-solve (5s Assist)</div>
+                        <div class="shop-desc">Auto-solve (10s Assist)</div>
                     </div>
                     <div class="shop-price">100</div>
                 </div>
@@ -476,8 +476,8 @@
         </div>
 
         <div class="modes-row">
-            <div class="game-card single-mode" style="cursor: pointer;" onclick="document.getElementById('missionModal').classList.add('active')">
-                <div class="card-title">SINGLE PLAYER</div>
+            <div class="game-card single-mode" style="cursor: pointer;" onclick="updateHero(); document.getElementById('missionModal').classList.add('active')"> 
+               <div class="card-title">SINGLE PLAYER</div>
                 <div class="card-sub">Survival Mode</div>
                 <div class="card-icon">🏎️</div>
             </div>
@@ -589,8 +589,17 @@
     function updateHero() {
         const savedId = localStorage.getItem('formulaRush_selectedCar') || 'car_default';
         const car = CAR_DB.find(c => c.id === savedId) || CAR_DB[0];
-        document.getElementById('dashboard-hero-car').src = `/static/${car.img}`;
-        document.getElementById('hero-car-name').innerText = car.name;
+        
+        // Update main dashboard image and text
+        const heroImg = document.getElementById('dashboard-hero-car');
+        const heroName = document.getElementById('hero-car-name');
+        const modalName = document.getElementById('modal-car-name');
+
+        if (heroImg) heroImg.src = `/static/${car.img}`;
+        if (heroName) heroName.innerText = car.name;
+        
+        // This part updates the text inside the Briefing Modal
+        if (modalName) modalName.innerText = car.name;
     }
     updateHero();
 
