@@ -3,6 +3,40 @@
 // PERSISTENT PLAYER CONFIG
 // (DOES NOT RESET ON GAME OVER)
 // ================================
+// --- NEW: MISSION LOADOUT (Read from URL) ---
+/* --- CONFIGURATION & STATE --- */
+
+// 1. GLOBAL ECONOMY VARIABLES (Must be here to avoid crashes)
+let activeLoadout = { shield: false, nitro: false, copilot: false };
+let sessionStats = { correct: 0, wrong: 0 };
+let loadoutCost = 0;
+
+// 2. READ URL PARAMS (To detect purchased items)
+const urlParams = new URLSearchParams(window.location.search);
+activeLoadout.shield = urlParams.get('shield') === '1';
+activeLoadout.nitro = urlParams.get('nitro') === '1';
+activeLoadout.copilot = urlParams.get('copilot') === '1';
+
+// 3. CREATE HUD CONTAINER
+if (!document.getElementById('loadout-hud')) {
+    const hud = document.createElement('div');
+    hud.id = 'loadout-hud';
+    hud.style.position = 'absolute'; hud.style.top = '80px'; hud.style.left = '20px';
+    hud.style.display = 'flex'; hud.style.gap = '10px'; hud.style.zIndex = '100';
+    document.body.appendChild(hud);
+}
+
+function updateLoadoutHUD() {
+    const hud = document.getElementById('loadout-hud');
+    hud.innerHTML = '';
+    // Only show icon if active
+    if (activeLoadout.shield) hud.innerHTML += '<div style="font-size:2rem; text-shadow:0 0 10px cyan;">🛡️</div>';
+    if (activeLoadout.nitro) hud.innerHTML += '<div style="font-size:2rem; text-shadow:0 0 10px orange;">🚀</div>';
+    if (activeLoadout.copilot) hud.innerHTML += '<div style="font-size:2rem; text-shadow:0 0 10px violet;">🧠</div>';
+}
+
+// ================================
+// PERSISTENT PLAYER CONFIG
 // --- 0. CAREER TRACKING INIT ---
 let raceSession = {
     startTime: Date.now(),
@@ -496,14 +530,28 @@ function checkAnswer(input) {
         }
     }
 
-    // 2. LOG MISTAKE IF WRONG
-    if (!correct) {
-        // Log the text of both questions visible on screen as the context
+    // --- NEW ECONOMY LOGIC ---
+    // Get Player Position for the animation
+    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2);
+    const playerY = canvas.height - 150;
+
+    if (correct) {
+        // 1. Increment the counter for app.py
+        sessionStats.correct++; 
+        // 2. Trigger floating +5 animation
+        if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 5, true);
+        // 3. Generate new problems
+        generateTwoProblems();
+    } else {
+        // 1. Increment the penalty counter for app.py
+        sessionStats.wrong++;
+        // 2. Trigger floating -1 animation
+        if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 1, false);
+        
+        // 3. LOG MISTAKE IF WRONG (Existing Logic)
         let context = `${leftMathValue.innerText} | ${rightMathValue.innerText}`;
         logMistake(context);
     }
-
-    if (correct) generateTwoProblems();
 }
 
 /* --- VOICE INPUT --- */
@@ -815,6 +863,21 @@ function applyCurrentPhysics() {
 
 function startGame() {
     if (gameState.isPlaying) return;
+
+    // --- 1. RESET ECONOMY (Critical Fix) ---
+    // Calculate initial cost based on URL params
+    loadoutCost = 0;
+    if (activeLoadout.shield) loadoutCost += 500;
+    if (activeLoadout.nitro) loadoutCost += 300;
+    if (activeLoadout.copilot) loadoutCost += 750;
+
+    // Reset counters
+    sessionStats = { correct: 0, wrong: 0 };
+    
+    // Refresh Icons
+    updateLoadoutHUD(); 
+    // ---------------------------------------
+
     // --- RESET CAREER TRACKER ---
     raceSession = {
         startTime: Date.now(),
@@ -823,6 +886,7 @@ function startGame() {
         controlMethod: playerConfig.controlMode,
         inputStats: { total: 0 }
     };
+
     // UI Setup
     btnStart.classList.add('btn-disabled'); 
     btnStop.classList.remove('btn-disabled');
@@ -831,14 +895,12 @@ function startGame() {
     playerConfig.mathMode = getSelectedRadio('math');
     savePlayerConfig();
 
-    // 1. GET CORRECT STATS
+    // Physics Setup
     const stats = getCurrentStats();
-
-    // 2. APPLY INITIAL PHYSICS
     gameState.maxSpeed = stats.max;
-    gameState.speed = stats.base; // Start at the correct base speed immediately
+    gameState.speed = stats.base; 
     
-    // Reset State
+    // Reset Game State
     gameState.isPlaying = true; 
     gameState.lane = 2; 
     gameState.score = 0; 
@@ -857,7 +919,7 @@ function startGame() {
     generateTwoProblems();
     requestAnimationFrame(gameLoop);
 
-    // 3. SET SPAWN TIMER (Only once!)
+    // Spawn Timer
     if(spawnTimer) clearInterval(spawnTimer);
     spawnTimer = setInterval(() => { 
         if (gameState.isPlaying) spawnEnemy(); 
@@ -947,7 +1009,29 @@ function gameLoop() {
         const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth / 2) - (e.type.width / 2);
         drawCar(enemyImages[e.type.name], ex, e.y, e.type.width, e.type.height, "red");
         const p = 10; 
-        if (playerX + p < ex + e.type.width - p && playerX + CONFIG.playerWidth - p > ex + p && playerY + p < e.y + e.type.height - p && playerY + CONFIG.playerHeight - p > e.y + p) { gameOver(); }
+        // COLLISION CHECK
+        if (playerX + p < ex + e.type.width - p && playerX + CONFIG.playerWidth - p > ex + p && playerY + p < e.y + e.type.height - p && playerY + CONFIG.playerHeight - p > e.y + p) { 
+            // --- SHIELD LOGIC ---
+            if (activeLoadout.shield) {
+                // 1. Break Shield
+                activeLoadout.shield = false; 
+                updateLoadoutHUD(); // Remove icon
+                
+                // 2. Remove the enemy immediately (Crash effect)
+                enemies.splice(i, 1);
+                i--;
+                
+                // 3. Optional: Flash Screen or Sound
+                document.body.style.backgroundColor = "cyan";
+                setTimeout(() => document.body.style.backgroundColor = "#050505", 100);
+                
+                console.log("SHIELD DEPLOYED - COLLISION BLOCKED");
+            } else {
+                // No Shield? Game Over.
+                console.log("CRASH! Calling GameOver...");
+                gameOver(); 
+            }
+        }
         if (e.y > canvas.height) { enemies.splice(i, 1); i--; }
     }
     requestAnimationFrame(gameLoop);
@@ -974,7 +1058,10 @@ function gameOver() {
             mode: "single",
             duration: Math.floor(duration),
             car: localStorage.getItem('formulaRush_selectedCar') || 'car_default',
-            
+            // --- NEW ECONOMY DATA ---
+            correctCount: sessionStats.correct, // Send +5 count
+            wrongCount: sessionStats.wrong,     // Send -1 count
+            loadoutCost: loadoutCost,           // Send the bill (e.g. 500)
             // New Context Data
             difficulty: playerConfig.difficulty,
             controlMethod: playerConfig.controlMode,
@@ -982,7 +1069,13 @@ function gameOver() {
             mistakes: raceSession.mistakes,
             inputStats: raceSession.inputStats
         })
-    });
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Score Saved. New Coins:", data.total_coins);
+    })
+    .catch(err => console.error("Save Failed:", err));
+
     gameState.isPlaying = false;
     if (recognition) recognition.stop();
     micIndicator.classList.remove('listening'); micText.innerText = "OFFLINE";
@@ -990,6 +1083,52 @@ function gameOver() {
     finalScoreEl.innerText = gameState.score;
     gameOverScreen.style.display = 'flex';
     btnStop.classList.add('btn-disabled');
+}
+
+/* --- VISUAL FX: FLOATING COINS --- */
+function spawnCoinEffect(x, y, amount, isGood) {
+    // 1. Create Container
+    const el = document.createElement('div');
+    el.style.position = 'absolute';
+    el.style.left = (x + 30) + 'px'; // Offset slightly from car
+    el.style.top = (y) + 'px';
+    el.style.pointerEvents = 'none';
+    el.style.fontWeight = 'bold';
+    el.style.fontSize = '1.5rem';
+    el.style.fontFamily = 'Orbitron';
+    el.style.zIndex = '50';
+    el.style.transition = 'all 0.8s ease-out';
+    el.style.opacity = '1';
+    
+    // 2. Content (Coin Icon + Number)
+    // We rotate the coin using a span
+    const symbol = isGood ? '🟡' : '🔴'; 
+    const color = isGood ? '#ffd700' : '#ff4b2b';
+    const sign = isGood ? '+' : '';
+    
+    el.innerHTML = `
+        <span style="display:inline-block; animation: spin 0.5s linear;">${symbol}</span> 
+        <span style="color:${color}; text-shadow:0 0 5px ${color};">${sign}${amount}</span>
+    `;
+
+    document.body.appendChild(el);
+
+    // 3. Animate (Float Up and Fade)
+    requestAnimationFrame(() => {
+        el.style.transform = 'translateY(-100px) scale(1.2)';
+        el.style.opacity = '0';
+    });
+
+    // 4. Cleanup
+    setTimeout(() => { document.body.removeChild(el); }, 800);
+}
+
+// Add CSS animation for the spin if not exists
+if (!document.getElementById('anim-style')) {
+    const style = document.createElement('style');
+    style.id = 'anim-style';
+    style.innerHTML = `@keyframes spin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }`;
+    document.head.appendChild(style);
 }
 
 // Load saved config and update UI elements immediately

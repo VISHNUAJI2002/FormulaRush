@@ -18,7 +18,10 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(150), nullable=False, unique=True)
     password = db.Column(db.String(150), nullable=False)
     high_score = db.Column(db.Integer, default=0)
-    # NEW: Relationship to access all races by this user (e.g., current_user.races)
+    # NEW: Wallet & Inventory
+    coins = db.Column(db.Integer, default=1000) # Start with 10 credits
+    inventory = db.Column(db.String(500), default='["car_default"]') # Tracks owned cars
+    # Relationship to access all races
     races = db.relationship('RaceSession', backref='player', lazy=True)
 
 # NEW: The Table for Pilot Career Data
@@ -230,58 +233,76 @@ def play():
 def single_player():
     return render_template('single_game.html')
 
-# UPDATED: This now records detailed stats AND high score
 @app.route('/submit_score', methods=['POST'])
 @login_required
 def submit_score():
     data = request.get_json()
     
-    # 1. Extract Basic Data
+    # 1. EXTRACT DATA
     score = data.get('score', 0)
     mode = data.get('mode', 'single')
     duration = data.get('duration', 0)
     car = data.get('car', 'car_default')
     
-    # 2. Extract New Context Data (with defaults just in case)
+    # Context Data
     difficulty_gear = data.get('difficulty', 'medium') 
     control_type = data.get('controlMethod', 'keyboard')
-    
-    # 3. Extract Complex Data (Lists/Dicts)
-    # We use json.dumps() to turn the list/object into a String for the database
     topics_list = json.dumps(data.get('activeTopics', [])) 
     mistakes_dict = json.dumps(data.get('mistakes', {}))
     telemetry_dict = json.dumps(data.get('inputStats', {}))
+
+    # --- 2. ECONOMY CALCULATION (THE FIX) ---
+    # Ensure we use .get(key, 0) to avoid NoneType errors
+    correct_count = int(data.get('correctCount', 0))
+    wrong_count = int(data.get('wrongCount', 0))
+    loadout_cost = int(data.get('loadoutCost', 0))
+
+    # 1. Calculate what they earned during the race
+    winnings = (correct_count * 5) - (wrong_count * 1)
+    if winnings < 0: winnings = 0
+        
+    # 2. Subtract the cost they already "spent" in the dashboard
+    # final_profit will likely be negative if they bought items
+    final_profit = winnings - loadout_cost
     
-    # 4. Create the Record
+    # 3. Apply to the database
+    current_user.coins += final_profit
+    # ------------------------------
+    
+    # Prevent Debt? (Optional: Uncomment to stop negative balance)
+    # if current_user.coins < 0: current_user.coins = 0
+    # ----------------------------------------
+    
+    # 3. CREATE RACE RECORD
     new_race = RaceSession(
         user_id=current_user.id,
         mode=mode,
         score=score,
         duration=duration,
         car_used=car,
-        difficulty=difficulty_gear,       # Saved: 'easy'/'medium'/'hard'
-        control_method=control_type,      # Saved: 'keyboard'/'voice'
-        active_topics=topics_list,        # Saved: "['2x', 'squares']"
+        difficulty=difficulty_gear,
+        control_method=control_type,
+        active_topics=topics_list,
         mistakes=mistakes_dict,
         input_stats=telemetry_dict
     )
     db.session.add(new_race)
 
-    # 5. Update High Score (Standard Logic)
+    # 4. UPDATE HIGH SCORE
     updated_high = False
     if mode == 'single':
         if score > current_user.high_score:
             current_user.high_score = score
             updated_high = True
-            db.session.commit() # Commit high score update immediately
             
-    # Commit the new race session
     db.session.commit()
 
     return jsonify({
         'status': 'ok',
         'high_score': current_user.high_score,
-        'new_record': updated_high
+        'coins_earned': earnings,
+        'items_cost': loadout_cost,
+        'total_coins': current_user.coins
     }), 200
 
 # --- CREATE DATABASE ---

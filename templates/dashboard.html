@@ -3,6 +3,94 @@
 {% block content %}
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
 
+<div id="missionModal" class="modal-overlay">
+    <div class="modal-box" style="width: 700px; text-align: left; border-color: var(--primary-accent);">
+        <div class="modal-title" style="color: var(--primary-accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 25px;">
+            MISSION BRIEFING
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px;">
+            
+            <div>
+                <div style="margin-bottom: 20px;">
+                    <div class="mini-label">DEPLOYMENT UNIT</div>
+                    <div style="font-family:'Orbitron'; font-size:1.4rem; color:#fff;">CROWN VIC</div>
+                </div>
+                
+                <div>
+                    <div class="mini-label">AVAILABLE FUNDS</div>
+                    <div style="font-family:'Orbitron'; font-size:2rem; color:var(--primary-accent);">
+                        {{ current_user.coins }} <span style="font-size:1rem;">CR</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 40px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                    <div class="mini-label">MISSION COST</div>
+                    <div id="mission-total-cost" style="font-family:'Orbitron'; font-size:1.5rem; color:#fff;">0 CR</div>
+                    <div id="funds-error" style="color:var(--neon-red); font-size:0.8rem; display:none; margin-top:5px;">INSUFFICIENT FUNDS</div>
+                </div>
+            </div>
+
+            <div>
+                <div class="mini-label" style="margin-bottom: 10px;">TACTICAL MODULES</div>
+                
+                <div class="shop-item" onclick="toggleItem('shield', 500, this)">
+                    <div class="shop-icon">🛡️</div>
+                    <div style="flex-grow:1;">
+                        <div class="shop-name">HULL SHIELD</div>
+                        <div class="shop-desc">Blocks 1 Collision/Error</div>
+                    </div>
+                    <div class="shop-price">500</div>
+                </div>
+
+                <div class="shop-item" onclick="toggleItem('nitro', 300, this)">
+                    <div class="shop-icon">🚀</div>
+                    <div style="flex-grow:1;">
+                        <div class="shop-name">NITRO START</div>
+                        <div class="shop-desc">Skip first 500m</div>
+                    </div>
+                    <div class="shop-price">300</div>
+                </div>
+
+                <div class="shop-item" onclick="toggleItem('copilot', 750, this)">
+                    <div class="shop-icon">🧠</div>
+                    <div style="flex-grow:1;">
+                        <div class="shop-name">AI CO-PILOT</div>
+                        <div class="shop-desc">Auto-solve (5s Assist)</div>
+                    </div>
+                    <div class="shop-price">750</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 30px;">
+            <button onclick="launchMission()" class="btn-modal-action btn-primary-action" style="background: var(--primary-accent); color:#000;">LAUNCH MISSION</button>
+            <button onclick="document.getElementById('missionModal').classList.remove('active')" class="btn-modal-action btn-cancel-action">ABORT</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Shop Item Styles */
+    .shop-item {
+        display: flex; align-items: center; gap: 15px;
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+        padding: 12px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+    }
+    .shop-item:hover { background: rgba(255,255,255,0.1); transform: translateX(5px); }
+    
+    .shop-item.selected { 
+        border-color: var(--primary-accent); 
+        background: rgba(0, 210, 255, 0.15); 
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); 
+    }
+    
+    .shop-icon { font-size: 1.5rem; }
+    .shop-name { font-family:'Orbitron'; font-size: 0.9rem; color: #fff; font-weight: bold; }
+    .shop-desc { font-size: 0.75rem; color: #888; }
+    .shop-price { font-family:'Orbitron'; color: #ffd700; font-size: 1rem; }
+</style>
+
 <style>
     /* --- 1. GLOBAL VARIABLES & RESET --- */
     :root {
@@ -364,6 +452,10 @@
 
             <div class="header-right">
                 <div class="mini-stat">
+                    <div class="mini-label">CREDITS</div>
+                    <div class="mini-val" style="color: var(--neon-cyan);">{{ current_user.coins }}</div>
+                </div>
+                <div class="mini-stat">
                     <div class="mini-label">CURRENT RANK</div>
                     <div class="mini-val gold">{{ rank }}</div>
                 </div>
@@ -384,11 +476,11 @@
         </div>
 
         <div class="modes-row">
-            <a href="{{ url_for('single_player') }}" class="game-card single-mode">
+            <div class="game-card single-mode" style="cursor: pointer;" onclick="document.getElementById('missionModal').classList.add('active')">
                 <div class="card-title">SINGLE PLAYER</div>
                 <div class="card-sub">Survival Mode</div>
                 <div class="card-icon">🏎️</div>
-            </a>
+            </div>
 
             <div id="btn-multiplayer" class="game-card multi-mode" style="cursor: pointer;">
                 <div class="card-title">MULTIPLAYER</div>
@@ -435,6 +527,53 @@
 </div>
 
 <script>
+
+        // --- MISSION SHOP LOGIC ---
+    let missionLoadout = { shield: false, nitro: false, copilot: false };
+    let currentCost = 0;
+    const userWallet = {{ current_user.coins }};
+
+    window.toggleItem = function(item, price, element) {
+        // Toggle Logic
+        if (missionLoadout[item]) {
+            missionLoadout[item] = false;
+            currentCost -= price;
+            element.classList.remove('selected');
+        } else {
+            missionLoadout[item] = true;
+            currentCost += price;
+            element.classList.add('selected');
+        }
+
+        // Update Display
+        const costDisplay = document.getElementById('mission-total-cost');
+        const errorDisplay = document.getElementById('funds-error');
+        
+        costDisplay.innerText = `${currentCost} CR`;
+
+        // Check Affordability
+        if (currentCost > userWallet) {
+            costDisplay.style.color = 'var(--neon-red)';
+            errorDisplay.style.display = 'block';
+        } else {
+            costDisplay.style.color = '#fff';
+            errorDisplay.style.display = 'none';
+        }
+    };
+
+    window.launchMission = function() {
+        if (currentCost > userWallet) return; // Stop if poor
+
+        // Build the URL with query parameters
+        // Example: /play?shield=1&nitro=1
+        let url = "{{ url_for('single_player') }}?";
+        if (missionLoadout.shield) url += "shield=1&";
+        if (missionLoadout.nitro) url += "nitro=1&";
+        if (missionLoadout.copilot) url += "copilot=1&";
+        
+        window.location.href = url;
+    };
+
     // --- CAR DATA & HERO UPDATE ---
     const CAR_DB = [
         { id: 'car_default', name: 'CROWN VIC',       img: 'car_default.png', unlockScore: 0 },
