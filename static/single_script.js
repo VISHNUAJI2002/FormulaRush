@@ -865,7 +865,6 @@ function startGame() {
     if (gameState.isPlaying) return;
 
     // --- 1. RESET ECONOMY (Critical Fix) ---
-    // Calculate initial cost based on URL params
     loadoutCost = 0;
     if (activeLoadout.shield) loadoutCost += 500;
     if (activeLoadout.nitro) loadoutCost += 300;
@@ -898,13 +897,26 @@ function startGame() {
     // Physics Setup
     const stats = getCurrentStats();
     gameState.maxSpeed = stats.max;
-    gameState.speed = stats.base; 
+    
+    // --- NITRO PHYSICS INJECTION ---
+    if (activeLoadout.nitro) {
+        gameState.distance = 5000; // Jumps score to 500 instantly (5000 / 10)
+        gameState.speed = 6.5;      // High burst speed
+        
+        // Visual "Blast Off" effect
+        document.body.style.backgroundColor = "#ff8c00"; 
+        setTimeout(() => document.body.style.backgroundColor = "#050505", 200);
+        console.log("NITRO INITIATED: BLASTING TO 500m");
+    } else {
+        gameState.distance = 0;
+        gameState.speed = stats.base; 
+    }
+    // -------------------------------
     
     // Reset Game State
     gameState.isPlaying = true; 
     gameState.lane = 2; 
-    gameState.score = 0; 
-    gameState.distance = 0; 
+    gameState.score = Math.floor(gameState.distance / 10); 
     enemies = [];
 
     // Initialize Inputs
@@ -976,6 +988,13 @@ function updatePhysics() {
     gameState.distance += gameState.speed;
     gameState.score = Math.floor(gameState.distance / 10);
     liveDistanceEl.innerText = gameState.score;
+    // If we were using Nitro, once the speed settles down to maxSpeed, 
+    // we consider the 'blast' over and remove the icon.
+    if (activeLoadout.nitro && gameState.speed <= gameState.maxSpeed + 0.5) {
+        activeLoadout.nitro = false;
+        updateLoadoutHUD();
+    }
+
 }
 function updateSpeedometer() {
     const maxS = 20; let pct = gameState.speed / maxS; if(pct > 1) pct = 1;
