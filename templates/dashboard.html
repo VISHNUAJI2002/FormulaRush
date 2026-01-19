@@ -17,15 +17,19 @@
 
     body {
         margin: 0; height: 100vh; overflow: hidden;
-        background: #0f0c29;
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        background: #050505;
+        /* Premium Dark Gradient (Deep Violet to Black) */
+        background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
         font-family: 'Rajdhani', sans-serif; color: var(--text-main);
     }
 
     /* BACKGROUND ANIMATION */
     .bg-orb {
         position: absolute; border-radius: 50%; filter: blur(80px);
-        z-index: 0; opacity: 0.4; animation: floatOrb 10s infinite ease-in-out;
+        z-index: 0; 
+        /* Reduced opacity for premium look */
+        opacity: 0.25; 
+        animation: floatOrb 10s infinite ease-in-out;
     }
     .orb-1 { width: 500px; height: 500px; background: #7b2cbf; top: -10%; left: -10%; }
     .orb-2 { width: 400px; height: 400px; background: #00d2ff; bottom: -5%; right: -5%; animation-delay: -5s; }
@@ -42,23 +46,38 @@
 
     /* --- 3. SIDEBAR --- */
     .sidebar {
-        background: rgba(15, 12, 41, 0.6); backdrop-filter: blur(20px);
+        background: rgba(5, 5, 10, 0.6); backdrop-filter: blur(20px);
         border-right: 1px solid var(--glass-border);
-        /* FIX: Gap removed */
         padding: 20px 30px; 
         display: flex; flex-direction: column; justify-content: space-between;
     }
 
     .nav-menu { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
 
+    /* --- SIDEBAR NEON HOVER EFFECTS --- */
     .nav-item {
         display: flex; align-items: center; padding: 15px 20px; border-radius: 12px;
         color: var(--text-muted); text-decoration: none; font-size: 1.1rem;
-        font-weight: 600; transition: all 0.3s ease; border: 1px solid transparent; cursor: pointer;
+        font-weight: 600; 
+        border: 1px solid transparent; cursor: pointer;
+        
+        /* Smooth transitions for the glass effect */
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative; overflow: hidden;
     }
+
+    /* The "Neon Panel" effect only activates on Hover */
     .nav-item:hover, .nav-item.active {
-        background: var(--glass-bg); color: #fff; border-color: var(--glass-border);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); transform: translateX(5px);
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+        color: #fff;
+        border-left: 4px solid var(--primary-accent); /* Only light up the left edge */
+        box-shadow: 10px 0 20px -10px rgba(0, 210, 255, 0.3); /* Subtle glow bleed */
+        padding-left: 25px; /* Slide the text slightly for movement */
+    }
+
+    .nav-item.active {
+        border-left-color: var(--secondary-accent); /* Different color for active tab */
+        background: linear-gradient(90deg, rgba(123, 44, 191, 0.15) 0%, transparent 100%);
     }
     .nav-icon { margin-right: 15px; width: 25px; text-align: center; }
 
@@ -88,7 +107,6 @@
     .mini-val.gold { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
 
     /* --- SHARED "GLANCING" SHINE EFFECT --- */
-    /* Applied to both Hero Card and Game Cards */
     .hero-card::after, .game-card::after {
         content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
@@ -116,7 +134,7 @@
     
     .hero-glow {
         position: absolute; width: 300px; height: 300px;
-        background: radial-gradient(circle, rgba(0, 210, 255, 0.2) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(0, 210, 255, 0.15) 0%, transparent 70%);
         border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
     .hero-car-img {
@@ -128,20 +146,63 @@
     .hero-label { color: var(--text-muted); font-size: 0.8rem; letter-spacing: 2px; }
     .hero-title { font-size: 1.8rem; font-family: 'Orbitron'; margin: 0; }
 
-    /* MODES ROW */
+    /* --- GAME CARDS (Weighted + Neon Glass) --- */
     .modes-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 180px; }
     
     .game-card {
-        background: linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-        border: 1px solid var(--glass-border); border-radius: 18px; padding: 20px;
+        /* Base Glass */
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px; padding: 20px;
         display: flex; flex-direction: column; justify-content: center;
         text-decoration: none; position: relative; overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        
+        /* WEIGHT PHYSICS: Springy transition & Thickness */
+        transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1.2); 
+        box-shadow: 
+            0 10px 25px rgba(0,0,0,0.5), /* Deep shadow = Weight */
+            inset 0 1px 0 rgba(255,255,255,0.1); /* Top edge highlight = 3D Thickness */
     }
-    .game-card:hover { transform: translateY(-3px); border-color: var(--primary-accent); }
-    .game-card.multi:hover { border-color: var(--secondary-accent); }
+
+    /* THE CLICK (Universal Physical Press) */
+    .game-card:active {
+        transform: translateY(4px) scale(0.98); /* Physically pushes down */
+        box-shadow: 
+            0 2px 5px rgba(0,0,0,0.8), /* Shadow disappears (close to ground) */
+            inset 0 0 0 transparent;
+        transition: 0.05s; /* Instant snap */
+    }
+
+    /* --- Single Player Specifics (Cyan Neon) --- */
+    .game-card.single-mode {
+        border-left: 4px solid var(--primary-accent);
+    }
     
-    .card-title { font-family: 'Orbitron'; font-size: 1.5rem; margin-bottom: 5px; color: #fff; }
+    .game-card.single-mode:hover {
+        transform: translateY(-8px); /* Lifts up */
+        border-color: var(--primary-accent); /* Full border lights up */
+        box-shadow: 
+            0 20px 40px rgba(0,0,0,0.6), /* Heavy depth shadow */
+            0 0 20px rgba(0, 210, 255, 0.4), /* Outer Neon Glow */
+            inset 0 0 20px rgba(0, 210, 255, 0.1); /* Inner Neon Glow */
+    }
+
+    /* --- Multiplayer Specifics (Purple Neon) --- */
+    .game-card.multi-mode {
+        border-left: 4px solid var(--secondary-accent);
+    }
+    
+    .game-card.multi-mode:hover {
+        transform: translateY(-8px); /* Lifts up */
+        border-color: var(--secondary-accent); /* Full border lights up */
+        box-shadow: 
+            0 20px 40px rgba(0,0,0,0.6), /* Heavy depth shadow */
+            0 0 20px rgba(123, 44, 191, 0.5), /* Outer Neon Glow */
+            inset 0 0 20px rgba(123, 44, 191, 0.15); /* Inner Neon Glow */
+    }
+    
+    .card-title { font-family: 'Orbitron'; font-size: 1.5rem; margin-bottom: 5px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .card-sub { color: var(--text-muted); font-size: 0.9rem; }
     .card-icon { position: absolute; right: 20px; bottom: 20px; font-size: 2.5rem; opacity: 0.2; }
 
@@ -204,13 +265,24 @@
     }
     .btn-cancel-action:hover { color: #fff; }
 
-    /* GARAGE MODAL SPECIFICS */
+    /* --- UPDATED GARAGE MODAL STYLES --- */
     .garage-container {
-        background: #1c1c2e; border: 1px solid var(--glass-border);
-        border-radius: 20px; padding: 30px; width: 90%; max-width: 900px;
+        /* Deep dark background with high blur for premium feel */
+        background: rgba(10, 10, 20, 0.95);
+        /* The Neon Border (Using your Primary Cyan Accent) */
+        border: 1px solid var(--primary-accent);
+        /* The Glow: Outer glow + Inner subtle glow */
+        box-shadow: 0 0 40px rgba(0, 210, 255, 0.2), inset 0 0 20px rgba(0, 210, 255, 0.05);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border-radius: 20px; 
+        padding: 40px; 
+        width: 90%; max-width: 900px;
         text-align: center; color: white;
+        animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
+
     .garage-grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 25px 0; }
+    
     .car-card {
         background: #252538; border: 1px solid #333; border-radius: 12px;
         width: 160px; height: 240px; padding: 10px;
@@ -223,6 +295,29 @@
     .car-preview { width: 100%; height: 100px; object-fit: contain; }
     .lock-overlay { position: absolute; top: 40%; font-size: 2rem; display: none; }
     .car-card.locked .lock-overlay { display: block; }
+
+    /* NEW CLOSE BUTTON STYLE */
+    #close-garage {
+        margin-top: 30px;
+        padding: 12px 40px;
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid var(--glass-border);
+        border-radius: 50px;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    #close-garage:hover {
+        color: #fff;
+        border-color: var(--neon-red); 
+        box-shadow: 0 0 20px rgba(255, 75, 43, 0.4);
+        background: rgba(255, 75, 43, 0.1);
+        transform: translateY(-2px);
+    }
 </style>
 
 <div class="bg-orb orb-1"></div>
@@ -289,13 +384,13 @@
         </div>
 
         <div class="modes-row">
-            <a href="{{ url_for('single_player') }}" class="game-card">
+            <a href="{{ url_for('single_player') }}" class="game-card single-mode">
                 <div class="card-title">SINGLE PLAYER</div>
                 <div class="card-sub">Survival Mode</div>
                 <div class="card-icon">🏎️</div>
             </a>
 
-            <div id="btn-multiplayer" class="game-card" style="cursor: pointer;">
+            <div id="btn-multiplayer" class="game-card multi-mode" style="cursor: pointer;">
                 <div class="card-title">MULTIPLAYER</div>
                 <div class="card-sub">1v1 Race • Real-time Rivals</div>
                 <div class="card-icon">⚔️</div> 
@@ -311,7 +406,7 @@
         <h2 style="font-family: 'Orbitron'; margin-bottom: 5px;">VEHICLE SELECTOR</h2>
         <p style="color: var(--text-muted); font-size: 0.9rem;">Choose your machine</p>
         <div class="garage-grid" id="garage-grid"></div>
-        <button id="close-garage" class="btn-action" style="background: transparent; border: 1px solid white; color: white;">Close Garage</button>
+        <button id="close-garage">CLOSE GARAGE</button>
     </div>
 </div>
 
@@ -407,7 +502,7 @@
     btnCloseGarage.addEventListener('click', () => { modalGarage.classList.remove('active'); });
 
 
-    // --- MULTIPLAYER CONFIG LOGIC (PREMIUM UI WRAPPER) ---
+    // --- MULTIPLAYER CONFIG LOGIC ---
     const btnMulti = document.getElementById('btn-multiplayer');
     const modalMulti = document.getElementById('multiplayerModal'); 
     const closeMulti = document.getElementById('close-multi');
