@@ -866,9 +866,9 @@ function startGame() {
 
     // --- 1. RESET ECONOMY (Critical Fix) ---
     loadoutCost = 0;
-    if (activeLoadout.shield) loadoutCost += 500;
-    if (activeLoadout.nitro) loadoutCost += 300;
-    if (activeLoadout.copilot) loadoutCost += 750;
+    if (activeLoadout.shield) loadoutCost += 150;
+    if (activeLoadout.nitro) loadoutCost += 100;
+    if (activeLoadout.copilot) loadoutCost += 100;
 
     // Reset counters
     sessionStats = { correct: 0, wrong: 0 };

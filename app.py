@@ -59,7 +59,7 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id)) # Modern way 
 
 # --- WEBSITE ROUTES ---
 
@@ -251,27 +251,25 @@ def submit_score():
     mistakes_dict = json.dumps(data.get('mistakes', {}))
     telemetry_dict = json.dumps(data.get('inputStats', {}))
 
-    # --- 2. ECONOMY CALCULATION (THE FIX) ---
-    # Ensure we use .get(key, 0) to avoid NoneType errors
+    # --- 2. ECONOMY CALCULATION ---
     correct_count = int(data.get('correctCount', 0))
     wrong_count = int(data.get('wrongCount', 0))
     loadout_cost = int(data.get('loadoutCost', 0))
 
-    # 1. Calculate what they earned during the race
-    winnings = (correct_count * 5) - (wrong_count * 1)
-    if winnings < 0: winnings = 0
-        
-    # 2. Subtract the cost they already "spent" in the dashboard
-    # final_profit will likely be negative if they bought items
-    final_profit = winnings - loadout_cost
+    # Calculate net earnings from this specific run
+    earnings = (correct_count * 5) - (wrong_count * 1)
     
-    # 3. Apply to the database
+    # Total change to the wallet (Earnings - Shop Costs)
+    final_profit = earnings - loadout_cost
+    
+    # Update the user's coins ONCE
     current_user.coins += final_profit
-    # ------------------------------
     
-    # Prevent Debt? (Optional: Uncomment to stop negative balance)
-    # if current_user.coins < 0: current_user.coins = 0
-    # ----------------------------------------
+    # DEBT PREVENTER: Ensure coins never drop below 0
+    if current_user.coins < 0:
+        current_user.coins = 0
+    
+    # ------------------------------
     
     # 3. CREATE RACE RECORD
     new_race = RaceSession(
@@ -289,12 +287,11 @@ def submit_score():
     db.session.add(new_race)
 
     # 4. UPDATE HIGH SCORE
-    updated_high = False
     if mode == 'single':
         if score > current_user.high_score:
             current_user.high_score = score
-            updated_high = True
             
+    # Final Commit to Database
     db.session.commit()
 
     return jsonify({

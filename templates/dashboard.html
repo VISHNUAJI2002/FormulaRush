@@ -34,31 +34,31 @@
             <div>
                 <div class="mini-label" style="margin-bottom: 10px;">TACTICAL MODULES</div>
                 
-                <div class="shop-item" onclick="toggleItem('shield', 500, this)">
+                <div class="shop-item" onclick="toggleItem('shield', 150, this)">
                     <div class="shop-icon">🛡️</div>
                     <div style="flex-grow:1;">
                         <div class="shop-name">HULL SHIELD</div>
                         <div class="shop-desc">Blocks 1 Collision/Error</div>
                     </div>
-                    <div class="shop-price">500</div>
+                    <div class="shop-price">150</div>
                 </div>
 
-                <div class="shop-item" onclick="toggleItem('nitro', 300, this)">
+                <div class="shop-item" onclick="toggleItem('nitro', 100, this)">
                     <div class="shop-icon">🚀</div>
                     <div style="flex-grow:1;">
                         <div class="shop-name">NITRO START</div>
                         <div class="shop-desc">Skip first 500m</div>
                     </div>
-                    <div class="shop-price">300</div>
+                    <div class="shop-price">100</div>
                 </div>
 
-                <div class="shop-item" onclick="toggleItem('copilot', 750, this)">
+                <div class="shop-item" onclick="toggleItem('copilot', 100, this)">
                     <div class="shop-icon">🧠</div>
                     <div style="flex-grow:1;">
                         <div class="shop-name">AI CO-PILOT</div>
                         <div class="shop-desc">Auto-solve (5s Assist)</div>
                     </div>
-                    <div class="shop-price">750</div>
+                    <div class="shop-price">100</div>
                 </div>
             </div>
         </div>
@@ -552,7 +552,7 @@
         costDisplay.innerText = `${currentCost} CR`;
 
         // Check Affordability
-        if (currentCost > userWallet) {
+        if (currentCost > Math.max(0, userWallet)) {
             costDisplay.style.color = 'var(--neon-red)';
             errorDisplay.style.display = 'block';
         } else {
@@ -562,10 +562,14 @@
     };
 
     window.launchMission = function() {
-        if (currentCost > userWallet) return; // Stop if poor
+        // Use 'currentCost' instead of 'totalCost'
+        // If currentCost is 0 (no items), we ignore the wallet and let them play
+        if (currentCost > 0 && currentCost > Math.max(0, userWallet)) {
+            document.getElementById('funds-error').style.display = 'block';
+            return; 
+        }
 
         // Build the URL with query parameters
-        // Example: /play?shield=1&nitro=1
         let url = "{{ url_for('single_player') }}?";
         if (missionLoadout.shield) url += "shield=1&";
         if (missionLoadout.nitro) url += "nitro=1&";
