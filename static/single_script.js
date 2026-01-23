@@ -542,14 +542,14 @@ function checkAnswer(input) {
         // 1. Increment the counter for app.py
         sessionStats.correct++; 
         // 2. Trigger floating +5 animation
-        if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 5, true);
+        if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 10, true);
         // 3. Generate new problems
         generateTwoProblems();
     } else {
         // 1. Increment the penalty counter for app.py
         sessionStats.wrong++;
         // 2. Trigger floating -1 animation
-        if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 1, false);
+        if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 2, false);
         
         // 3. LOG MISTAKE IF WRONG (Existing Logic)
         let context = `${leftMathValue.innerText} | ${rightMathValue.innerText}`;

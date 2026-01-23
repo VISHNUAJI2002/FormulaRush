@@ -19,7 +19,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(150), nullable=False)
     high_score = db.Column(db.Integer, default=0)
     # NEW: Wallet & Inventory
-    coins = db.Column(db.Integer, default=1000) # Start with 10 credits
+    coins = db.Column(db.Integer, default=1000) # Start with 1000 credits
     inventory = db.Column(db.String(500), default='["car_default"]') # Tracks owned cars
     # Relationship to access all races
     races = db.relationship('RaceSession', backref='player', lazy=True)
@@ -257,7 +257,7 @@ def submit_score():
     loadout_cost = int(data.get('loadoutCost', 0))
 
     # Calculate net earnings from this specific run
-    earnings = (correct_count * 5) - (wrong_count * 1)
+    earnings = (correct_count * 10) - (wrong_count * 2)
     
     # Total change to the wallet (Earnings - Shop Costs)
     final_profit = earnings - loadout_cost
