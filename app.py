@@ -4,6 +4,20 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime # NEW: To track when a game was played
 import json # NEW: To store mistakes as text
+import pickle
+import pandas as pd
+
+# --- LOAD AI BRAIN ---
+try:
+    with open('pilot_model.pkl', 'rb') as f:
+        ai_model = pickle.load(f)
+    with open('le_diff.pkl', 'rb') as f:
+        le_diff = pickle.load(f)
+    print("AI BRAIN: LOADED SUCCESSFULLY")
+except FileNotFoundError:
+    ai_model = None
+    le_diff = None
+    print("AI BRAIN: NOT FOUND - AUTO-PILOT DISABLED")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'formularush_secure_key_2026'
@@ -51,6 +65,25 @@ class RaceSession(db.Model):
     
     # Stores input telemetry: '{"avg_reaction": 1.4, "panic_brakes": 3}'
     input_stats = db.Column(db.Text, default="{}")
+
+class TelemetryData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    # AI INPUTS (The "Features")
+    speed = db.Column(db.Float)           # Car speed at that moment
+    difficulty = db.Column(db.String(20)) # Easy, Medium, Hard
+    reaction_time = db.Column(db.Float)   # How long it took to answer
+    is_correct = db.Column(db.Boolean)    # Did they get it right?
+    
+    # THE LABEL (The "Answer Key" for the AI)
+    # This helps the AI understand if the result was "Good" or "Bad"
+    confidence_label = db.Column(db.String(20)) 
+    
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    def __repr__(self):
+        return f'<Telemetry {self.user_id}: RT={self.reaction_time} Correct={self.is_correct}>'
 
 # --- LOGIN MANAGER SETUP ---
 login_manager = LoginManager()
@@ -290,10 +323,32 @@ def submit_score():
     if mode == 'single':
         if score > current_user.high_score:
             current_user.high_score = score
+# Inside submit_score after extracting other data
+    telemetry_list = data.get('telemetry', [])
+
+    for entry in telemetry_list:
+        # Determine the "Confidence Label" automatically
+        # Logic: Correct + Quick (< 1.5s) = Confident
+        label = "unstable"
+        if entry['correct']:
+            if entry['rt'] < 1.5:
+                label = "confident"
+            else:
+                label = "stable"
+        
+        new_entry = TelemetryData(
+            user_id=current_user.id,
+            speed=entry['speed'],
+            difficulty=entry['difficulty'],
+            reaction_time=entry['rt'],
+            is_correct=entry['correct'],
+            confidence_label=label
+        )
+        db.session.add(new_entry)            
             
     # Final Commit to Database
     db.session.commit()
-
+    
     return jsonify({
         'status': 'ok',
         'high_score': current_user.high_score,
@@ -301,6 +356,43 @@ def submit_score():
         'items_cost': loadout_cost,
         'total_coins': current_user.coins
     }), 200
+
+# --- Place this AFTER your submit_score function ---
+
+@app.route('/ai_predict', methods=['POST'])
+@login_required
+def ai_predict():
+    # 1. Check if we have enough data (Requirement: 50 records)
+    data_count = TelemetryData.query.filter_by(user_id=current_user.id).count()
+    MIN_REQUIRED = 50 
+    
+    if data_count < MIN_REQUIRED:
+        return jsonify({
+            'status': 'insufficient_data',
+            'current': data_count,
+            'needed': MIN_REQUIRED - data_count
+        })
+
+    if ai_model is None:
+        return jsonify({'error': 'AI Model not initialized on server'}), 500
+
+    # 2. Proceed with Prediction
+    data = request.get_json()
+    try:
+        features = pd.DataFrame([{
+            'speed': data.get('speed'),
+            'difficulty': le_diff.transform([data.get('difficulty')])[0],
+            'reaction_time': data.get('rt'),
+            'is_correct': data.get('correct')
+        }])
+        
+        prediction = ai_model.predict(features)[0]
+        return jsonify({
+            'status': 'success',
+            'prediction': prediction
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 # --- CREATE DATABASE ---
 if __name__ == '__main__':

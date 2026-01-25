@@ -10,6 +10,8 @@
 let activeLoadout = { shield: false, nitro: false, copilot: false };
 let sessionStats = { correct: 0, wrong: 0 };
 let loadoutCost = 0;
+let telemetryLog = [];
+let autoPilotActive = false;
 
 // 2. READ URL PARAMS (To detect purchased items)
 const urlParams = new URLSearchParams(window.location.search);
@@ -35,6 +37,21 @@ function updateLoadoutHUD() {
     if (activeLoadout.copilot) hud.innerHTML += '<div style="font-size:2rem; text-shadow:0 0 10px violet;">🧠</div>';
 }
 
+function toggleAutoPilot() {
+    autoPilotActive = !autoPilotActive;
+    const btn = document.getElementById('btn-ai-auto');
+    
+    if (autoPilotActive) {
+        btn.innerText = "AUTO-PILOT: ACTIVE";
+        btn.classList.add('ai-active'); // We can style this in CSS later
+        console.log("AI AUTO-PILOT ENGAGED");
+    } else {
+        btn.innerText = "AUTO-PILOT: OFF";
+        btn.classList.remove('ai-active');
+        console.log("AI AUTO-PILOT DISENGAGED");
+    }
+}
+
 // ================================
 // PERSISTENT PLAYER CONFIG
 // --- 0. CAREER TRACKING INIT ---
@@ -45,6 +62,7 @@ let raceSession = {
     controlMethod: 'keyboard',
     inputStats: { total: 0 }
 };
+let questionStartTime = 0;
 
 function logMistake(questionText) {
     if (!raceSession.mistakes[questionText]) {
@@ -434,6 +452,7 @@ function generateTwoProblems() {
 
     leftMathValue.innerHTML  = leftObj.html || leftObj.text;
     rightMathValue.innerHTML = rightObj.html || rightObj.text;
+    questionStartTime = Date.now(); // Mark the exact millisecond the question appeared
 }
 
 function createMathProblem() {
@@ -500,61 +519,116 @@ function checkDifficulty(ans, op) {
 }
 
 function checkAnswer(input) {
-    // 1. TRACK ATTEMPT
+    if (!gameState.isPlaying) return;
+
+    const now = Date.now();
+    const reactionTime = (now - questionStartTime) / 1000;
     raceSession.inputStats.total++; 
 
     let correct = false;
     
-    // Number Check
+    // Logic for checking input (Keyboard/Voice)
     if (typeof input === 'number' && currentQuestion.leftDigit !== null) {
-        if (input === currentQuestion.leftDigit) { 
-            if (gameState.lane > 0) gameState.lane--; 
-            correct = true; 
-        }
-        else if (input === currentQuestion.rightDigit) { 
-            if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; 
-            correct = true; 
-        }
-    } 
-    // String Check (Voice)
-    else if (typeof input === 'string') {
-        input = input.toLowerCase().replace('equals', '').trim();
+        if (input === currentQuestion.leftDigit) { if (gameState.lane > 0) gameState.lane--; correct = true; }
+        else if (input === currentQuestion.rightDigit) { if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; correct = true; }
+    } else if (typeof input === 'string') {
+        const inputVal = input.toLowerCase().replace('equals', '').trim();
         const checkMatch = (expected) => {
-            if (Array.isArray(expected)) return expected.some(val => input.includes(val.toLowerCase()));
-            return String(expected).toLowerCase().includes(input);
+            if (Array.isArray(expected)) return expected.some(val => inputVal.includes(val.toLowerCase()));
+            return String(expected).toLowerCase().includes(inputVal);
         };
-        if (checkMatch(expectedLeft)) { 
-            if (gameState.lane > 0) gameState.lane--; 
-            correct = true; 
-        }
-        else if (checkMatch(expectedRight)) { 
-            if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; 
-            correct = true; 
-        }
+        if (checkMatch(expectedLeft)) { if (gameState.lane > 0) gameState.lane--; correct = true; }
+        else if (checkMatch(expectedRight)) { if (gameState.lane < CONFIG.laneCount - 1) gameState.lane++; correct = true; }
     }
 
-    // --- NEW ECONOMY LOGIC ---
-    // Get Player Position for the animation
+    // --- TELEMETRY LOGGING ---
+    telemetryLog.push({
+        speed: gameState.speed,
+        difficulty: playerConfig.difficulty,
+        rt: reactionTime,
+        correct: correct
+    });
+
+    // --- GRADUAL AI AUTO-PILOT LOGIC ---
+    if (autoPilotActive) {
+        fetch('/ai_predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                speed: gameState.speed,
+                difficulty: playerConfig.difficulty,
+                rt: reactionTime,
+                correct: correct
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            // Handle "Not Enough Data" Warning
+            if (data.status === 'insufficient_data') {
+                autoPilotActive = false; // Turn off to prevent spamming
+                const btn = document.getElementById('btn-ai-auto');
+                btn.innerText = "LOCKED";
+                alert(`AI Learning: Need ${data.needed} more data points to enable Auto-Pilot.`);
+                return;
+            }
+
+            const currentGear = playerConfig.difficulty; // 'easy', 'medium', or 'hard'
+            const prediction = data.prediction; // 'confident', 'stable', or 'unstable'
+
+            /* GRADUAL SHIFT LOGIC:
+               1. If 'confident': Move UP one level (Easy -> Medium -> Hard)
+               2. If 'unstable' or WRONG: Move DOWN one level (Hard -> Medium -> Easy)
+               3. If 'stable': Maintain current gear.
+            */
+
+            let nextGear = currentGear;
+
+            if (prediction === 'confident' && correct) {
+                if (currentGear === 'easy') nextGear = 'medium';
+                else if (currentGear === 'medium') nextGear = 'hard';
+            } 
+            else if (prediction === 'unstable' || !correct) {
+                if (currentGear === 'hard') nextGear = 'medium';
+                else if (currentGear === 'medium') nextGear = 'easy';
+            }
+
+            // Only trigger a shift if the gear actually changes
+            if (nextGear !== currentGear) {
+                console.log(`AI shifting from ${currentGear} to ${nextGear}`);
+                shiftGear(nextGear);
+                visualizeAIShift(nextGear);
+            }
+        })
+        .catch(err => console.error("AI Prediction Error:", err));
+    }
+    
+    questionStartTime = Date.now(); 
+
+    // --- ECONOMY & ANIMATION ---
     const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2);
     const playerY = canvas.height - 150;
 
     if (correct) {
-        // 1. Increment the counter for app.py
         sessionStats.correct++; 
-        // 2. Trigger floating +5 animation
         if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 10, true);
-        // 3. Generate new problems
         generateTwoProblems();
     } else {
-        // 1. Increment the penalty counter for app.py
         sessionStats.wrong++;
-        // 2. Trigger floating -1 animation
         if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 2, false);
-        
-        // 3. LOG MISTAKE IF WRONG (Existing Logic)
-        let context = `${leftMathValue.innerText} | ${rightMathValue.innerText}`;
-        logMistake(context);
+        logMistake(`${leftMathValue.innerText} | ${rightMathValue.innerText}`);
     }
+}
+
+// Helper for UI Feedback
+function visualizeAIShift(gear) {
+    const aiButton = document.getElementById('btn-ai-auto');
+    const colors = { 'easy': '#ff4b2b', 'medium': '#ffc107', 'hard': '#00d2ff' };
+    aiButton.style.boxShadow = `0 0 20px ${colors[gear]}`;
+    aiButton.style.borderColor = colors[gear];
+    setTimeout(() => {
+        aiButton.style.boxShadow = "0 0 10px #9b59b6";
+        aiButton.style.borderColor = "#9b59b6";
+    }, 800);
 }
 
 /* --- VOICE INPUT --- */
@@ -863,7 +937,6 @@ function applyCurrentPhysics() {
         gameState.maxSpeed = SPEEDS[playerConfig.difficulty].max;
     }
 }
-
 function startGame() {
     if (gameState.isPlaying) return;
 
@@ -1113,19 +1186,21 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 function gameOver() {
-    // --- GARAGE UPDATE: SAVE HIGH SCORE FOR UNLOCKS ---
+    // 1. SAVE HIGH SCORE (Local Storage)
     const currentHigh = parseInt(localStorage.getItem('formulaRush_highScore') || '0');
     if (gameState.score > currentHigh) {
         localStorage.setItem('formulaRush_highScore', gameState.score);
     }
-    // --- PREPARE CAREER DATA ---
+
+    // 2. PREPARE SESSION DATA
     const duration = (Date.now() - raceSession.startTime) / 1000;
-    // Convert playerConfig settings into a list of topics for the DB
+    
     let activeTopics = [];
     if (playerConfig.multipliers.length > 0) activeTopics.push(`Mult: ${playerConfig.multipliers.join(',')}`);
     for (let [k, v] of Object.entries(playerConfig.advancedOps)) { if(v) activeTopics.push(k); }
     for (let [k, v] of Object.entries(playerConfig.voiceOps)) { if(v) activeTopics.push(k); }
-    // --- SUBMIT FULL SCORE & TELEMETRY ---
+
+    // 3. SUBMIT FULL SCORE & TELEMETRY
     fetch("/submit_score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1134,28 +1209,35 @@ function gameOver() {
             mode: "single",
             duration: Math.floor(duration),
             car: localStorage.getItem('formulaRush_selectedCar') || 'car_default',
-            // --- NEW ECONOMY DATA ---
-            correctCount: sessionStats.correct, // Send +5 count
-            wrongCount: sessionStats.wrong,     // Send -1 count
-            loadoutCost: loadoutCost,           // Send the bill (e.g. 500)
-            // New Context Data
+            correctCount: sessionStats.correct,
+            wrongCount: sessionStats.wrong,
+            loadoutCost: loadoutCost,
             difficulty: playerConfig.difficulty,
             controlMethod: playerConfig.controlMode,
             activeTopics: activeTopics,
             mistakes: raceSession.mistakes,
-            inputStats: raceSession.inputStats
+            inputStats: raceSession.inputStats,
+            
+            // --- AI INTEGRATION: SEND THE LOG ---
+            telemetry: telemetryLog 
         })
     })
     .then(response => response.json())
     .then(data => {
-        console.log("Score Saved. New Coins:", data.total_coins);
+        console.log("Telemetry Sync Complete. AI Data Saved.");
+        // Clear the log so we don't double-save if the user reboots without refreshing
+        telemetryLog = []; 
     })
-    .catch(err => console.error("Save Failed:", err));
+    .catch(err => console.error("Sync Failure:", err));
 
+    // 4. RESET UI & STOP SYSTEMS
     gameState.isPlaying = false;
     if (recognition) recognition.stop();
-    micIndicator.classList.remove('listening'); micText.innerText = "OFFLINE";
-    gameOverTitle.innerText = "CRITICAL FAILURE"; gameOverTitle.style.color = "#ff4b2b";
+    micIndicator.classList.remove('listening'); 
+    micText.innerText = "OFFLINE";
+    
+    gameOverTitle.innerText = "CRITICAL FAILURE"; 
+    gameOverTitle.style.color = "#ff4b2b";
     finalScoreEl.innerText = gameState.score;
     gameOverScreen.style.display = 'flex';
     btnStop.classList.add('btn-disabled');

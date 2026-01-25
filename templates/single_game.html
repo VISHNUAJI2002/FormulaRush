@@ -448,35 +448,49 @@
         <div class="game-wrapper">
 
             <div class="control-panel">
-                <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
-                    <span class="control-label">Transmission</span>
-                    <div class="shifter-container">
-                        <div class="shifter-slot"></div>
-                        <div class="shifter-labels">
-                            <div class="shift-mark mark-3" id="label-hard">Hard</div>
-                            <div class="shift-mark mark-2" id="label-medium">Medium</div>
-                            <div class="shift-mark mark-1 active-label" id="label-easy">Easy</div>
-                        </div>
-                        <div class="click-zone zone-1"
-                            onclick="shiftGear('easy')"
-                            data-tooltip="Easy gear keeps speed low and uses single-digit answers.">
-                        </div>
-                        <div class="click-zone zone-2"
-                            onclick="shiftGear('medium')"
-                            data-tooltip="Medium gear increases speed and allows two-digit answers.">
-                        </div>
-                        <div class="click-zone zone-3"
-                            onclick="shiftGear('hard')"
-                            data-tooltip="Hard gear enables maximum speed and complex math.">
-                        </div>
-                        <div class="shifter-stick-assembly" id="shifter-assembly">
-                            <div class="shifter-knob">
-                                <span class="knob-number" id="knob-number" style="color:#00d2ff; text-shadow:0 0 15px #00d2ff;">1</span>
-                            </div>
-                            <div class="shifter-rod"></div>
-                        </div>
-                    </div>
+<div style="width:100%; display:flex; flex-direction:column; align-items:center;">
+    <div style="width:100%; display:flex; flex-direction:row; align-items:stretch; justify-content:space-between; padding-bottom: 5px;">
+        
+        <div class="ai-module-box" style="flex: 1; display:flex; flex-direction:column; align-items:center; justify-content: space-between; padding: 10px; background: linear-gradient(145deg, #161a24, #0a0c10); border: 1px solid rgba(155, 89, 182, 0.4); border-radius: 10px; margin-right: 12px; height: 195px; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 0 10px rgba(155, 89, 182, 0.1);">
+            <span class="control-label" style="font-size: 0.65rem; color: #9b59b6; margin-bottom: 8px; text-shadow: 0 0 8px rgba(155, 89, 182, 0.6);">AI ASSISTANT</span>
+            
+            <button id="btn-ai-auto" class="btn-sys-config" onclick="toggleAutoPilot()" 
+                    style="width: 100%; flex-grow: 1; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.08); 
+                           font-family: 'Orbitron', sans-serif; font-size: 0.65rem; line-height: 1.4; border-radius: 6px; cursor: pointer; transition: all 0.3s; margin-top:0;">
+                PILOT<br>SYSTEM
+            </button>
+
+            <div style="width: 100%; margin-top: 12px; text-align: center;">
+                <div style="font-size: 0.5rem; color: #666; margin-bottom: 4px; letter-spacing: 1px;">NEURAL SYNC</div>
+                <div style="width: 100%; height: 5px; background: #000; border-radius: 3px; border: 1px solid #333; overflow: hidden;">
+                    <div id="ai-confidence-bar" style="width: 0%; height: 100%; background: #9b59b6; box-shadow: 0 0 8px #9b59b6; transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
                 </div>
+                <div id="ai-status-text" style="font-size: 0.55rem; color: #9b59b6; margin-top: 6px; font-weight: 800; letter-spacing: 1px;">OFFLINE</div>
+            </div>
+        </div>
+
+        <div style="flex: 1.2; display:flex; flex-direction:column; align-items:flex-end;">
+            <span class="control-label" style="margin-bottom: 8px; text-align: right;">Manual Shifter</span>
+            <div class="shifter-container" style="transform: scale(0.85); transform-origin: right top; margin-right: -10px; height: 215px; background: #111; border-color: #333;">
+                <div class="shifter-slot"></div>
+                <div class="shifter-labels">
+                    <div class="shift-mark mark-3" id="label-hard" style="font-size: 0.55rem; left: 10px;">HARD</div>
+                    <div class="shift-mark mark-2" id="label-medium" style="font-size: 0.55rem; left: 10px;">MEDIUM</div>
+                    <div class="shift-mark mark-1 active-label" id="label-easy" style="font-size: 0.55rem; left: 10px;">EASY</div>
+                </div>
+                <div class="click-zone zone-3" onclick="shiftGear('hard')"></div>
+                <div class="click-zone zone-2" onclick="shiftGear('medium')"></div>
+                <div class="click-zone zone-1" onclick="shiftGear('easy')"></div>
+                <div class="shifter-stick-assembly" id="shifter-assembly" style="top: 165px;">
+                    <div class="shifter-knob">
+                        <span class="knob-number" id="knob-number" style="color:#00d2ff; text-shadow:0 0 15px #00d2ff;">1</span>
+                    </div>
+                    <div class="shifter-rod"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                 <div class="panel-divider"></div>
                 
                 <div id="std-nav-controls" style="width:100%">
@@ -522,7 +536,6 @@
                         <div id="mic-indicator" class="mic-indicator">STATUS: <span id="mic-text">STANDBY</span></div>
                     </div>
                 </div>
-                <a href="{{ url_for('dashboard') }}" style="display:block; text-align:center; margin-top:10px; color:#555; text-decoration:none; font-size:0.8rem;">&larr; Exit to Hangar</a>
             </div>
 
 
