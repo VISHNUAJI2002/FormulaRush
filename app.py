@@ -172,88 +172,112 @@ def career():
     # 1. Fetch Data
     races = RaceSession.query.filter_by(user_id=current_user.id).order_by(RaceSession.date_played.desc()).all()
     
-    # 2. Stats
+    # 2. Basic Stats
     total_races = len(races)
     total_distance = sum(r.score for r in races) if races else 0
     total_seconds = sum(r.duration for r in races) if races else 0
-    flight_hours = round(total_seconds / 3600, 2)
     avg_distance = int(total_distance / total_races) if total_races > 0 else 0
     
-    # 3. Rank System (Updated for 0-50k Scale)
+    # 3. Rank System (0-50k Scale)
     rank_title = "ROOKIE"
     next_rank = "AMATEUR"
-    
-    if total_distance > 50000:
+    if total_distance >= 50000:
         rank_title = "LEGEND"
         next_rank = "MAX RANK"
-    elif total_distance > 15000:
+    elif total_distance >= 15000:
         rank_title = "PRO RACER"
         next_rank = "LEGEND"
-    elif total_distance > 5000:
+    elif total_distance >= 5000:
         rank_title = "AMATEUR"
         next_rank = "PRO RACER"
         
-    # LOGIC FIX: Bar now fills from 0 to 50,000 (The Ultimate Goal)
-    # If you have 5,000m, the bar is 10% full.
     target_goal = 50000 
-    progress_percent = (total_distance / target_goal) * 100
-    progress_percent = min(100, max(0, progress_percent))
+    progress_percent = min(100, (total_distance / target_goal) * 100) if target_goal > 0 else 0
 
-    # 4. Favorite Car
+    # 4. Favorite Car (Formatted Name)
     favorite_car = "None"
     if races:
-        all_cars = [r.car_used for r in races]
-        favorite_car = max(set(all_cars), key=all_cars.count).replace('car_', '').upper()
+        all_cars = [r.car_used for r in races if r.car_used]
+        if all_cars:
+            favorite_car = max(set(all_cars), key=all_cars.count).replace('car_', '').replace('_', ' ').upper()
 
-    # 5. Graph & Heatmap Data
+    # 5. Graph & Heatmap Data (Mistakes and Usage)
     mistake_counts = {i: 0 for i in range(2, 13)}
     usage_counts = {i: 0 for i in range(2, 13)}
 
     for r in races:
-        # Usage
+        # Process Usage
         try:
-            topics = json.loads(r.active_topics)
+            topics = json.loads(r.active_topics) if r.active_topics else []
             for t in topics:
                 if t.startswith("Mult:"):
-                    for n in t.replace("Mult: ", "").split(","):
-                        if n.isdigit(): usage_counts[int(n)] += 1
-        except: pass
-        # Mistakes
-        try:
-            mistakes = json.loads(r.mistakes)
-            for prob, count in mistakes.items():
-                if 'x' in prob:
-                    for p in prob.split('x'):
-                        if p.isdigit() and int(p) in mistake_counts:
-                            mistake_counts[int(p)] += count
+                    nums = t.replace("Mult:", "").strip().split(",")
+                    for n in nums:
+                        val = int(n.strip())
+                        if val in usage_counts: usage_counts[val] += 1
         except: pass
 
-    # Prepare return data
+        # Process Mistakes
+        try:
+            mistakes = json.loads(r.mistakes) if r.mistakes else {}
+            for prob, count in mistakes.items():
+                if 'x' in prob:
+                    parts = prob.split('x')
+                    for p in parts:
+                        p_val = int(''.join(filter(str.isdigit, p)))
+                        if p_val in mistake_counts: mistake_counts[p_val] += count
+        except: pass
+
     chart_labels = list(range(2, 13))
     chart_mistakes = [mistake_counts[i] for i in chart_labels]
     chart_usage = [usage_counts[i] for i in chart_labels]
     
-    weakest_num = max(mistake_counts, key=mistake_counts.get)
-    if mistake_counts[weakest_num] == 0: weakest_num = "NONE"
-    
-    most_used_num = max(usage_counts, key=usage_counts.get)
-    if usage_counts[most_used_num] == 0: most_used_num = "NONE"
+    # Determine Weakest/Strongest
+    weakest_num = max(mistake_counts, key=mistake_counts.get) if any(mistake_counts.values()) else "NONE"
+    most_used_num = max(usage_counts, key=usage_counts.get) if any(usage_counts.values()) else "NONE"
 
+    # 6. Accuracy Calculation
+    total_telemetry = TelemetryData.query.filter_by(user_id=current_user.id).count()
+    correct_telemetry = TelemetryData.query.filter_by(user_id=current_user.id, is_correct=True).count()
+    accuracy_rate = int((correct_telemetry / total_telemetry) * 100) if total_telemetry > 0 else 0
+    neural_load = 0
+    if total_seconds > 0:
+        total_minutes = total_seconds / 60
+        # Round to 1 decimal place (e.g., "12.5" QPM)
+        neural_load = round(total_telemetry / total_minutes, 1)
+    # 7. Today's Flight Time Logic
+    from datetime import datetime
+    today = datetime.utcnow().date()
+    today_races = [r for r in races if r.date_played.date() == today]
+    today_seconds = sum(r.duration for r in today_races)
+
+    if today_seconds == 0:
+        today_flight_time = "0s"
+    elif today_seconds < 60:
+        today_flight_time = f"{today_seconds}s"
+    elif today_seconds < 3600:
+        today_flight_time = f"{today_seconds // 60}m {today_seconds % 60}s"
+    else:
+        today_flight_time = f"{today_seconds // 3600}h {(today_seconds % 3600) // 60}m"
+
+    # 8. Return data (Ensure today_flight_time is passed!)
     return render_template('career.html', 
-                           races=races, 
-                           total_races=total_races,
-                           avg_distance=avg_distance,
-                           total_distance=total_distance,
-                           flight_hours=flight_hours,
-                           rank_title=rank_title,
-                           next_rank=next_rank,
-                           progress_percent=progress_percent, # Now scaled 0-50k
-                           favorite_car=favorite_car,
-                           chart_labels=chart_labels,
-                           chart_mistakes=chart_mistakes,
-                           chart_usage=chart_usage,
-                           weakest_num=weakest_num,
-                           most_used_num=most_used_num)
+                            races=races, 
+                            total_races=total_races,
+                            avg_distance=avg_distance,
+                            total_distance=total_distance,
+                            rank_title=rank_title,
+                            next_rank=next_rank,
+                            progress_percent=progress_percent,
+                            favorite_car=favorite_car,
+                            chart_labels=chart_labels,
+                            chart_mistakes=chart_mistakes,
+                            chart_usage=chart_usage,
+                            weakest_num=weakest_num,
+                            most_used_num=most_used_num,
+                            accuracy_rate=accuracy_rate,
+                            neural_load=neural_load,
+                            today_flight_time=today_flight_time)
 # --- GAME ROUTES ---
 
 @app.route('/play')
