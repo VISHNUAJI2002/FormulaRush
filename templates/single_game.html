@@ -7,440 +7,1146 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <style>
     /* --- CORE COCKPIT STYLES --- */
-    body { overflow: hidden; background-color: #050510; margin: 0; }
-    .cockpit-body { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; z-index: 10; padding-top: 60px; }
-    
-    .game-transform-wrapper { transform-origin: center center; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; transform: scale(0.95); }
-    .game-wrapper { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 20px; }
+    body {
+        overflow: hidden;
+        background-color: #050510;
+        margin: 0;
+    }
+
+    .cockpit-body {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #eee;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        user-select: none;
+        z-index: 10;
+        padding-top: 60px;
+    }
+
+    .game-transform-wrapper {
+        transform-origin: center center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        transform: scale(0.95);
+    }
+
+    .game-wrapper {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 20px;
+    }
 
     /* --- PANELS --- */
-    .control-panel, .hud-panel {
-        width: 300px; background: rgba(15, 20, 30, 0.95); padding: 25px;
-        border-radius: 12px; border: 2px solid #00d2ff;
-        box-shadow: 0 0 25px rgba(0, 210, 255, 0.1), inset 0 0 60px rgba(0,0,0,0.8);
-        display: flex; flex-direction: column; align-items: center; height: 640px;
+    .control-panel,
+    .hud-panel {
+        width: 300px;
+        background: rgba(15, 20, 30, 0.95);
+        padding: 25px;
+        border-radius: 12px;
+        border: 2px solid #00d2ff;
+        box-shadow: 0 0 25px rgba(0, 210, 255, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 640px;
     }
-    .control-panel { justify-content: space-between; }
-    .hud-panel { justify-content: space-between; }
+
+    .control-panel {
+        justify-content: space-between;
+    }
+
+    .hud-panel {
+        justify-content: space-between;
+    }
 
     /* NEON DIVIDER (Applied to both panels now) */
-    .panel-divider { width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #00d2ff, transparent); opacity: 0.5; box-shadow: 0 0 5px #00d2ff; margin: 5px 0; }
-    
-    .control-label { font-weight: 800; color: #00d2ff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-size: 0.75rem; text-align: center; width: 100%; display: block; text-shadow: 0 0 5px rgba(0, 210, 255, 0.5); }
+    .panel-divider {
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #00d2ff, transparent);
+        opacity: 0.5;
+        box-shadow: 0 0 5px #00d2ff;
+        margin: 5px 0;
+    }
+
+    .control-label {
+        font-weight: 800;
+        color: #00d2ff;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+        font-size: 0.75rem;
+        text-align: center;
+        width: 100%;
+        display: block;
+        text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
+    }
 
     /* --- GEARBOX --- */
-    .shifter-container { position: relative; width: 160px; height: 230px; background: linear-gradient(145deg, #222, #111); border-radius: 10px; border: 2px solid #444; box-shadow: inset 0 0 20px #000; display: flex; justify-content: center; overflow: hidden; flex-shrink: 0; }
-    .shifter-slot { width: 12px; height: 190px; background: #000; border-radius: 10px; margin-top: 20px; box-shadow: inset 0 0 5px #000; position: relative; z-index: 1; }
-    .shifter-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
-    .shift-mark { position: absolute; left: 15px; font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase; transition: color 0.3s; }
-    .mark-3 { top: 30px; } .mark-2 { top: 95px; } .mark-1 { top: 160px; }
-    .active-label { text-shadow: 0 0 10px currentColor; }
-    .shifter-stick-assembly { position: absolute; top: 165px; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; z-index: 10; transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none; }
-    .shifter-rod { position: absolute; top: 50%; left: 50%; width: 6px; height: 120px; background: #888; transform: translate(-50%, 0); z-index: -1; }
-    .shifter-knob { width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #444, #111); border-radius: 50%; border: 2px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; }
-    .knob-number { font-size: 1.5rem; font-weight: 900; color: #333; font-family: 'Courier New', monospace; transition: all 0.3s; }
-    .click-zone { position: absolute; left: 0; width: 100%; height: 70px; cursor: pointer; z-index: 20; }
-    .zone-3 { top: 0px; } .zone-2 { top: 76px; } .zone-1 { top: 152px; }
+    .shifter-container {
+        position: relative;
+        width: 160px;
+        height: 230px;
+        background: linear-gradient(145deg, #222, #111);
+        border-radius: 10px;
+        border: 2px solid #444;
+        box-shadow: inset 0 0 20px #000;
+        display: flex;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .shifter-slot {
+        width: 12px;
+        height: 190px;
+        background: #000;
+        border-radius: 10px;
+        margin-top: 20px;
+        box-shadow: inset 0 0 5px #000;
+        position: relative;
+        z-index: 1;
+    }
+
+    .shifter-labels {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .shift-mark {
+        position: absolute;
+        left: 15px;
+        font-weight: 800;
+        font-size: 0.7rem;
+        color: #444;
+        text-transform: uppercase;
+        transition: color 0.3s;
+    }
+
+    .mark-3 {
+        top: 30px;
+    }
+
+    .mark-2 {
+        top: 95px;
+    }
+
+    .mark-1 {
+        top: 160px;
+    }
+
+    .active-label {
+        text-shadow: 0 0 10px currentColor;
+    }
+
+    .shifter-stick-assembly {
+        position: absolute;
+        top: 165px;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        z-index: 10;
+        transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        pointer-events: none;
+    }
+
+    .shifter-rod {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 6px;
+        height: 120px;
+        background: #888;
+        transform: translate(-50%, 0);
+        z-index: -1;
+    }
+
+    .shifter-knob {
+        width: 55px;
+        height: 55px;
+        background: radial-gradient(circle at 30% 30%, #444, #111);
+        border-radius: 50%;
+        border: 2px solid #555;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .knob-number {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #333;
+        font-family: 'Courier New', monospace;
+        transition: all 0.3s;
+    }
+
+    .click-zone {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 70px;
+        cursor: pointer;
+        z-index: 20;
+    }
+
+    .zone-3 {
+        top: 0px;
+    }
+
+    .zone-2 {
+        top: 76px;
+    }
+
+    .zone-1 {
+        top: 152px;
+    }
 
     /* --- ROCKERS --- */
-    .rocker-group { display: flex; gap: 10px; justify-content: center; width: 100%; transition: opacity 0.3s; }
-    .rocker-input { display: none; }
-    .rocker-label { width: 100px; height: 45px; background: linear-gradient(to bottom, #222, #333); border-top: 1px solid #555; border-bottom: 2px solid #000; border-radius: 4px; position: relative; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; transition: all 0.1s; }
-    .rocker-light { width: 20px; height: 4px; background: #333; margin-bottom: 5px; box-shadow: inset 0 0 2px #000; transition: all 0.3s; }
-    .rocker-text {
-    font-size: 1.2rem;              /* Bigger */
-    font-weight: 850;               /* Stronger */
-    color: #eaeaea;                 /* Brighter */
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    text-shadow: 
-        0 0 6px rgba(0, 210, 255, 0.6); /* Neon clarity */
-}
-    .rocker-input:checked + .rocker-label { background: linear-gradient(to bottom, #111, #222); border-top: 2px solid #000; transform: translateY(2px); }
-    #math-simple:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
-    #math-mixed:checked + .rocker-label .rocker-light { background: #d63384; box-shadow: 0 0 8px #d63384; }
-    .rocker-input:checked + .rocker-label .rocker-text {
-    color: #ffffff;
-    text-shadow:
-        0 0 8px #00d2ff,
-        0 0 15px rgba(0, 210, 255, 0.8);
-}
+    .rocker-group {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        width: 100%;
+        transition: opacity 0.3s;
+    }
 
-    
+    .rocker-input {
+        display: none;
+    }
+
+    .rocker-label {
+        width: 100px;
+        height: 45px;
+        background: linear-gradient(to bottom, #222, #333);
+        border-top: 1px solid #555;
+        border-bottom: 2px solid #000;
+        border-radius: 4px;
+        position: relative;
+        cursor: pointer;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.1s;
+    }
+
+    .rocker-light {
+        width: 20px;
+        height: 4px;
+        background: #333;
+        margin-bottom: 5px;
+        box-shadow: inset 0 0 2px #000;
+        transition: all 0.3s;
+    }
+
+    .rocker-text {
+        font-size: 1.2rem;
+        /* Bigger */
+        font-weight: 850;
+        /* Stronger */
+        color: #eaeaea;
+        /* Brighter */
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        text-shadow:
+            0 0 6px rgba(0, 210, 255, 0.6);
+        /* Neon clarity */
+    }
+
+    .rocker-input:checked+.rocker-label {
+        background: linear-gradient(to bottom, #111, #222);
+        border-top: 2px solid #000;
+        transform: translateY(2px);
+    }
+
+    #math-simple:checked+.rocker-label .rocker-light {
+        background: #00d2ff;
+        box-shadow: 0 0 8px #00d2ff;
+    }
+
+    #math-mixed:checked+.rocker-label .rocker-light {
+        background: #d63384;
+        box-shadow: 0 0 8px #d63384;
+    }
+
+    .rocker-input:checked+.rocker-label .rocker-text {
+        color: #ffffff;
+        text-shadow:
+            0 0 8px #00d2ff,
+            0 0 15px rgba(0, 210, 255, 0.8);
+    }
+
+
     /* Disabled Look */
-    .controls-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); transition: opacity 0.3s; }
+    .controls-disabled {
+        opacity: 0.3;
+        pointer-events: none;
+        filter: grayscale(100%);
+        transition: opacity 0.3s;
+    }
 
     /* --- INPUT BUTTONS --- */
-    .control-selection-group { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
-    .input-mode-btn { width: 100%; height: 60px; background: rgba(0, 10, 20, 0.6); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; color: #557; display: flex; align-items: center; justify-content: flex-start; padding-left: 20px; cursor: pointer; transition: all 0.2s; position: relative; }
-    .input-mode-btn .icon { font-size: 1.8rem; margin-right: 15px; opacity: 0.5; transition: 0.3s; }
-    .input-mode-btn .text-group { display: flex; flex-direction: column; align-items: flex-start; }
-    .input-mode-btn .main-text { font-size: 0.9rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-    .input-mode-btn .sub-text { font-size: 0.55rem; font-weight: normal; text-transform: uppercase; opacity: 0.7; }
-    .input-mode-btn:hover { background: rgba(0, 210, 255, 0.05); border-color: #00d2ff; }
-    .input-mode-btn.active-mode { background: rgba(0, 210, 255, 0.1); border: 2px solid #00d2ff; color: #fff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1); }
-    #btn-mode-voice.active-mode { border-color: #00d2ff; color: #fff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1); }
-    .input-mode-btn.active-mode .icon { opacity: 1; text-shadow: 0 0 10px #fff; }
-    .mic-indicator { margin-top: 5px; width: 100%; text-align: center; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #444; border: 1px solid #333; padding: 5px; border-radius: 4px; background: #000; opacity: 0; transition: opacity 0.3s; }
-    .mic-indicator.visible { opacity: 1; }
-    .mic-indicator.listening { color: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.3); }
+    .control-selection-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        align-items: center;
+    }
+
+    .input-mode-btn {
+        width: 100%;
+        height: 60px;
+        background: rgba(0, 10, 20, 0.6);
+        border: 1px solid rgba(0, 210, 255, 0.3);
+        border-radius: 8px;
+        color: #557;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding-left: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .input-mode-btn .icon {
+        font-size: 1.8rem;
+        margin-right: 15px;
+        opacity: 0.5;
+        transition: 0.3s;
+    }
+
+    .input-mode-btn .text-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .input-mode-btn .main-text {
+        font-size: 0.9rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .input-mode-btn .sub-text {
+        font-size: 0.55rem;
+        font-weight: normal;
+        text-transform: uppercase;
+        opacity: 0.7;
+    }
+
+    .input-mode-btn:hover {
+        background: rgba(0, 210, 255, 0.05);
+        border-color: #00d2ff;
+    }
+
+    .input-mode-btn.active-mode {
+        background: rgba(0, 210, 255, 0.1);
+        border: 2px solid #00d2ff;
+        color: #fff;
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1);
+    }
+
+    #btn-mode-voice.active-mode {
+        border-color: #00d2ff;
+        color: #fff;
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 210, 255, 0.1);
+    }
+
+    .input-mode-btn.active-mode .icon {
+        opacity: 1;
+        text-shadow: 0 0 10px #fff;
+    }
+
+    .mic-indicator {
+        margin-top: 5px;
+        width: 100%;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: #444;
+        border: 1px solid #333;
+        padding: 5px;
+        border-radius: 4px;
+        background: #000;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .mic-indicator.visible {
+        opacity: 1;
+    }
+
+    .mic-indicator.listening {
+        color: #2ecc71;
+        border-color: #2ecc71;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+    }
 
     /* --- CENTER STAGE --- */
-    .center-stage { display: flex; flex-direction: column; width: 800px; height: 640px; justify-content: space-between; }
-    .game-container { position: relative; border: 4px solid #00d2ff; border-radius: 12px; box-shadow: 0 0 40px rgba(0, 210, 255, 0.2); background: #000; width: 100%; height: 530px; flex-shrink: 0; z-index: 5; }
-    canvas { display: block; width: 100%; height: 100%; }
-    .mission-control { height: 90px; width: 100%; background: rgba(10, 10, 10, 0.8); border: 2px solid #333; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 30px; box-shadow: inset 0 0 30px #000; margin-top: 10px; }
-    .ctrl-btn { height: 60px; min-width: 250px; font-family: 'Segoe UI', sans-serif; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); border-radius: 4px; position: relative; overflow: hidden; }
-    .btn-initiate { border: 2px solid #2ecc71; color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.2); text-shadow: 0 0 8px #2ecc71; }
-    .btn-initiate:hover { background: rgba(46, 204, 113, 0.1); box-shadow: 0 0 20px rgba(46, 204, 113, 0.6); }
-    .btn-initiate:active { transform: scale(0.98); }
-    .btn-abort { border: 2px solid #e74c3c; color: #e74c3c; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); text-shadow: 0 0 8px #e74c3c; background: repeating-linear-gradient(45deg, rgba(231,76,60,0.1), rgba(231,76,60,0.1) 10px, transparent 10px, transparent 20px); }
-    .btn-abort:hover { background-color: rgba(231, 76, 60, 0.2); box-shadow: 0 0 20px rgba(231, 76, 60, 0.6); }
-    .ctrl-btn.btn-disabled { filter: grayscale(100%); opacity: 0.2; pointer-events: none; border-style: dashed; }
+    .center-stage {
+        display: flex;
+        flex-direction: column;
+        width: 800px;
+        height: 640px;
+        justify-content: space-between;
+    }
+
+    .game-container {
+        position: relative;
+        border: 4px solid #00d2ff;
+        border-radius: 12px;
+        box-shadow: 0 0 40px rgba(0, 210, 255, 0.2);
+        background: #000;
+        width: 100%;
+        height: 530px;
+        flex-shrink: 0;
+        z-index: 5;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .mission-control {
+        height: 90px;
+        width: 100%;
+        background: rgba(10, 10, 10, 0.8);
+        border: 2px solid #333;
+        border-radius: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 30px;
+        box-shadow: inset 0 0 30px #000;
+        margin-top: 10px;
+    }
+
+    .ctrl-btn {
+        height: 60px;
+        min-width: 250px;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 900;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-initiate {
+        border: 2px solid #2ecc71;
+        color: #2ecc71;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.2);
+        text-shadow: 0 0 8px #2ecc71;
+    }
+
+    .btn-initiate:hover {
+        background: rgba(46, 204, 113, 0.1);
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.6);
+    }
+
+    .btn-initiate:active {
+        transform: scale(0.98);
+    }
+
+    .btn-abort {
+        border: 2px solid #e74c3c;
+        color: #e74c3c;
+        box-shadow: 0 0 10px rgba(231, 76, 60, 0.2);
+        text-shadow: 0 0 8px #e74c3c;
+        background: repeating-linear-gradient(45deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.1) 10px, transparent 10px, transparent 20px);
+    }
+
+    .btn-abort:hover {
+        background-color: rgba(231, 76, 60, 0.2);
+        box-shadow: 0 0 20px rgba(231, 76, 60, 0.6);
+    }
+
+    .ctrl-btn.btn-disabled {
+        filter: grayscale(100%);
+        opacity: 0.2;
+        pointer-events: none;
+        border-style: dashed;
+    }
 
     /* --- HUD & SYSTEM BUTTON --- */
-    .digital-display { background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; width: 100%; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
-    .digital-value { color: #00d2ff; font-size: 2.5rem; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 0 0 10px rgba(0,210,255,0.5); }
-    .gauge-wrapper { position: relative; width: 220px; height: 220px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #333; margin-top: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.8);}
-    .gauge-arc { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: conic-gradient(from 225deg, #00d2ff 0deg, #0056b3 200deg, transparent 200deg); -webkit-mask: radial-gradient(transparent 65%, black 65%); mask: radial-gradient(transparent 65%, black 65%); }
-    .gauge-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 3px; background: #fff; transform-origin: 0% 50%; transform: rotate(225deg); transition: transform 0.1s linear; border-radius: 50%; z-index: 5; box-shadow: 0 0 5px white; }
-    .gauge-value { position: absolute; bottom: 50px; left: 0; right: 0; text-align: center; color: white; font-size: 2.5rem; font-weight: bold; z-index: 6; }
-    .gauge-unit { font-size: 0.8rem; color: #888; display: block; }
+    .digital-display {
+        background: #000;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 10px;
+        width: 100%;
+        text-align: center;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+    }
 
-/* CAMERA FEED STYLES */
+    .digital-value {
+        color: #00d2ff;
+        font-size: 2.5rem;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+    }
+
+    .gauge-wrapper {
+        position: relative;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(#222, #000);
+        border-radius: 50%;
+        border: 4px solid #333;
+        margin-top: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .gauge-arc {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 50%;
+        background: conic-gradient(from 225deg, #00d2ff 0deg, #0056b3 200deg, transparent 200deg);
+        -webkit-mask: radial-gradient(transparent 65%, black 65%);
+        mask: radial-gradient(transparent 65%, black 65%);
+    }
+
+    .gauge-needle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 45%;
+        height: 3px;
+        background: #fff;
+        transform-origin: 0% 50%;
+        transform: rotate(225deg);
+        transition: transform 0.1s linear;
+        border-radius: 50%;
+        z-index: 5;
+        box-shadow: 0 0 5px white;
+    }
+
+    .gauge-value {
+        position: absolute;
+        bottom: 50px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: white;
+        font-size: 2.5rem;
+        font-weight: bold;
+        z-index: 6;
+    }
+
+    .gauge-unit {
+        font-size: 0.8rem;
+        color: #888;
+        display: block;
+    }
+
+    /* CAMERA FEED STYLES */
     .camera-wrapper {
-        width: 100%; height: 160px; 
-        background: #000; border: 2px solid #9b59b6; /* Purple for AI */
-        border-radius: 8px; position: relative; overflow: hidden; 
-        display: none; /* Hidden by default */
+        width: 100%;
+        height: 160px;
+        background: #000;
+        border: 2px solid #9b59b6;
+        /* Purple for AI */
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        display: none;
+        /* Hidden by default */
         box-shadow: 0 0 20px rgba(155, 89, 182, 0.2);
         margin-top: 10px;
     }
-    .camera-wrapper.active { display: block; }
-    
-    /* Flip video horizontally so it acts like a mirror */
-    #gesture-video { position: absolute; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.6; }
-    #gesture-canvas { position: absolute; width: 100%; height: 100%; transform: scaleX(-1); z-index: 5; }
-    
-    .camera-label { 
-        position: absolute; bottom: 5px; left: 5px; 
-        color: #9b59b6; font-size: 0.6rem; font-weight: bold; 
-        z-index: 10; background: rgba(0,0,0,0.7); padding: 2px 5px; 
+
+    .camera-wrapper.active {
+        display: block;
     }
+
+    /* Flip video horizontally so it acts like a mirror */
+    #gesture-video {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+        opacity: 0.6;
+    }
+
+    #gesture-canvas {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        transform: scaleX(-1);
+        z-index: 5;
+    }
+
+    .camera-label {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        color: #9b59b6;
+        font-size: 0.6rem;
+        font-weight: bold;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 2px 5px;
+    }
+
     /* NEW CLASSY SYSTEM BUTTON */
-/* SYSTEM CONFIG BUTTON (Heavy Mechanical Look - Neon Text Fix) */
-/* SYSTEM CONFIG BUTTON — Classy Neon Standard */
-.btn-sys-config {
-    width: 100%;
-    height: 52px;
-    margin-top: auto;
+    /* SYSTEM CONFIG BUTTON (Heavy Mechanical Look - Neon Text Fix) */
+    /* SYSTEM CONFIG BUTTON — Classy Neon Standard */
+    .btn-sys-config {
+        width: 100%;
+        height: 52px;
+        margin-top: auto;
 
-    /* Solid, premium base */
-    background: linear-gradient(to bottom, #1c1f26, #0f1116);
-    border: 1px solid rgba(0, 210, 255, 0.35);
-    border-bottom: 4px solid rgba(0, 0, 0, 0.9);
-    border-radius: 8px;
+        /* Solid, premium base */
+        background: linear-gradient(to bottom, #1c1f26, #0f1116);
+        border: 1px solid rgba(0, 210, 255, 0.35);
+        border-bottom: 4px solid rgba(0, 0, 0, 0.9);
+        border-radius: 8px;
 
-    /* Neon typography (controlled, not loud) */
-    color: #7fe9ff;
-    font-weight: 800;
-    font-size: 0.85rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+        /* Neon typography (controlled, not loud) */
+        color: #7fe9ff;
+        font-weight: 800;
+        font-size: 0.85rem;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
 
-    text-shadow:
-        0 0 4px rgba(0, 210, 255, 0.4),
-        0 0 10px rgba(0, 210, 255, 0.15);
+        text-shadow:
+            0 0 4px rgba(0, 210, 255, 0.4),
+            0 0 10px rgba(0, 210, 255, 0.15);
 
-    /* Layout */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    cursor: pointer;
+        /* Layout */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        cursor: pointer;
 
-    /* Depth */
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.05),
-        0 6px 14px rgba(0,0,0,0.7);
+        /* Depth */
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.05),
+            0 6px 14px rgba(0, 0, 0, 0.7);
 
-    transition:
-        transform 0.08s ease,
-        box-shadow 0.08s ease,
-        color 0.15s ease,
-        border-color 0.15s ease,
-        text-shadow 0.15s ease;
-}
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.08s ease,
+            color 0.15s ease,
+            border-color 0.15s ease,
+            text-shadow 0.15s ease;
+    }
 
-.btn-sys-config:hover {
-    color: #ffffff;
-    border-color: #00d2ff;
+    .btn-sys-config:hover {
+        color: #ffffff;
+        border-color: #00d2ff;
 
-    text-shadow:
-        0 0 6px #00d2ff,
-        0 0 16px rgba(0, 210, 255, 0.6);
+        text-shadow:
+            0 0 6px #00d2ff,
+            0 0 16px rgba(0, 210, 255, 0.6);
 
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.08),
-        0 8px 22px rgba(0, 210, 255, 0.25);
-}
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            0 8px 22px rgba(0, 210, 255, 0.25);
+    }
 
-.btn-sys-config:active {
-    transform: translateY(3px);
-    border-bottom-width: 1px;
+    .btn-sys-config:active {
+        transform: translateY(3px);
+        border-bottom-width: 1px;
 
-    box-shadow:
-        inset 0 2px 6px rgba(0,0,0,0.9),
-        0 2px 4px rgba(0,0,0,0.8);
+        box-shadow:
+            inset 0 2px 6px rgba(0, 0, 0, 0.9),
+            0 2px 4px rgba(0, 0, 0, 0.8);
 
-    color: #ffffff;
-    text-shadow:
-        0 0 10px rgba(255,255,255,0.9);
-}
+        color: #ffffff;
+        text-shadow:
+            0 0 10px rgba(255, 255, 255, 0.9);
+    }
+
+    /* --- MISSION BRIEFING CARD (Campaign Only) --- */
+    .mission-card {
+        background: rgba(255, 215, 0, 0.05);
+        border: 1px solid var(--neon-gold, #ffd700);
+        border-left: 4px solid var(--neon-gold, #ffd700);
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        text-align: left;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .mission-title {
+        font-family: 'Orbitron';
+        color: var(--neon-gold, #ffd700);
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        display: block;
+        text-transform: uppercase;
+    }
+
+    .mission-obj {
+        color: #ddd;
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+
+    .mission-target {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #fff;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Hide controls when locked */
+    .controls-locked {
+        opacity: 0.3;
+        pointer-events: none;
+        filter: grayscale(100%);
+        position: relative;
+    }
+
+    .controls-locked::after {
+        content: "SYSTEM LOCKED BY MISSION CONTROL";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-10deg);
+        color: #ff4b2b;
+        border: 2px solid #ff4b2b;
+        padding: 5px 10px;
+        font-family: 'Orbitron';
+        font-weight: 900;
+        font-size: 1rem;
+        white-space: nowrap;
+        opacity: 0.8;
+    }
 
     /* OVERLAYS */
-.math-overlay {
-    position: absolute;
-    top: 22px;
+    .math-overlay {
+        position: absolute;
+        top: 22px;
 
-    display: flex;
-    align-items: center;
-    gap: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
 
-    background: rgba(0, 0, 0, 0.85);
-    padding: 10px 18px;
-    border-radius: 10px;
-    border: 2px solid #00d2ff;
+        background: rgba(0, 0, 0, 0.85);
+        padding: 10px 18px;
+        border-radius: 10px;
+        border: 2px solid #00d2ff;
 
-    font-weight: 800;
-    font-size: 1.6rem;
-    color: #ffffff;
+        font-weight: 800;
+        font-size: 1.6rem;
+        color: #ffffff;
 
-    box-shadow:
-        0 0 15px rgba(0, 210, 255, 0.35),
-        inset 0 0 20px rgba(0,0,0,0.6);
+        box-shadow:
+            0 0 15px rgba(0, 210, 255, 0.35),
+            inset 0 0 20px rgba(0, 0, 0, 0.6);
 
-    z-index: 12;
-    min-width: 150px;
-}
+        z-index: 12;
+        min-width: 150px;
+    }
 
-/* Left & Right positioning */
-.math-overlay.left {
-    left: 30px;
-}
-.math-overlay.right {
-    right: 30px;
-}
+    /* Left & Right positioning */
+    .math-overlay.left {
+        left: 30px;
+    }
 
-/* LEFT / RIGHT label */
-.lr-label {
-    font-size: 0.7rem;
-    letter-spacing: 2px;
-    color: #00d2ff;
-    opacity: 0.9;
-    text-transform: uppercase;
-}
+    .math-overlay.right {
+        right: 30px;
+    }
 
-/* Actual math content */
-.math-value {
-    font-size: 1.6rem;
-    font-family: 'Courier New', monospace;
-    white-space: nowrap;
-}
-    #question-left { left: 30px; } #question-right { right: 30px; }
-    .shape-svg { filter: drop-shadow(0 0 5px #00d2ff); width: 60px; height: 60px; fill: none; stroke: #fff; stroke-width: 3; }
-    #game-over-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
+    /* LEFT / RIGHT label */
+    .lr-label {
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        color: #00d2ff;
+        opacity: 0.9;
+        text-transform: uppercase;
+    }
+
+    /* Actual math content */
+    .math-value {
+        font-size: 1.6rem;
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+    }
+
+    #question-left {
+        left: 30px;
+    }
+
+    #question-right {
+        right: 30px;
+    }
+
+    .shape-svg {
+        filter: drop-shadow(0 0 5px #00d2ff);
+        width: 60px;
+        height: 60px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 3;
+    }
+
+    #game-over-screen {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 20;
+    }
 
     /* --- POPUP WINDOW --- */
     #config-modal {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85); z-index: 100;
-        display: flex; justify-content: center; align-items: center;
-        opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
     }
-    #config-modal.active { opacity: 1; pointer-events: auto; }
-    
+
+    #config-modal.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
     .modal-content {
-            width: 700px; 
-            background: rgba(10, 15, 25, 0.98); /* Much darker, solid background */
-            border: 2px solid #00d2ff; /* Strong Neon Border */
-            border-radius: 12px;
-            box-shadow: 0 0 40px rgba(0, 210, 255, 0.25), inset 0 0 100px rgba(0,0,0,0.8); /* Glass Glow Effect */
-            padding: 20px 30px; position: relative;
-            transform: translateY(50px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-    #config-modal.active .modal-content { transform: translateY(0); }
-    
-    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
-    .modal-title { color: #ccc; margin: 0; font-family: 'Segoe UI', sans-serif; font-weight: 800; letter-spacing: 2px; }
-    .close-btn { color: #555; font-size: 2rem; cursor: pointer; transition: color 0.2s; line-height: 20px; }
-    .close-btn:hover { color: #fff; }
+        width: 700px;
+        background: rgba(10, 15, 25, 0.98);
+        /* Much darker, solid background */
+        border: 2px solid #00d2ff;
+        /* Strong Neon Border */
+        border-radius: 12px;
+        box-shadow: 0 0 40px rgba(0, 210, 255, 0.25), inset 0 0 100px rgba(0, 0, 0, 0.8);
+        /* Glass Glow Effect */
+        padding: 20px 30px;
+        position: relative;
+        transform: translateY(50px);
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
 
-    .config-section { margin-bottom: 15px; }
-    .config-label { color: #888; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; display: block; border-left: 3px solid #f39c12; padding-left: 10px; letter-spacing: 1px; }
-    .toggle-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-items: center; }
-    .toggle-grid.wide { grid-template-columns: repeat(4, 1fr); }
+    #config-modal.active .modal-content {
+        transform: translateY(0);
+    }
 
-/* NEON TILES — Premium HUD Style */
-.neon-tile {
-    width: 100%;
-    padding: 12px 6px;
-    text-align: center;
-    cursor: pointer;
-    position: relative;
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
 
-    /* Typography */
-    font-family: 'Rajdhani', 'Courier New', monospace;
-    font-weight: 700;
-    font-size: 0.85rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    .modal-title {
+        color: #ccc;
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 800;
+        letter-spacing: 2px;
+    }
 
-    /* Inactive Neon (controlled) */
-    color: rgba(160, 200, 255, 0.45);
-    text-shadow: 0 0 2px rgba(160, 200, 255, 0.25);
+    .close-btn {
+        color: #555;
+        font-size: 2rem;
+        cursor: pointer;
+        transition: color 0.2s;
+        line-height: 20px;
+    }
 
-    /* Premium base */
-    background: linear-gradient(160deg, #141820, #0b0e14);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-bottom: 4px solid rgba(0,0,0,0.9);
-    border-radius: 6px;
+    .close-btn:hover {
+        color: #fff;
+    }
 
-    /* Depth */
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.04),
-        0 6px 12px rgba(0,0,0,0.65);
+    .config-section {
+        margin-bottom: 15px;
+    }
 
-    transition:
-        transform 0.08s ease,
-        box-shadow 0.1s ease,
-        background 0.15s ease,
-        color 0.15s ease,
-        border-color 0.15s ease,
-        text-shadow 0.15s ease;
-}
-.neon-tile:hover {
-    background: linear-gradient(160deg, #1b2230, #101521);
-    border-color: rgba(0, 210, 255, 0.4);
+    .config-label {
+        color: #888;
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        display: block;
+        border-left: 3px solid #f39c12;
+        padding-left: 10px;
+        letter-spacing: 1px;
+    }
 
-    color: #bfefff;
-    text-shadow:
-        0 0 4px rgba(0, 210, 255, 0.6),
-        0 0 10px rgba(0, 210, 255, 0.25);
+    .toggle-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+        justify-items: center;
+    }
 
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.06),
-        0 8px 18px rgba(0,0,0,0.75);
-}
-    
-.neon-tile.active {
-    transform: translateY(3px);
-    border-bottom-width: 1px;
-    border-color: #00d2ff;
+    .toggle-grid.wide {
+        grid-template-columns: repeat(4, 1fr);
+    }
 
-    background: linear-gradient(160deg, #0f2a36, #081a22);
+    /* NEON TILES — Premium HUD Style */
+    .neon-tile {
+        width: 100%;
+        padding: 12px 6px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
 
-    color: #ffffff;
-    text-shadow:
-        0 0 6px #00d2ff,
-        0 0 14px rgba(0, 210, 255, 0.7);
+        /* Typography */
+        font-family: 'Rajdhani', 'Courier New', monospace;
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
 
-    box-shadow:
-        inset 0 2px 10px rgba(0, 210, 255, 0.25),
-        0 3px 6px rgba(0,0,0,0.8);
-}
+        /* Inactive Neon (controlled) */
+        color: rgba(160, 200, 255, 0.45);
+        text-shadow: 0 0 2px rgba(160, 200, 255, 0.25);
+
+        /* Premium base */
+        background: linear-gradient(160deg, #141820, #0b0e14);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 4px solid rgba(0, 0, 0, 0.9);
+        border-radius: 6px;
+
+        /* Depth */
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.04),
+            0 6px 12px rgba(0, 0, 0, 0.65);
+
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.1s ease,
+            background 0.15s ease,
+            color 0.15s ease,
+            border-color 0.15s ease,
+            text-shadow 0.15s ease;
+    }
+
+    .neon-tile:hover {
+        background: linear-gradient(160deg, #1b2230, #101521);
+        border-color: rgba(0, 210, 255, 0.4);
+
+        color: #bfefff;
+        text-shadow:
+            0 0 4px rgba(0, 210, 255, 0.6),
+            0 0 10px rgba(0, 210, 255, 0.25);
+
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.06),
+            0 8px 18px rgba(0, 0, 0, 0.75);
+    }
+
+    .neon-tile.active {
+        transform: translateY(3px);
+        border-bottom-width: 1px;
+        border-color: #00d2ff;
+
+        background: linear-gradient(160deg, #0f2a36, #081a22);
+
+        color: #ffffff;
+        text-shadow:
+            0 0 6px #00d2ff,
+            0 0 14px rgba(0, 210, 255, 0.7);
+
+        box-shadow:
+            inset 0 2px 10px rgba(0, 210, 255, 0.25),
+            0 3px 6px rgba(0, 0, 0, 0.8);
+    }
+
     /* Confirm Button */
-    .modal-footer { margin-top: 25px; display: flex; justify-content: center; }
-/* CONFIRM BUTTON — Premium Cyan Glass */
-.btn-confirm {
-    /* Size & typography */
-    padding: 14px 56px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 900;
-    font-size: 0.9rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+    .modal-footer {
+        margin-top: 25px;
+        display: flex;
+        justify-content: center;
+    }
 
-    /* Glass base */
-    background:
-        linear-gradient(
-            160deg,
-            rgba(0, 210, 255, 0.18),
-            rgba(0, 120, 180, 0.12)
-        ),
-        rgba(8, 12, 20, 0.85);
+    /* CONFIRM BUTTON — Premium Cyan Glass */
+    .btn-confirm {
+        /* Size & typography */
+        padding: 14px 56px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 900;
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-family: 'Rajdhani', 'Segoe UI', sans-serif;
 
-    border: 1px solid rgba(0, 210, 255, 0.45);
-    border-bottom: 4px solid rgba(0, 80, 120, 0.9);
+        /* Glass base */
+        background:
+            linear-gradient(160deg,
+                rgba(0, 210, 255, 0.18),
+                rgba(0, 120, 180, 0.12)),
+            rgba(8, 12, 20, 0.85);
 
-    /* Neon typography */
-    color: #e8faff;
-    text-shadow:
-        0 0 4px rgba(0, 210, 255, 0.6),
-        0 0 10px rgba(0, 210, 255, 0.25);
+        border: 1px solid rgba(0, 210, 255, 0.45);
+        border-bottom: 4px solid rgba(0, 80, 120, 0.9);
 
-    /* Depth */
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.08),
-        0 8px 22px rgba(0,0,0,0.65);
+        /* Neon typography */
+        color: #e8faff;
+        text-shadow:
+            0 0 4px rgba(0, 210, 255, 0.6),
+            0 0 10px rgba(0, 210, 255, 0.25);
 
-    backdrop-filter: blur(6px);
+        /* Depth */
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            0 8px 22px rgba(0, 0, 0, 0.65);
 
-    transition:
-        transform 0.08s ease,
-        box-shadow 0.12s ease,
-        background 0.15s ease,
-        border-color 0.15s ease,
-        text-shadow 0.15s ease,
-        color 0.15s ease;
-}
-.btn-confirm:hover {
-    background:
-        linear-gradient(
-            160deg,
-            rgba(0, 210, 255, 0.32),
-            rgba(0, 150, 220, 0.22)
-        ),
-        rgba(10, 15, 25, 0.9);
+        backdrop-filter: blur(6px);
 
-    border-color: #00d2ff;
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.12s ease,
+            background 0.15s ease,
+            border-color 0.15s ease,
+            text-shadow 0.15s ease,
+            color 0.15s ease;
+    }
 
-    color: #ffffff;
-    text-shadow:
-        0 0 6px #00d2ff,
-        0 0 14px rgba(0, 210, 255, 0.75);
+    .btn-confirm:hover {
+        background:
+            linear-gradient(160deg,
+                rgba(0, 210, 255, 0.32),
+                rgba(0, 150, 220, 0.22)),
+            rgba(10, 15, 25, 0.9);
 
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.12),
-        0 12px 30px rgba(0, 210, 255, 0.35);
-}
-.btn-confirm:active {
-    transform: translateY(3px);
-    border-bottom-width: 1px;
+        border-color: #00d2ff;
 
-    box-shadow:
-        inset 0 3px 10px rgba(0,0,0,0.85),
-        0 3px 6px rgba(0,0,0,0.8);
+        color: #ffffff;
+        text-shadow:
+            0 0 6px #00d2ff,
+            0 0 14px rgba(0, 210, 255, 0.75);
 
-    color: #ffffff;
-    text-shadow:
-        0 0 10px rgba(255,255,255,0.9);
-}
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.12),
+            0 12px 30px rgba(0, 210, 255, 0.35);
+    }
+
+    .btn-confirm:active {
+        transform: translateY(3px);
+        border-bottom-width: 1px;
+
+        box-shadow:
+            inset 0 3px 10px rgba(0, 0, 0, 0.85),
+            0 3px 6px rgba(0, 0, 0, 0.8);
+
+        color: #ffffff;
+        text-shadow:
+            0 0 10px rgba(255, 255, 255, 0.9);
+    }
 
     /* TOOLTIP WARNING */
     #cursor-tooltip {
-        position: fixed; pointer-events: none; z-index: 200;
-        background: rgba(0, 0, 0, 0.9); border: 1px solid #f39c12;
-        color: #f39c12; font-family: 'Segoe UI', sans-serif; font-size: 0.7rem; font-weight: bold;
-        padding: 5px 10px; border-radius: 4px;
-        opacity: 0; transition: opacity 0.2s; transform: translate(15px, 15px);
+        position: fixed;
+        pointer-events: none;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.9);
+        border: 1px solid #f39c12;
+        color: #f39c12;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 0.7rem;
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        transform: translate(15px, 15px);
     }
-    #cursor-tooltip.visible { opacity: 1; }
+
+    #cursor-tooltip.visible {
+        opacity: 1;
+    }
 
     /* Scaling */
-    @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.85); } }
+    @media (max-height: 850px) {
+        .game-transform-wrapper {
+            transform: scale(0.85);
+        }
+    }
+
+    /* --- CAMPAIGN MODE COMPACT STYLES --- */
+    .campaign-layout-override {
+        justify-content: flex-start !important;
+        /* Stack from top, don't spread */
+        gap: 8px !important;
+        /* Tighter gap between sections */
+    }
+
+    .campaign-layout-override .panel-divider {
+        margin: 2px 0 !important;
+        /* Reduce divider spacing */
+    }
+
+    #campaign-objective-block {
+        margin-top: -25px;
+        /* Pull mission briefing up into the free space below gearbox */
+    }
+
+    .mission-compact-box {
+        background: rgba(255, 215, 0, 0.08);
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        border-left: 4px solid #ffd700;
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin-top: 0px;
+        width: 100%;
+    }
+
+    .control-group-compact {
+        gap: 10px !important;
+        /* Original gap preserved */
+    }
 </style>
 
 <div class="cockpit-body">
@@ -448,91 +1154,138 @@
         <div class="game-wrapper">
 
             <div class="control-panel">
-<div style="width:100%; display:flex; flex-direction:column; align-items:center;">
-    <div style="width:100%; display:flex; flex-direction:row; align-items:stretch; justify-content:space-between; padding-bottom: 5px;">
-        
-        <div class="ai-module-box" style="flex: 1; display:flex; flex-direction:column; align-items:center; justify-content: space-between; padding: 10px; background: linear-gradient(145deg, #161a24, #0a0c10); border: 1px solid rgba(155, 89, 182, 0.4); border-radius: 10px; margin-right: 12px; height: 195px; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 0 10px rgba(155, 89, 182, 0.1);">
-            <span class="control-label" style="font-size: 0.65rem; color: #9b59b6; margin-bottom: 8px; text-shadow: 0 0 8px rgba(155, 89, 182, 0.6);">AI ASSISTANT</span>
-            
-            <button id="btn-ai-auto" class="btn-sys-config" onclick="toggleAutoPilot()" 
-                    style="width: 100%; flex-grow: 1; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.08); 
+                <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
+                    <div
+                        style="width:100%; display:flex; flex-direction:row; align-items:stretch; justify-content:space-between; padding-bottom: 5px;">
+
+                        <div class="ai-module-box"
+                            style="flex: 1; display:flex; flex-direction:column; align-items:center; justify-content: space-between; padding: 10px; background: linear-gradient(145deg, #161a24, #0a0c10); border: 1px solid rgba(155, 89, 182, 0.4); border-radius: 10px; margin-right: 12px; height: 195px; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 0 10px rgba(155, 89, 182, 0.1);">
+                            <span class="control-label"
+                                style="font-size: 0.65rem; color: #9b59b6; margin-bottom: 8px; text-shadow: 0 0 8px rgba(155, 89, 182, 0.6);">AI
+                                ASSISTANT</span>
+
+                            <button id="btn-ai-auto" class="btn-sys-config" onclick="toggleAutoPilot()"
+                                style="width: 100%; flex-grow: 1; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.08); 
                            font-family: 'Orbitron', sans-serif; font-size: 0.65rem; line-height: 1.4; border-radius: 6px; cursor: pointer; transition: all 0.3s; margin-top:0;">
-                PILOT<br>SYSTEM
-            </button>
+                                PILOT<br>SYSTEM
+                            </button>
 
-            <div style="width: 100%; margin-top: 12px; text-align: center;">
-                <div style="font-size: 0.5rem; color: #666; margin-bottom: 4px; letter-spacing: 1px;">NEURAL SYNC</div>
-                <div style="width: 100%; height: 5px; background: #000; border-radius: 3px; border: 1px solid #333; overflow: hidden;">
-                    <div id="ai-confidence-bar" style="width: 0%; height: 100%; background: #9b59b6; box-shadow: 0 0 8px #9b59b6; transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
-                </div>
-                <div id="ai-status-text" style="font-size: 0.55rem; color: #9b59b6; margin-top: 6px; font-weight: 800; letter-spacing: 1px;">OFFLINE</div>
-            </div>
-        </div>
+                            <div style="width: 100%; margin-top: 12px; text-align: center;">
+                                <div style="font-size: 0.5rem; color: #666; margin-bottom: 4px; letter-spacing: 1px;">
+                                    NEURAL SYNC</div>
+                                <div
+                                    style="width: 100%; height: 5px; background: #000; border-radius: 3px; border: 1px solid #333; overflow: hidden;">
+                                    <div id="ai-confidence-bar"
+                                        style="width: 0%; height: 100%; background: #9b59b6; box-shadow: 0 0 8px #9b59b6; transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                                    </div>
+                                </div>
+                                <div id="ai-status-text"
+                                    style="font-size: 0.55rem; color: #9b59b6; margin-top: 6px; font-weight: 800; letter-spacing: 1px;">
+                                    OFFLINE</div>
+                            </div>
+                        </div>
 
-        <div style="flex: 1.2; display:flex; flex-direction:column; align-items:flex-end;">
-            <span class="control-label" style="margin-bottom: 8px; text-align: right;">Manual Shifter</span>
-            <div class="shifter-container" style="transform: scale(0.85); transform-origin: right top; margin-right: -10px; height: 215px; background: #111; border-color: #333;">
-                <div class="shifter-slot"></div>
-                <div class="shifter-labels">
-                    <div class="shift-mark mark-3" id="label-hard" style="font-size: 0.55rem; left: 10px;">HARD</div>
-                    <div class="shift-mark mark-2" id="label-medium" style="font-size: 0.55rem; left: 10px;">MEDIUM</div>
-                    <div class="shift-mark mark-1 active-label" id="label-easy" style="font-size: 0.55rem; left: 10px;">EASY</div>
-                </div>
-                <div class="click-zone zone-3" onclick="shiftGear('hard')"></div>
-                <div class="click-zone zone-2" onclick="shiftGear('medium')"></div>
-                <div class="click-zone zone-1" onclick="shiftGear('easy')"></div>
-                <div class="shifter-stick-assembly" id="shifter-assembly" style="top: 165px;">
-                    <div class="shifter-knob">
-                        <span class="knob-number" id="knob-number" style="color:#00d2ff; text-shadow:0 0 15px #00d2ff;">1</span>
+                        <div style="flex: 1.2; display:flex; flex-direction:column; align-items:flex-end;">
+                            <span class="control-label" style="margin-bottom: 8px; text-align: right;">Manual
+                                Shifter</span>
+                            <div class="shifter-container"
+                                style="transform: scale(0.85); transform-origin: right top; margin-right: -10px; height: 215px; background: #111; border-color: #333;">
+                                <div class="shifter-slot"></div>
+                                <div class="shifter-labels">
+                                    <div class="shift-mark mark-3" id="label-hard"
+                                        style="font-size: 0.55rem; left: 10px;">HARD</div>
+                                    <div class="shift-mark mark-2" id="label-medium"
+                                        style="font-size: 0.55rem; left: 10px;">MEDIUM</div>
+                                    <div class="shift-mark mark-1 active-label" id="label-easy"
+                                        style="font-size: 0.55rem; left: 10px;">EASY</div>
+                                </div>
+                                <div class="click-zone zone-3" onclick="shiftGear('hard')"></div>
+                                <div class="click-zone zone-2" onclick="shiftGear('medium')"></div>
+                                <div class="click-zone zone-1" onclick="shiftGear('easy')"></div>
+                                <div class="shifter-stick-assembly" id="shifter-assembly" style="top: 165px;">
+                                    <div class="shifter-knob">
+                                        <span class="knob-number" id="knob-number"
+                                            style="color:#00d2ff; text-shadow:0 0 15px #00d2ff;">1</span>
+                                    </div>
+                                    <div class="shifter-rod"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="shifter-rod"></div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
                 <div class="panel-divider"></div>
-                
-                <div id="std-nav-controls" style="width:100%">
+
+                {% if level_config.mode == 'campaign' %}
+                <div id="campaign-objective-block" style="width: 100%;">
+                    <span class="control-label" style="margin-bottom:4px;">Mission Briefing</span>
+                    <div class="mission-compact-box">
+                        <div
+                            style="font-family: 'Orbitron', sans-serif; color: #ffd700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);">
+                            OBJECTIVE: {{ level_config.name }}
+                        </div>
+                        <div style="color: #ccc; font-size: 0.7rem; line-height: 1.2;">
+                            {{ level_config.desc }}
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    // This forces the panel to stack tightly from the top
+                    document.addEventListener("DOMContentLoaded", function () {
+                        document.querySelector('.control-panel').classList.add('campaign-layout-override');
+                        document.querySelector('.control-selection-group').classList.add('control-group-compact');
+                    });
+                </script>
+                {% else %}
+
+                <div id="std-nav-controls">
                     <span class="control-label">Nav Computer</span>
                     <div class="rocker-group">
                         <div class="rocker-wrapper">
-                            <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" checked onchange="updateMathMode()">
-                            <label for="math-simple" class="rocker-label" data-tooltip="Basic arithmetic mode. Only addition and subtraction. Best for quick reactions and early gameplay.">
-                                <div><div class="rocker-light"></div><div class="rocker-text">+  -</div></div>
+                            <input type="radio" name="math" id="math-simple" value="simple" class="rocker-input" checked
+                                onchange="updateMathMode()">
+                            <label for="math-simple" class="rocker-label">
+                                <div>
+                                    <div class="rocker-light"></div>
+                                    <div class="rocker-text">+ -</div>
+                                </div>
                             </label>
                         </div>
                         <div class="rocker-wrapper">
-                            <input type="radio" name="math" id="math-mixed" value="mixed" class="rocker-input" onchange="updateMathMode()">
-                            <label for="math-mixed" class="rocker-label" data-tooltip="Advanced math mode. Includes multiplication and division. Increases difficulty and reaction demand.">
-                                <div><div class="rocker-light"></div><div class="rocker-text">+  -  *  /</div></div>
+                            <input type="radio" name="math" id="math-mixed" value="mixed" class="rocker-input"
+                                onchange="updateMathMode()">
+                            <label for="math-mixed" class="rocker-label">
+                                <div>
+                                    <div class="rocker-light"></div>
+                                    <div class="rocker-text">+ - * /</div>
+                                </div>
                             </label>
                         </div>
                     </div>
                 </div>
+                {% endif %}
 
                 <div class="panel-divider"></div>
                 <div style="width:100%">
                     <span class="control-label">Control System</span>
                     <div class="control-selection-group">
-                    <div id="btn-mode-key"
-                        class="input-mode-btn"
-                        onclick="setControlMode('keyboard')"
-                        data-tooltip="Answer questions using keyboard digits.">
+                        <div id="btn-mode-key" class="input-mode-btn" onclick="setControlMode('keyboard')"
+                            data-tooltip="Answer questions using keyboard digits.">
                             <div class="icon">⌨️</div>
-                            <div class="text-group"><span class="main-text">Manual</span><span class="sub-text">Keyboard</span></div>
+                            <div class="text-group"><span class="main-text">Manual</span><span
+                                    class="sub-text">Keyboard</span>
+                            </div>
                         </div>
-                        <div id="btn-mode-voice"
-                            class="input-mode-btn"
-                            onclick="setControlMode('voice')"
+                        <div id="btn-mode-voice" class="input-mode-btn" onclick="setControlMode('voice')"
                             data-tooltip="Answer questions using speech recognition.">
                             <div class="icon">🎙️</div>
-                            <div class="text-group"><span class="main-text">Voice</span><span class="sub-text">Speech Rec.</span></div>
+                            <div class="text-group"><span class="main-text">Voice</span><span class="sub-text">Speech
+                                    Rec.</span></div>
                         </div>
                         <div id="btn-mode-gesture" class="input-mode-btn" onclick="setControlMode('gesture')">
-        <div class="icon">🖐️</div>
-        <div class="text-group"><span class="main-text">Vision</span><span class="sub-text">Hand Gesture</span></div>
-    </div>
+                            <div class="icon">🖐️</div>
+                            <div class="text-group"><span class="main-text">Vision</span><span class="sub-text">Hand
+                                    Gesture</span></div>
+                        </div>
                         <div id="mic-indicator" class="mic-indicator">STATUS: <span id="mic-text">STANDBY</span></div>
                     </div>
                 </div>
@@ -541,27 +1294,34 @@
 
             <div class="center-stage">
                 <div class="game-container">
-                    <div id="question-left" class="math-overlay left" style="display: flex; align-items: center; gap: 8px; min-width: auto;">
+                    <div id="question-left" class="math-overlay left"
+                        style="display: flex; align-items: center; gap: 8px; min-width: auto;">
                         <span class="lr-label">LEFT</span>
                         <div style="display: flex; flex-direction: column; align-items: flex-start;">
                             <span class="math-value">--</span>
-                            <span class="ai-hint" style="color: #ffd700; font-size: 0.75rem; margin-top: -8px; font-family: 'Rajdhani', sans-serif;"></span>
+                            <span class="ai-hint"
+                                style="color: #ffd700; font-size: 0.75rem; margin-top: -8px; font-family: 'Rajdhani', sans-serif;"></span>
                         </div>
                     </div>
 
-                    <div id="question-right" class="math-overlay right" style="display: flex; align-items: center; gap: 8px; min-width: auto;">
+                    <div id="question-right" class="math-overlay right"
+                        style="display: flex; align-items: center; gap: 8px; min-width: auto;">
                         <span class="lr-label">RIGHT</span>
                         <div style="display: flex; flex-direction: column; align-items: flex-start;">
                             <span class="math-value">--</span>
-                            <span class="ai-hint" style="color: #ffd700; font-size: 0.75rem; margin-top: -8px; font-family: 'Rajdhani', sans-serif;"></span>
+                            <span class="ai-hint"
+                                style="color: #ffd700; font-size: 0.75rem; margin-top: -8px; font-family: 'Rajdhani', sans-serif;"></span>
                         </div>
                     </div>
-                        
-                        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+                    <canvas id="gameCanvas" width="800" height="600"></canvas>
                     <div id="game-over-screen">
-                        <h1 id="game-over-title" style="font-size:3rem; margin-bottom:10px; color:#ff4b2b;">CRITICAL FAILURE</h1>
-                        <p style="font-size: 1.5rem; color:#ccc;">Distance Traveled: <span id="final-score">0</span>m</p>
-                        <button onclick="location.reload()" class="btn btn-primary btn-lg" style="margin-top:30px; font-size:1.5rem;">REBOOT SYSTEM</button>
+                        <h1 id="game-over-title" style="font-size:3rem; margin-bottom:10px; color:#ff4b2b;">CRITICAL
+                            FAILURE</h1>
+                        <p style="font-size: 1.5rem; color:#ccc;">Distance Traveled: <span id="final-score">0</span>m
+                        </p>
+                        <button onclick="location.reload()" class="btn btn-primary btn-lg"
+                            style="margin-top:30px; font-size:1.5rem;">REBOOT SYSTEM</button>
                     </div>
                 </div>
                 <div class="mission-control">
@@ -584,23 +1344,26 @@
                     <div class="gauge-wrapper">
                         <div class="gauge-arc"></div>
                         <div class="gauge-needle" id="speed-needle"></div>
-                        <div class="gauge-value"><span id="speed-value">0</span><span class="gauge-unit">KM/H</span></div>
+                        <div class="gauge-value"><span id="speed-value">0</span><span class="gauge-unit">KM/H</span>
+                        </div>
                     </div>
                 </div>
                 <div class="panel-divider"></div>
-    <div id="camera-container" class="camera-wrapper">
-        <video id="gesture-video" autoplay playsinline></video>
-        <canvas id="gesture-canvas"></canvas>
-        <div class="camera-label">AI VISION ACTIVE</div>
-    </div>
+                <div id="camera-container" class="camera-wrapper">
+                    <video id="gesture-video" autoplay playsinline></video>
+                    <canvas id="gesture-canvas"></canvas>
+                    <div class="camera-label">AI VISION ACTIVE</div>
+                </div>
                 <div class="panel-divider"></div>
+                {% if level_config.mode != 'campaign' %}
                 <div id="btn-sys-config" class="btn-sys-config">
                     ADDITIONAL FEATURES
                 </div>
+                {% endif %}
             </div>
 
-        </div> 
-    </div> 
+        </div>
+    </div>
 </div>
 
 <div id="config-modal">
@@ -614,9 +1377,7 @@
             <span class="config-label">MULTIPLICATION VECTORS</span>
             <div class="toggle-grid">
                 {% for i in range(2, 12) %}
-                <div class="neon-tile feature-btn"
-                    data-type="mult"
-                    data-value="{{ i }}">
+                <div class="neon-tile feature-btn" data-type="mult" data-value="{{ i }}">
                     X{{ i }}
                 </div>
                 {% endfor %}
@@ -637,7 +1398,8 @@
         <div class="config-section">
             <span class="config-label">VISUAL & VOICE RECOGNITION OPS (REQ. VOICE MODE)</span>
             <div class="toggle-grid wide">
-                {% for op, label in [('shapes', 'SHAPES'), ('diff', 'CALC: DIFF'), ('int', 'CALC: INT'), ('trig', 'TRIG')] %}
+                {% for op, label in [('shapes', 'SHAPES'), ('diff', 'CALC: DIFF'), ('int', 'CALC: INT'), ('trig',
+                'TRIG')] %}
                 <div class="neon-tile feature-btn" data-type="voice" data-value="{{ op }}">
                     {{ label }}
                 </div>
@@ -646,13 +1408,20 @@
         </div>
 
         <div class="modal-footer">
-            <button class="btn-confirm" onclick="document.getElementById('config-modal').classList.remove('active')">CONFIRM</button>
+            <button class="btn-confirm"
+                onclick="document.getElementById('config-modal').classList.remove('active')">CONFIRM</button>
         </div>
 
     </div>
 </div>
 
 <div id="cursor-tooltip">WARNING</div>
+
+<script>
+    // This receives the data from Flask (app.py)
+    const LEVEL_CONTEXT = {{ level_config | tojson }};
+    console.log("LOADED LEVEL CONTEXT:", LEVEL_CONTEXT);
+</script>
 
 <script src="{{ url_for('static', filename='math_data.js') }}"></script>
 <script src="{{ url_for('static', filename='single_script.js') }}"></script>

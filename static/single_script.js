@@ -40,7 +40,7 @@ function updateLoadoutHUD() {
 function toggleAutoPilot() {
     autoPilotActive = !autoPilotActive;
     const btn = document.getElementById('btn-ai-auto');
-    
+
     if (autoPilotActive) {
         btn.innerText = "AUTO-PILOT: ACTIVE";
         btn.classList.add('ai-active'); // We can style this in CSS later
@@ -104,23 +104,23 @@ const CONFIG = {
 /* --- PHYSICS CONSTANTS --- */
 // 1. KEYBOARD MODE (Standard)
 const SPEEDS = {
-    easy:   { base: 0.8, max: 1.8, acceleration: 0.0009, spawnInterval: 2500 },
+    easy: { base: 0.8, max: 1.8, acceleration: 0.0009, spawnInterval: 2500 },
     medium: { base: 1.9, max: 2.8, acceleration: 0.0009, spawnInterval: 2000 },
-    hard:   { base: 2.9, max: 5.0, acceleration: 0.002, spawnInterval: 1200 }
+    hard: { base: 2.9, max: 5.0, acceleration: 0.002, spawnInterval: 1200 }
 };
 
 // 2. VOICE MODE (Generally Slower - Speaking takes time)
-const VOICE_STATS = { 
-    easy:   { base: 0.2, max: 1.2, acceleration: 0.01, spawnInterval: 4000 },
+const VOICE_STATS = {
+    easy: { base: 0.2, max: 1.2, acceleration: 0.01, spawnInterval: 4000 },
     medium: { base: 0.5, max: 2.0, acceleration: 0.015, spawnInterval: 3500 },
-    hard:   { base: 1.0, max: 3.0, acceleration: 0.02, spawnInterval: 3000 }
+    hard: { base: 1.0, max: 3.0, acceleration: 0.02, spawnInterval: 3000 }
 };
 
 // 3. GESTURE MODE (needs high base speed to clear safety gap)
-const GESTURE_STATS = { 
-    easy:   { base: 0.5, max: 1.5, acceleration: 0.003, spawnInterval: 2500 },
+const GESTURE_STATS = {
+    easy: { base: 0.5, max: 1.5, acceleration: 0.003, spawnInterval: 2500 },
     medium: { base: 1.7, max: 2.1, acceleration: 0.004, spawnInterval: 2000 }, // Your "Sweet Spot"
-    hard:   { base: 1.8, max: 3.0, acceleration: 0.005, spawnInterval: 1500 }
+    hard: { base: 1.8, max: 3.0, acceleration: 0.005, spawnInterval: 1500 }
 };
 // --- HELPER: GET CURRENT PHYSICS STATS ---
 // --- HELPER: GET CURRENT PHYSICS STATS ---
@@ -129,10 +129,10 @@ function getCurrentStats() {
     let profile;
     if (playerConfig.controlMode === 'voice') {
         profile = VOICE_STATS;
-    } 
+    }
     else if (playerConfig.controlMode === 'gesture') {
         profile = GESTURE_STATS;
-    } 
+    }
     else {
         profile = SPEEDS; // Keyboard
     }
@@ -185,7 +185,7 @@ function loadPlayerConfig() {
             const type = btn.dataset.type;
             const value = btn.dataset.value;
             let isActive = false;
-            
+
             if (type === 'mult') isActive = playerConfig.multipliers.includes(parseInt(value));
             else if (type === 'adv') isActive = playerConfig.advancedOps[value];
             else if (type === 'voice') isActive = playerConfig.voiceOps[value];
@@ -195,22 +195,24 @@ function loadPlayerConfig() {
         });
 
         // 5. Restore Nav Controls State
-        if (playerConfig.customActive) stdNavControls.classList.add('controls-disabled');
-        else stdNavControls.classList.remove('controls-disabled');
+        if (stdNavControls) {
+            if (playerConfig.customActive) stdNavControls.classList.add('controls-disabled');
+            else stdNavControls.classList.remove('controls-disabled');
+        }
 
     } catch (e) {
         console.warn("Failed to load saved config", e);
     }
 }
 
-const playerImg = new Image(); playerImg.src = "/static/car_player.png"; 
+const playerImg = new Image(); playerImg.src = "/static/car_player.png";
 // GARAGE INTEGRATION: OVERRIDE DEFAULT IF SELECTED
 // ADDED: CAR DIMENSION REGISTRY
 const CAR_REGISTRY = {
     'car_default': { width: 120, height: 105, src: 'car_default.png' },
-    'car_bronze':  { width: 72, height: 123, src: 'car_bronze.png' },
-    'car_silver':  { width: 75, height: 145, src: 'car_silver.png' },
-    'car_gold':    { width: 120, height: 120, src: 'car_gold.png' }
+    'car_bronze': { width: 72, height: 123, src: 'car_bronze.png' },
+    'car_silver': { width: 75, height: 145, src: 'car_silver.png' },
+    'car_gold': { width: 120, height: 120, src: 'car_gold.png' }
 };
 const storedCar = localStorage.getItem('formulaRush_selectedCar');
 if (storedCar && CAR_REGISTRY[storedCar]) {
@@ -222,20 +224,20 @@ if (storedCar && CAR_REGISTRY[storedCar]) {
 // Traffic Logic
 const TRAFFIC_TYPES = [
     { name: "normal", img: "/static/normal.png", width: 95, height: 105, speedMultiplier: 1.0, spawnWeight: 15 },
-    { name: "taxi", img: "/static/car_enemy.png", width: 45, height: 90, speedMultiplier: 0.85, spawnWeight: 45 },    
+    { name: "taxi", img: "/static/car_enemy.png", width: 45, height: 90, speedMultiplier: 0.85, spawnWeight: 45 },
     { name: "bike", img: "/static/bike.png", width: 73, height: 100, speedMultiplier: 0.9, spawnWeight: 10 },
     { name: "redcar", img: "/static/car1.png", width: 80, height: 115, speedMultiplier: 0.8, spawnWeight: 30 }
 ];
 const enemyImages = {};
-TRAFFIC_TYPES.forEach(type => { const img = new Image(); img.src = type.img; enemyImages[type.name] = img; }); 
+TRAFFIC_TYPES.forEach(type => { const img = new Image(); img.src = type.img; enemyImages[type.name] = img; });
 
 let enemies = [];
 let currentQuestion = null;
-let expectedLeft = null; 
+let expectedLeft = null;
 let expectedRight = null;
 let spawnTimer = null;
-let recognition = null; 
-let isProcessingSpeech = false; 
+let recognition = null;
+let isProcessingSpeech = false;
 
 /* --- UI ELEMENTS --- */
 const questionLeftEl = document.getElementById('question-left');
@@ -259,7 +261,7 @@ const labelMedium = document.getElementById('label-medium');
 const labelHard = document.getElementById('label-hard');
 const stdNavControls = document.getElementById('std-nav-controls');
 
-const leftMathValue  = questionLeftEl.querySelector('.math-value');
+const leftMathValue = questionLeftEl.querySelector('.math-value');
 const rightMathValue = questionRightEl.querySelector('.math-value');
 
 // GESTURE UI ELEMENTS
@@ -371,7 +373,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Modal Logic
-btnSysConfig.addEventListener('click', () => { configModal.classList.add('active'); });
+if (btnSysConfig) btnSysConfig.addEventListener('click', () => { configModal.classList.add('active'); });
 closeModal.addEventListener('click', () => { configModal.classList.remove('active'); });
 
 // Tooltip Logic
@@ -412,22 +414,24 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
         } else if (type === 'voice') {
             playerConfig.voiceOps[value] = isActive;
         }
-        
+
         // CHECK MASTER CUSTOM STATE
         const hasMult = playerConfig.multipliers.length > 0;
         const hasAdv = Object.values(playerConfig.advancedOps).some(x => x);
         const hasVoice = Object.values(playerConfig.voiceOps).some(x => x);
         playerConfig.customActive = (hasMult || hasAdv || hasVoice);
-        
+
         // DISABLE STANDARD NAV COMPUTER
-        if (playerConfig.customActive) stdNavControls.classList.add('controls-disabled');
-        else stdNavControls.classList.remove('controls-disabled');
+        if (stdNavControls) {
+            if (playerConfig.customActive) stdNavControls.classList.add('controls-disabled');
+            else stdNavControls.classList.remove('controls-disabled');
+        }
 
         // WARNING 2: Gear Suggestion
         // WARNING 2: Gear Suggestion (Only for numeric operations)
         if (isActive && playerConfig.customActive && playerConfig.difficulty === 'easy' && type !== 'voice') {
             showTooltip(e.clientX, e.clientY, "SUGGESTION: SHIFT UP (Answers > 9)");
-        }   
+        }
 
         savePlayerConfig(); // Save after toggle change
         if (gameState.isPlaying) generateTwoProblems();
@@ -438,19 +442,19 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
 function generateTwoProblems() {
     let leftObj = createMathProblem();
     let rightObj = createMathProblem();
-    
+
     let safe = 0;
     while (JSON.stringify(rightObj.answer) === JSON.stringify(leftObj.answer) && safe < 50) { rightObj = createMathProblem(); safe++; }
-    
+
     expectedLeft = leftObj.answer;
     expectedRight = rightObj.answer;
-    
+
     currentQuestion = {
         leftDigit: (typeof expectedLeft === 'number') ? expectedLeft % 10 : null,
         rightDigit: (typeof expectedRight === 'number') ? expectedRight % 10 : null
     };
 
-    leftMathValue.innerHTML  = leftObj.html || leftObj.text;
+    leftMathValue.innerHTML = leftObj.html || leftObj.text;
     rightMathValue.innerHTML = rightObj.html || rightObj.text;
     questionStartTime = Date.now(); // Mark the exact millisecond the question appeared
 }
@@ -458,19 +462,60 @@ function generateTwoProblems() {
 function createMathProblem() {
     // STANDARD LOGIC
     if (!playerConfig.customActive) {
-        let n1, n2, op, ans, text, isValid=false, safety=0;
+        let n1, n2, op, ans, text, isValid = false, safety = 0;
         while (!isValid && safety < 50) {
             safety++;
+
+            // CAMPAIGN MODE: Check LEVEL_CONTEXT.ops for allowed operations
             let operators = ['+', '-'];
-            if (playerConfig.mathMode === 'mixed') operators.push('*', '/');
+            let tableRange = null; // For specific multiplication tables
+
+            if (typeof LEVEL_CONTEXT !== 'undefined' && LEVEL_CONTEXT.mode === 'campaign' && LEVEL_CONTEXT.ops && LEVEL_CONTEXT.ops.length > 0) {
+                operators = [];
+
+                // Basic operations
+                if (LEVEL_CONTEXT.ops.includes('addition')) operators.push('+');
+                if (LEVEL_CONTEXT.ops.includes('subtraction')) operators.push('-');
+                if (LEVEL_CONTEXT.ops.includes('division')) operators.push('/');
+
+                // Specific multiplication table ranges
+                if (LEVEL_CONTEXT.ops.includes('mult_1_2')) { operators.push('*'); tableRange = [1, 2]; }
+                if (LEVEL_CONTEXT.ops.includes('mult_3_4')) { operators.push('*'); tableRange = [3, 4]; }
+                if (LEVEL_CONTEXT.ops.includes('mult_5_6')) { operators.push('*'); tableRange = [5, 6]; }
+                if (LEVEL_CONTEXT.ops.includes('mult_7_8')) { operators.push('*'); tableRange = [7, 8]; }
+                if (LEVEL_CONTEXT.ops.includes('mult_9_10')) { operators.push('*'); tableRange = [9, 10]; }
+
+                // Legacy support
+                if (LEVEL_CONTEXT.ops.includes('mult_easy')) operators.push('*');
+
+                // All operations (final level)
+                if (LEVEL_CONTEXT.ops.includes('all_ops') || LEVEL_CONTEXT.ops.includes('mixed')) {
+                    operators = ['+', '-', '*', '/'];
+                }
+
+                // Fallback if no operators matched
+                if (operators.length === 0) operators = ['+'];
+            } else if (playerConfig.mathMode === 'mixed') {
+                operators.push('*', '/');
+            }
+
             op = operators[Math.floor(Math.random() * operators.length)];
-            n1 = Math.floor(Math.random()*12)+1; n2 = Math.floor(Math.random()*12)+1;
-            
-            if (op==='+') { ans=n1+n2; text=`${n1}+${n2}`; }
-            else if (op==='-') { ans=Math.max(n1,n2)-Math.min(n1,n2); text=`${Math.max(n1,n2)}-${Math.min(n1,n2)}`; }
-            else if (op==='*') { ans=n1*n2; text=`${n1}x${n2}`; }
-            else { n1=Math.floor(Math.random()*9)+2; ans=Math.floor(Math.random()*10)+1; text=`${n1*ans}/${n1}`; }
-            
+
+            // Generate numbers based on operation type
+            if (op === '*' && tableRange) {
+                // Use specific table range for multiplication
+                n1 = tableRange[Math.floor(Math.random() * tableRange.length)];
+                n2 = Math.floor(Math.random() * 12) + 1;
+            } else {
+                n1 = Math.floor(Math.random() * 12) + 1;
+                n2 = Math.floor(Math.random() * 12) + 1;
+            }
+
+            if (op === '+') { ans = n1 + n2; text = `${n1}+${n2}`; }
+            else if (op === '-') { ans = Math.max(n1, n2) - Math.min(n1, n2); text = `${Math.max(n1, n2)}-${Math.min(n1, n2)}`; }
+            else if (op === '*') { ans = n1 * n2; text = `${n1}x${n2}`; }
+            else { n1 = Math.floor(Math.random() * 9) + 2; ans = Math.floor(Math.random() * 10) + 1; text = `${n1 * ans}/${n1}`; }
+
             isValid = checkDifficulty(ans, op);
         }
         return { text: text, answer: ans };
@@ -480,31 +525,31 @@ function createMathProblem() {
     let pool = [];
     if (playerConfig.controlMode === 'voice') {
         for (const [key, active] of Object.entries(playerConfig.voiceOps)) {
-            if (active) pool.push(...VOICE_DATA[key].map(i => ({text: i.t, html: i.html, answer: i.a, type:'voice'})));
+            if (active) pool.push(...VOICE_DATA[key].map(i => ({ text: i.t, html: i.html, answer: i.a, type: 'voice' })));
         }
     }
-    if (playerConfig.advancedOps.squares) pool.push({type: 'square'});
-    if (playerConfig.advancedOps.cubes) pool.push({type: 'cube'});
-    if (playerConfig.advancedOps.sqrt) pool.push({type: 'sqrt'});
-    if (playerConfig.multipliers.length > 0) pool.push({type: 'mult'});
+    if (playerConfig.advancedOps.squares) pool.push({ type: 'square' });
+    if (playerConfig.advancedOps.cubes) pool.push({ type: 'cube' });
+    if (playerConfig.advancedOps.sqrt) pool.push({ type: 'sqrt' });
+    if (playerConfig.multipliers.length > 0) pool.push({ type: 'mult' });
 
-    if (pool.length === 0) pool.push({type: 'standard'});
+    if (pool.length === 0) pool.push({ type: 'standard' });
 
     let choice = pool[Math.floor(Math.random() * pool.length)];
     if (choice.type === 'voice') return choice;
 
-    let n1, n2, ans, text, isValid=false, safety=0;
+    let n1, n2, ans, text, isValid = false, safety = 0;
     while (!isValid && safety < 50) {
         safety++; isValid = false;
-        if (choice.type === 'square') { n1 = Math.floor(Math.random()*12)+1; ans = n1*n1; text = `${n1}²`; }
-        else if (choice.type === 'cube') { n1 = Math.floor(Math.random()*6)+1; ans = n1*n1*n1; text = `${n1}³`; }
-        else if (choice.type === 'sqrt') { n1 = Math.floor(Math.random()*12)+1; ans = n1; text = `√${n1*n1}`; }
+        if (choice.type === 'square') { n1 = Math.floor(Math.random() * 12) + 1; ans = n1 * n1; text = `${n1}²`; }
+        else if (choice.type === 'cube') { n1 = Math.floor(Math.random() * 6) + 1; ans = n1 * n1 * n1; text = `${n1}³`; }
+        else if (choice.type === 'sqrt') { n1 = Math.floor(Math.random() * 12) + 1; ans = n1; text = `√${n1 * n1}`; }
         else if (choice.type === 'mult') {
-            n1 = playerConfig.multipliers[Math.floor(Math.random()*playerConfig.multipliers.length)];
-            n2 = Math.floor(Math.random()*12)+1; ans = n1*n2; text = `${n1}x${n2}`;
+            n1 = playerConfig.multipliers[Math.floor(Math.random() * playerConfig.multipliers.length)];
+            n2 = Math.floor(Math.random() * 12) + 1; ans = n1 * n2; text = `${n1}x${n2}`;
         }
-        else { 
-             n1=Math.floor(Math.random()*9)+1; n2=Math.floor(Math.random()*9)+1; ans=n1+n2; text=`${n1}+${n2}`;
+        else {
+            n1 = Math.floor(Math.random() * 9) + 1; n2 = Math.floor(Math.random() * 9) + 1; ans = n1 + n2; text = `${n1}+${n2}`;
         }
         isValid = checkDifficulty(ans, 'custom');
     }
@@ -523,10 +568,10 @@ function checkAnswer(input) {
 
     const now = Date.now();
     const reactionTime = (now - questionStartTime) / 1000;
-    raceSession.inputStats.total++; 
+    raceSession.inputStats.total++;
 
     let correct = false;
-    
+
     // Logic for checking input (Keyboard/Voice)
     if (typeof input === 'number' && currentQuestion.leftDigit !== null) {
         if (input === currentQuestion.leftDigit) { if (gameState.lane > 0) gameState.lane--; correct = true; }
@@ -561,55 +606,55 @@ function checkAnswer(input) {
                 correct: correct
             })
         })
-        .then(res => res.json())
-        .then(data => {
-            // Handle "Not Enough Data" Warning
-            if (data.status === 'insufficient_data') {
-                autoPilotActive = false; // Turn off to prevent spamming
-                const btn = document.getElementById('btn-ai-auto');
-                btn.innerText = "LOCKED";
-                alert(`AI Learning: Need ${data.needed} more data points to enable Auto-Pilot.`);
-                return;
-            }
+            .then(res => res.json())
+            .then(data => {
+                // Handle "Not Enough Data" Warning
+                if (data.status === 'insufficient_data') {
+                    autoPilotActive = false; // Turn off to prevent spamming
+                    const btn = document.getElementById('btn-ai-auto');
+                    btn.innerText = "LOCKED";
+                    alert(`AI Learning: Need ${data.needed} more data points to enable Auto-Pilot.`);
+                    return;
+                }
 
-            const currentGear = playerConfig.difficulty; // 'easy', 'medium', or 'hard'
-            const prediction = data.prediction; // 'confident', 'stable', or 'unstable'
+                const currentGear = playerConfig.difficulty; // 'easy', 'medium', or 'hard'
+                const prediction = data.prediction; // 'confident', 'stable', or 'unstable'
 
-            /* GRADUAL SHIFT LOGIC:
-               1. If 'confident': Move UP one level (Easy -> Medium -> Hard)
-               2. If 'unstable' or WRONG: Move DOWN one level (Hard -> Medium -> Easy)
-               3. If 'stable': Maintain current gear.
-            */
+                /* GRADUAL SHIFT LOGIC:
+                   1. If 'confident': Move UP one level (Easy -> Medium -> Hard)
+                   2. If 'unstable' or WRONG: Move DOWN one level (Hard -> Medium -> Easy)
+                   3. If 'stable': Maintain current gear.
+                */
 
-            let nextGear = currentGear;
+                let nextGear = currentGear;
 
-            if (prediction === 'confident' && correct) {
-                if (currentGear === 'easy') nextGear = 'medium';
-                else if (currentGear === 'medium') nextGear = 'hard';
-            } 
-            else if (prediction === 'unstable' || !correct) {
-                if (currentGear === 'hard') nextGear = 'medium';
-                else if (currentGear === 'medium') nextGear = 'easy';
-            }
+                if (prediction === 'confident' && correct) {
+                    if (currentGear === 'easy') nextGear = 'medium';
+                    else if (currentGear === 'medium') nextGear = 'hard';
+                }
+                else if (prediction === 'unstable' || !correct) {
+                    if (currentGear === 'hard') nextGear = 'medium';
+                    else if (currentGear === 'medium') nextGear = 'easy';
+                }
 
-            // Only trigger a shift if the gear actually changes
-            if (nextGear !== currentGear) {
-                console.log(`AI shifting from ${currentGear} to ${nextGear}`);
-                shiftGear(nextGear);
-                visualizeAIShift(nextGear);
-            }
-        })
-        .catch(err => console.error("AI Prediction Error:", err));
+                // Only trigger a shift if the gear actually changes
+                if (nextGear !== currentGear) {
+                    console.log(`AI shifting from ${currentGear} to ${nextGear}`);
+                    shiftGear(nextGear);
+                    visualizeAIShift(nextGear);
+                }
+            })
+            .catch(err => console.error("AI Prediction Error:", err));
     }
-    
-    questionStartTime = Date.now(); 
+
+    questionStartTime = Date.now();
 
     // --- ECONOMY & ANIMATION ---
-    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2);
+    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth / 2);
     const playerY = canvas.height - 150;
 
     if (correct) {
-        sessionStats.correct++; 
+        sessionStats.correct++;
         if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 10, true);
         generateTwoProblems();
     } else {
@@ -632,26 +677,26 @@ function visualizeAIShift(gear) {
 }
 
 /* --- VOICE INPUT --- */
-const wordMap = { 
-    'zero':0, 'one':1, 'two':2, 'three':3, 'four':4, 'five':5, 'six':6, 'seven':7, 'eight':8, 'nine':9, 
-    'for':4, 'to':2, 'too':2, 'ate':8,
-    'sign':'sin', 'sine':'sin', 'cost':'cos', 'course':'cos', 'cause':'cos', 'tan':'tan', 'sec':'sec'
+const wordMap = {
+    'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
+    'for': 4, 'to': 2, 'too': 2, 'ate': 8,
+    'sign': 'sin', 'sine': 'sin', 'cost': 'cos', 'course': 'cos', 'cause': 'cos', 'tan': 'tan', 'sec': 'sec'
 };
 
 function initSpeech() {
     const SpeechChoice = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechChoice) { alert("Voice not supported. Use Chrome."); return; }
-    
+
     recognition = new SpeechChoice();
     recognition.continuous = true;
-    recognition.interimResults = true; 
+    recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
         if (isProcessingSpeech) return;
         const last = event.results.length - 1;
         let transcript = event.results[last][0].transcript.trim().toLowerCase();
-        
+
         for (const [key, val] of Object.entries(wordMap)) { if (transcript === key) transcript = val.toString(); }
         micText.innerText = `HEARD: "${transcript}"`;
 
@@ -674,7 +719,7 @@ function initSpeech() {
     };
 
     recognition.onend = () => {
-        if (gameState.isPlaying && gameState.controlMode === 'voice') { try { recognition.start(); } catch(e){} } 
+        if (gameState.isPlaying && gameState.controlMode === 'voice') { try { recognition.start(); } catch (e) { } }
         else { micIndicator.classList.remove('listening'); micText.innerText = "STANDBY"; }
     };
 }
@@ -682,7 +727,7 @@ function initSpeech() {
 function processVoice(input) {
     checkAnswer(input);
     isProcessingSpeech = true; micText.innerText = "PROCESSING...";
-    setTimeout(() => { isProcessingSpeech = false; if(gameState.isPlaying) micText.innerText = "LISTENING..."; }, 1200);
+    setTimeout(() => { isProcessingSpeech = false; if (gameState.isPlaying) micText.innerText = "LISTENING..."; }, 1200);
 }
 
 function countFingers(landmarks, handedness) {
@@ -695,7 +740,7 @@ function countFingers(landmarks, handedness) {
     // For Left Hand: Thumb opens to the Right (larger X)
     if (label === 'Right') {
         // If Tip is to the left of the knuckle, it's open
-        if (landmarks[4].x < landmarks[3].x - 0.03) count++; 
+        if (landmarks[4].x < landmarks[3].x - 0.03) count++;
     } else {
         // If Tip is to the right of the knuckle, it's open
         if (landmarks[4].x > landmarks[3].x + 0.03) count++;
@@ -705,9 +750,9 @@ function countFingers(landmarks, handedness) {
     // Instead of checking Y-coordinates (which fails if hand is tilted),
     // we check distance from the WRIST (Landmark 0).
     // If (Distance Wrist->Tip) > (Distance Wrist->PIP_Joint), finger is open.
-    
+
     const wrist = landmarks[0];
-    
+
     // Indices: [Index, Middle, Ring, Pinky]
     // Tips: [8, 12, 16, 20]
     // PIP Joints (Lower Knuckle): [6, 10, 14, 18]
@@ -733,17 +778,19 @@ function countFingers(landmarks, handedness) {
 }
 // --- OPTIMIZED AI INITIALIZATION ---
 function initMediaPipe() {
-    if (hands) return; 
+    if (hands) return;
 
-    hands = new Hands({locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-    }});
+    hands = new Hands({
+        locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }
+    });
 
     hands.setOptions({
         maxNumHands: 2,
         // CHANGED: 0 = Lite (Fastest), 1 = Full (Default). 
         // 0 is much better for gaming performance!
-        modelComplexity: 0, 
+        modelComplexity: 0,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
     });
@@ -761,14 +808,14 @@ function initMediaPipe() {
                 // Only send to AI if enough time has passed
                 if (now - lastProcessTime > processInterval) {
                     lastProcessTime = now;
-                    await hands.send({image: videoElement});
+                    await hands.send({ image: videoElement });
                 }
             }
         },
         width: 320,
         height: 240
     });
-    
+
     console.log("AI Vision System Loaded (Lite Mode)");
     camera.start();
 }
@@ -777,7 +824,7 @@ function onHandsResults(results) {
     // 1. Clear previous drawings
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    
+
     // Draw the video frame
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
@@ -791,9 +838,9 @@ function onHandsResults(results) {
             const handedness = results.multiHandedness[i]; // Get "Left" or "Right" logic
 
             // Draw Skeleton
-            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00d2ff', lineWidth: 2});
-            drawLandmarks(canvasCtx, landmarks, {color: '#ff0000', lineWidth: 1});
-            
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00d2ff', lineWidth: 2 });
+            drawLandmarks(canvasCtx, landmarks, { color: '#ff0000', lineWidth: 1 });
+
             // Count using the new smart logic
             totalFingers += countFingers(landmarks, handedness);
         }
@@ -801,9 +848,9 @@ function onHandsResults(results) {
         // 3. Debounce Logic (Wait for stability)
         if (totalFingers !== lastDetectedFingerCount) {
             lastDetectedFingerCount = totalFingers;
-            
+
             // Visual Feedback instantly
-            micText.innerText = `SCANNING: ${totalFingers}`; 
+            micText.innerText = `SCANNING: ${totalFingers}`;
             micText.style.color = "#f39c12"; // Orange while scanning
 
             // Wait 0.5s for the hand to stay still before locking in the answer
@@ -820,50 +867,50 @@ function onHandsResults(results) {
     canvasCtx.restore();
 }
 
-window.setControlMode = function(mode) {
+window.setControlMode = function (mode) {
     playerConfig.controlMode = mode;
     savePlayerConfig();
 
     // Reset UI
     btnModeKey.classList.remove('active-mode');
     btnModeVoice.classList.remove('active-mode');
-    btnModeGesture.classList.remove('active-mode'); 
+    btnModeGesture.classList.remove('active-mode');
     micIndicator.classList.remove('visible');
-    cameraContainer.classList.remove('active'); 
+    cameraContainer.classList.remove('active');
 
     // Stop Systems (Clean up)
-    if (recognition) try { recognition.stop(); } catch(e){}
+    if (recognition) try { recognition.stop(); } catch (e) { }
 
     // Activate New Mode
     if (mode === 'keyboard') {
         btnModeKey.classList.add('active-mode');
-    } 
+    }
     else if (mode === 'voice') {
         btnModeVoice.classList.add('active-mode');
         micIndicator.classList.add('visible');
         if (!recognition) initSpeech();
-        if (gameState.isPlaying) try { recognition.start(); } catch(e){}
-    } 
+        if (gameState.isPlaying) try { recognition.start(); } catch (e) { }
+    }
     else if (mode === 'gesture') {
         btnModeGesture.classList.add('active-mode');
-        cameraContainer.classList.add('active'); 
+        cameraContainer.classList.add('active');
         micIndicator.classList.add('visible');
         micText.innerText = "CAMERA ACTIVE";
-        initMediaPipe(); 
+        initMediaPipe();
     }
 
     // --- CRITICAL: UPDATE PHYSICS & SPAWNER INSTANTLY ---
     if (gameState.isPlaying) {
         // 1. Get new stats
         const stats = getCurrentStats();
-        
+
         // 2. Update Max Speed immediately (Acceleration will follow in updatePhysics)
         gameState.maxSpeed = stats.max;
 
         // 3. Reset Spawn Timer to new interval
-        if(spawnTimer) clearInterval(spawnTimer);
-        spawnTimer = setInterval(() => { 
-            if (gameState.isPlaying) spawnEnemy(); 
+        if (spawnTimer) clearInterval(spawnTimer);
+        spawnTimer = setInterval(() => {
+            if (gameState.isPlaying) spawnEnemy();
         }, stats.spawnInterval);
     }
 }
@@ -882,36 +929,36 @@ function updateMathMode() {
 
 function shiftGear(level) {
     playerConfig.difficulty = level;
-    savePlayerConfig(); 
+    savePlayerConfig();
 
     // 1. VISUALS
-    [labelEasy, labelMedium, labelHard].forEach(label => { 
-        label.classList.remove('active-label'); 
-        label.style.color = ""; 
-        label.style.textShadow = ""; 
+    [labelEasy, labelMedium, labelHard].forEach(label => {
+        label.classList.remove('active-label');
+        label.style.color = "";
+        label.style.textShadow = "";
     });
 
     if (level === 'hard') {
-        shifterAssembly.style.top = "30px"; knobNumber.innerText = "3"; 
-        knobNumber.style.color = "#dc3545"; knobNumber.style.textShadow = "0 0 15px #dc3545"; 
+        shifterAssembly.style.top = "30px"; knobNumber.innerText = "3";
+        knobNumber.style.color = "#dc3545"; knobNumber.style.textShadow = "0 0 15px #dc3545";
         labelHard.classList.add('active-label'); labelHard.style.color = "#dc3545";
     } else if (level === 'medium') {
-        shifterAssembly.style.top = "95px"; knobNumber.innerText = "2"; 
-        knobNumber.style.color = "#ffc107"; knobNumber.style.textShadow = "0 0 15px #ffc107"; 
+        shifterAssembly.style.top = "95px"; knobNumber.innerText = "2";
+        knobNumber.style.color = "#ffc107"; knobNumber.style.textShadow = "0 0 15px #ffc107";
         labelMedium.classList.add('active-label'); labelMedium.style.color = "#ffc107";
-    } else { 
-        shifterAssembly.style.top = "165px"; knobNumber.innerText = "1"; 
-        knobNumber.style.color = "#00d2ff"; knobNumber.style.textShadow = "0 0 15px #00d2ff"; 
+    } else {
+        shifterAssembly.style.top = "165px"; knobNumber.innerText = "1";
+        knobNumber.style.color = "#00d2ff"; knobNumber.style.textShadow = "0 0 15px #00d2ff";
         labelEasy.classList.add('active-label'); labelEasy.style.color = "#00d2ff";
     }
 
     // 2. PHYSICS UPDATE
     if (gameState.isPlaying) {
         const stats = getCurrentStats();
-        
+
         // Update Limits
         gameState.maxSpeed = stats.max;
-        
+
         // --- THE FIX: INSTANT BOOST ---
         // If current speed is lower than the new gear's base speed, jump to base.
         if (gameState.speed < stats.base) {
@@ -919,9 +966,9 @@ function shiftGear(level) {
         }
 
         // Restart Spawner
-        if(spawnTimer) clearInterval(spawnTimer);
-        spawnTimer = setInterval(() => { 
-            if (gameState.isPlaying) spawnEnemy(); 
+        if (spawnTimer) clearInterval(spawnTimer);
+        spawnTimer = setInterval(() => {
+            if (gameState.isPlaying) spawnEnemy();
         }, stats.spawnInterval);
     }
 }
@@ -948,9 +995,9 @@ function startGame() {
 
     // Reset counters
     sessionStats = { correct: 0, wrong: 0 };
-    
+
     // Refresh Icons
-    updateLoadoutHUD(); 
+    updateLoadoutHUD();
     // ---------------------------------------
 
     // --- RESET CAREER TRACKER ---
@@ -963,9 +1010,9 @@ function startGame() {
     };
 
     // UI Setup
-    btnStart.classList.add('btn-disabled'); 
+    btnStart.classList.add('btn-disabled');
     btnStop.classList.remove('btn-disabled');
-    
+
     // Sync Math Mode
     playerConfig.mathMode = getSelectedRadio('math');
     savePlayerConfig();
@@ -973,32 +1020,32 @@ function startGame() {
     // Physics Setup
     const stats = getCurrentStats();
     gameState.maxSpeed = stats.max;
-    
+
     // --- NITRO PHYSICS INJECTION ---
     if (activeLoadout.nitro) {
         gameState.distance = 5000; // Jumps score to 500 instantly (5000 / 10)
         gameState.speed = 6.5;      // High burst speed
-        
+
         // Visual "Blast Off" effect
-        document.body.style.backgroundColor = "#ff8c00"; 
+        document.body.style.backgroundColor = "#ff8c00";
         setTimeout(() => document.body.style.backgroundColor = "#050505", 200);
         console.log("NITRO INITIATED: BLASTING TO 500m");
     } else {
         gameState.distance = 0;
-        gameState.speed = stats.base; 
+        gameState.speed = stats.base;
     }
     // -------------------------------
-    
+
     // Reset Game State
-    gameState.isPlaying = true; 
-    gameState.lane = 2; 
-    gameState.score = Math.floor(gameState.distance / 10); 
+    gameState.isPlaying = true;
+    gameState.lane = 2;
+    gameState.score = Math.floor(gameState.distance / 10);
     enemies = [];
 
     // Initialize Inputs
     if (playerConfig.controlMode === 'voice') {
         if (!recognition) initSpeech();
-        try { recognition.start(); } catch(e){}
+        try { recognition.start(); } catch (e) { }
         micIndicator.classList.add('listening'); micText.innerText = "LISTENING...";
     } else if (playerConfig.controlMode === 'gesture') {
         initMediaPipe();
@@ -1008,9 +1055,9 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 
     // Spawn Timer
-    if(spawnTimer) clearInterval(spawnTimer);
-    spawnTimer = setInterval(() => { 
-        if (gameState.isPlaying) spawnEnemy(); 
+    if (spawnTimer) clearInterval(spawnTimer);
+    spawnTimer = setInterval(() => {
+        if (gameState.isPlaying) spawnEnemy();
     }, stats.spawnInterval);
 }
 
@@ -1019,7 +1066,7 @@ function abortRace() {
     gameState.isPlaying = false;
     if (recognition) recognition.stop();
     micIndicator.classList.remove('listening'); micText.innerText = "STANDBY";
-    gameOverTitle.innerText = "RACE ABORTED"; gameOverTitle.style.color = "#ffc107"; 
+    gameOverTitle.innerText = "RACE ABORTED"; gameOverTitle.style.color = "#ffc107";
     finalScoreEl.innerText = gameState.score;
     gameOverScreen.style.display = 'flex';
     btnStop.classList.add('btn-disabled');
@@ -1038,9 +1085,9 @@ function spawnEnemy() {
     const totalWeight = TRAFFIC_TYPES.reduce((sum, t) => sum + t.spawnWeight, 0);
     let rand = Math.random() * totalWeight;
     let chosenType = TRAFFIC_TYPES[0];
-    for (let t of TRAFFIC_TYPES) { 
-        rand -= t.spawnWeight; 
-        if (rand <= 0) { chosenType = t; break; } 
+    for (let t of TRAFFIC_TYPES) {
+        rand -= t.spawnWeight;
+        if (rand <= 0) { chosenType = t; break; }
     }
     enemies.push({ lane: lane, y: -150, type: chosenType, speedOffset: Math.random() * 0.5 });
 }
@@ -1051,9 +1098,9 @@ function updatePhysics() {
     // 2. Apply Acceleration
     // If we haven't reached the mode's Max Speed yet, speed up!
     if (gameState.speed < stats.max) {
-        gameState.speed += stats.acceleration; 
+        gameState.speed += stats.acceleration;
     }
-    
+
     // 3. Decelerate if we are too fast 
     // (e.g. Switched from Gesture [Max 4.0] to Voice [Max 1.2])
     if (gameState.speed > stats.max) {
@@ -1073,9 +1120,9 @@ function updatePhysics() {
 
 }
 function updateSpeedometer() {
-    const maxS = 20; let pct = gameState.speed / maxS; if(pct > 1) pct = 1;
+    const maxS = 20; let pct = gameState.speed / maxS; if (pct > 1) pct = 1;
     speedNeedle.style.transform = `rotate(${225 + (pct * 270)}deg)`;
-    speedValueEl.innerText = Math.floor(gameState.speed * 10); 
+    speedValueEl.innerText = Math.floor(gameState.speed * 10);
 }
 function drawCar(img, x, y, w, h, color) {
     if (img.complete && img.naturalHeight !== 0) ctx.drawImage(img, x, y, w, h);
@@ -1084,8 +1131,8 @@ function drawCar(img, x, y, w, h, color) {
 function gameLoop() {
     if (!gameState.isPlaying) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    updatePhysics(); 
+
+    updatePhysics();
     updateSpeedometer();
 
     // --- NITRO HUD AUTO-CLEANUP ---
@@ -1095,14 +1142,14 @@ function gameLoop() {
         updateLoadoutHUD();
     }
 
-// --- AI CO-PILOT VISUAL HIGHLIGHTER ---
+    // --- AI CO-PILOT VISUAL HIGHLIGHTER ---
     const leftHintEl = questionLeftEl.querySelector('.ai-hint');
     const rightHintEl = questionRightEl.querySelector('.ai-hint');
 
     if (coPilotActive && currentQuestion) {
         const glowAlpha = 0.4 + Math.abs(Math.sin(Date.now() / 200)) * 0.5;
         const glowStyle = `0 0 25px rgba(255, 215, 0, ${glowAlpha})`;
-        
+
         questionLeftEl.style.boxShadow = glowStyle;
         questionRightEl.style.boxShadow = glowStyle;
         questionLeftEl.style.borderColor = "#ffd700";
@@ -1118,29 +1165,29 @@ function gameLoop() {
         questionRightEl.style.boxShadow = "";
         questionLeftEl.style.borderColor = "";
         questionRightEl.style.borderColor = "";
-        
+
         // Hide Hints
         if (leftHintEl) leftHintEl.innerText = "";
         if (rightHintEl) rightHintEl.innerText = "";
     }
 
     // --- DRAWING THE ROAD ---
-    ctx.fillStyle = "#222"; 
+    ctx.fillStyle = "#222";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; 
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
     ctx.lineWidth = 4;
     ctx.setLineDash([30, 30]);
     const lineOffset = gameState.distance % 60;
     ctx.beginPath();
-    for (let i = 1; i < CONFIG.laneCount; i++) { 
-        let x = i * CONFIG.laneWidth; 
-        ctx.moveTo(x, -60 + lineOffset); 
-        ctx.lineTo(x, canvas.height + lineOffset); 
+    for (let i = 1; i < CONFIG.laneCount; i++) {
+        let x = i * CONFIG.laneWidth;
+        ctx.moveTo(x, -60 + lineOffset);
+        ctx.lineTo(x, canvas.height + lineOffset);
     }
     ctx.stroke();
 
     // --- DRAWING PLAYER ---
-    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth/2) - (CONFIG.playerWidth/2);
+    const playerX = (gameState.lane * CONFIG.laneWidth) + (CONFIG.laneWidth / 2) - (CONFIG.playerWidth / 2);
     const playerY = canvas.height - 150;
     drawCar(playerImg, playerX, playerY, CONFIG.playerWidth, CONFIG.playerHeight, "cyan");
 
@@ -1149,22 +1196,22 @@ function gameLoop() {
         let e = enemies[i];
         const isSlowMode = (playerConfig.controlMode === 'voice' || playerConfig.controlMode === 'gesture');
         const trafficMultiplier = isSlowMode ? 0.5 : 0.8;
-        
+
         e.y += (gameState.speed * trafficMultiplier * e.type.speedMultiplier) + e.speedOffset;
         const ex = (e.lane * CONFIG.laneWidth) + (CONFIG.laneWidth / 2) - (e.type.width / 2);
-        
+
         drawCar(enemyImages[e.type.name], ex, e.y, e.type.width, e.type.height, "red");
-        
-        const p = 10; 
+
+        const p = 10;
         // COLLISION CHECK
-        if (playerX + p < ex + e.type.width - p && 
-            playerX + CONFIG.playerWidth - p > ex + p && 
-            playerY + p < e.y + e.type.height - p && 
-            playerY + CONFIG.playerHeight - p > e.y + p) { 
-            
+        if (playerX + p < ex + e.type.width - p &&
+            playerX + CONFIG.playerWidth - p > ex + p &&
+            playerY + p < e.y + e.type.height - p &&
+            playerY + CONFIG.playerHeight - p > e.y + p) {
+
             if (activeLoadout.shield) {
-                activeLoadout.shield = false; 
-                updateLoadoutHUD(); 
+                activeLoadout.shield = false;
+                updateLoadoutHUD();
                 enemies.splice(i, 1);
                 i--;
                 document.body.style.backgroundColor = "cyan";
@@ -1172,17 +1219,17 @@ function gameLoop() {
                 console.log("SHIELD DEPLOYED");
             } else {
                 console.log("CRASH! Calling GameOver...");
-                gameOver(); 
+                gameOver();
                 return; // Stop the loop immediately
             }
         }
-        
-        if (e.y > canvas.height) { 
-            enemies.splice(i, 1); 
-            i--; 
+
+        if (e.y > canvas.height) {
+            enemies.splice(i, 1);
+            i--;
         }
     }
-    
+
     requestAnimationFrame(gameLoop);
 }
 function gameOver() {
@@ -1194,11 +1241,16 @@ function gameOver() {
 
     // 2. PREPARE SESSION DATA
     const duration = (Date.now() - raceSession.startTime) / 1000;
-    
+
     let activeTopics = [];
     if (playerConfig.multipliers.length > 0) activeTopics.push(`Mult: ${playerConfig.multipliers.join(',')}`);
-    for (let [k, v] of Object.entries(playerConfig.advancedOps)) { if(v) activeTopics.push(k); }
-    for (let [k, v] of Object.entries(playerConfig.voiceOps)) { if(v) activeTopics.push(k); }
+    for (let [k, v] of Object.entries(playerConfig.advancedOps)) { if (v) activeTopics.push(k); }
+    for (let [k, v] of Object.entries(playerConfig.voiceOps)) { if (v) activeTopics.push(k); }
+
+    // --- CAMPAIGN MODE DETECTION ---
+    const isCampaign = (typeof LEVEL_CONTEXT !== 'undefined' && LEVEL_CONTEXT.mode === 'campaign');
+    const gameMode = isCampaign ? 'campaign' : 'single';
+    const levelId = isCampaign ? LEVEL_CONTEXT.id : null;
 
     // 3. SUBMIT FULL SCORE & TELEMETRY
     fetch("/submit_score", {
@@ -1206,7 +1258,8 @@ function gameOver() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             score: gameState.score,
-            mode: "single",
+            mode: gameMode,
+            levelId: levelId,
             duration: Math.floor(duration),
             car: localStorage.getItem('formulaRush_selectedCar') || 'car_default',
             correctCount: sessionStats.correct,
@@ -1217,26 +1270,39 @@ function gameOver() {
             activeTopics: activeTopics,
             mistakes: raceSession.mistakes,
             inputStats: raceSession.inputStats,
-            
+
             // --- AI INTEGRATION: SEND THE LOG ---
-            telemetry: telemetryLog 
+            telemetry: telemetryLog
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Telemetry Sync Complete. AI Data Saved.");
-        // Clear the log so we don't double-save if the user reboots without refreshing
-        telemetryLog = []; 
-    })
-    .catch(err => console.error("Sync Failure:", err));
+        .then(response => response.json())
+        .then(data => {
+            console.log("Telemetry Sync Complete. AI Data Saved.");
+            // Clear the log so we don't double-save if the user reboots without refreshing
+            telemetryLog = [];
+
+            // --- CAMPAIGN LEVEL UNLOCK NOTIFICATION ---
+            if (data.level_unlocked) {
+                gameOverTitle.innerText = "LEVEL COMPLETE!";
+                gameOverTitle.style.color = "#ffd700";
+
+                // Show unlock message
+                const unlockMsg = document.createElement('div');
+                unlockMsg.innerHTML = `<div style="color:#00d2ff; font-family:Orbitron; font-size:1.2rem; margin-top:15px; text-shadow:0 0 10px #00d2ff;">
+                    🔓 LEVEL ${data.next_level} UNLOCKED!
+                </div>`;
+                finalScoreEl.parentNode.insertBefore(unlockMsg, finalScoreEl.nextSibling);
+            }
+        })
+        .catch(err => console.error("Sync Failure:", err));
 
     // 4. RESET UI & STOP SYSTEMS
     gameState.isPlaying = false;
     if (recognition) recognition.stop();
-    micIndicator.classList.remove('listening'); 
+    micIndicator.classList.remove('listening');
     micText.innerText = "OFFLINE";
-    
-    gameOverTitle.innerText = "CRITICAL FAILURE"; 
+
+    gameOverTitle.innerText = "CRITICAL FAILURE";
     gameOverTitle.style.color = "#ff4b2b";
     finalScoreEl.innerText = gameState.score;
     gameOverScreen.style.display = 'flex';
@@ -1257,13 +1323,13 @@ function spawnCoinEffect(x, y, amount, isGood) {
     el.style.zIndex = '50';
     el.style.transition = 'all 0.8s ease-out';
     el.style.opacity = '1';
-    
+
     // 2. Content (Coin Icon + Number)
     // We rotate the coin using a span
-    const symbol = isGood ? '🟡' : '🔴'; 
+    const symbol = isGood ? '🟡' : '🔴';
     const color = isGood ? '#ffd700' : '#ff4b2b';
     const sign = isGood ? '+' : '';
-    
+
     el.innerHTML = `
         <span style="display:inline-block; animation: spin 0.5s linear;">${symbol}</span> 
         <span style="color:${color}; text-shadow:0 0 5px ${color};">${sign}${amount}</span>

@@ -25,6 +25,90 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
 db = SQLAlchemy(app)
 
+LEVEL_CONFIG = {
+    1: {
+        "id": 1, 
+        "name": "ADDITION ACADEMY", 
+        "desc": "Master the basics. Addition only.",
+        "ops": ["addition"],
+        "target_score": 500,
+        "reward": 100,
+        "difficulty": "easy"
+    },
+    2: {
+        "id": 2, 
+        "name": "SUBTRACTION ZONE", 
+        "desc": "Survival required. Subtraction enabled.",
+        "ops": ["subtraction"],
+        "target_score": 600,
+        "reward": 120,
+        "difficulty": "easy"
+    },
+    3: {
+        "id": 3, 
+        "name": "TABLES 1 & 2", 
+        "desc": "Multiplication basics. Tables of 1 and 2.",
+        "ops": ["mult_1_2"],
+        "target_score": 700,
+        "reward": 150,
+        "difficulty": "easy"
+    },
+    4: {
+        "id": 4, 
+        "name": "TABLES 3 & 4", 
+        "desc": "Building momentum. Tables of 3 and 4.",
+        "ops": ["mult_3_4"],
+        "target_score": 800,
+        "reward": 180,
+        "difficulty": "medium"
+    },
+    5: {
+        "id": 5, 
+        "name": "TABLES 5 & 6", 
+        "desc": "Mid-range challenge. Tables of 5 and 6.",
+        "ops": ["mult_5_6"],
+        "target_score": 900,
+        "reward": 200,
+        "difficulty": "medium"
+    },
+    6: {
+        "id": 6, 
+        "name": "TABLES 7 & 8", 
+        "desc": "Getting harder. Tables of 7 and 8.",
+        "ops": ["mult_7_8"],
+        "target_score": 1000,
+        "reward": 250,
+        "difficulty": "medium"
+    },
+    7: {
+        "id": 7, 
+        "name": "TABLES 9 & 10", 
+        "desc": "Advanced multiplication. Tables of 9 and 10.",
+        "ops": ["mult_9_10"],
+        "target_score": 1100,
+        "reward": 300,
+        "difficulty": "hard"
+    },
+    8: {
+        "id": 8, 
+        "name": "DIVISION DISTRICT", 
+        "desc": "Reverse the process. Division only.",
+        "ops": ["division"],
+        "target_score": 1200,
+        "reward": 350,
+        "difficulty": "hard"
+    },
+    9: {
+        "id": 9, 
+        "name": "THE GAUNTLET", 
+        "desc": "Master all operations. Final challenge!",
+        "ops": ["all_ops"],
+        "target_score": 1500,
+        "reward": 500,
+        "difficulty": "hard"
+    }
+}
+
 # --- DATABASE MODELS ---
 
 class User(db.Model, UserMixin):
@@ -37,6 +121,7 @@ class User(db.Model, UserMixin):
     inventory = db.Column(db.String(500), default='["car_default"]') # Tracks owned cars
     # Relationship to access all races
     races = db.relationship('RaceSession', backref='player', lazy=True)
+    max_level_unlocked = db.Column(db.Integer, default=1)
 
 # NEW: The Table for Pilot Career Data
 # THE UPGRADED TABLE
@@ -280,15 +365,44 @@ def career():
                             today_flight_time=today_flight_time)
 # --- GAME ROUTES ---
 
+# --- CAMPAIGN HUB (Map) ---
+@app.route('/campaign')
+@login_required
+def campaign_hub():
+    return render_template('campaign_hub.html', 
+                           max_level=current_user.max_level_unlocked,
+                           levels=LEVEL_CONFIG)                           
+
+
+@app.route('/play/level/<int:level_id>')
+@login_required
+def play_level(level_id):
+    # Security: Prevent skipping levels
+    if level_id > current_user.max_level_unlocked:
+        flash("Level Locked! Complete previous missions first.")
+        return redirect(url_for('campaign_hub'))
+    
+    # Load specific rules
+    config = LEVEL_CONFIG.get(level_id)
+    config['mode'] = 'campaign' # Tag it as campaign
+    
+    return render_template('single_game.html', level_config=config)
+
+@app.route('/play/practice')
+@login_required
+def play_practice():
+    # "Practice Config" enables the sandbox UI
+    config = {
+        "mode": "practice",
+        "name": "FREE FLIGHT",
+        "ops": [] # Empty list = Allow user to toggle everything
+    }
+    return render_template('single_game.html', level_config=config)    
+
 @app.route('/play')
 @login_required
 def play():
     return render_template('game.html')
-
-@app.route('/single_player')
-@login_required
-def single_player():
-    return render_template('single_game.html')
 
 @app.route('/submit_score', methods=['POST'])
 @login_required
@@ -300,6 +414,7 @@ def submit_score():
     mode = data.get('mode', 'single')
     duration = data.get('duration', 0)
     car = data.get('car', 'car_default')
+    level_id = data.get('levelId')  # NEW: For campaign mode
     
     # Context Data
     difficulty_gear = data.get('difficulty', 'medium') 
@@ -347,7 +462,22 @@ def submit_score():
     if mode == 'single':
         if score > current_user.high_score:
             current_user.high_score = score
-# Inside submit_score after extracting other data
+
+    # --- 5. CAMPAIGN LEVEL UNLOCK LOGIC ---
+    level_unlocked = False
+    next_level = None
+    
+    if mode == 'campaign' and level_id is not None:
+        # Player must reach 1000m to unlock the next level
+        if score >= 200:
+            next_level = level_id + 1
+            # Only unlock if it's actually a new level for the player
+            if next_level > current_user.max_level_unlocked:
+                current_user.max_level_unlocked = next_level
+                level_unlocked = True
+                print(f"CAMPAIGN: Player unlocked Level {next_level}!")
+
+    # Inside submit_score after extracting other data
     telemetry_list = data.get('telemetry', [])
 
     for entry in telemetry_list:
@@ -378,7 +508,9 @@ def submit_score():
         'high_score': current_user.high_score,
         'coins_earned': earnings,
         'items_cost': loadout_cost,
-        'total_coins': current_user.coins
+        'total_coins': current_user.coins,
+        'level_unlocked': level_unlocked,
+        'next_level': next_level
     }), 200
 
 # --- Place this AFTER your submit_score function ---
