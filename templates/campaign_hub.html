@@ -484,7 +484,7 @@
 
     <div class="map-header">
         <h1>CAMPAIGN MAP</h1>
-        <div class="clearance-badge">CLEARANCE: LEVEL {{ max_level }} / 9</div>
+        <div class="clearance-badge">CLEARANCE: LEVEL {{9 if max_level > 9 else max_level-1 }} / 9</div>
     </div>
 
     <div class="map-3d-layer">
