@@ -99,13 +99,13 @@
     /* ===== NUMBER BLOCKS CONTAINER ===== */
     .number-blocks-container {
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
         width: 100%;
-        height: 200px;
+        height: 100vh;
         pointer-events: none;
         z-index: -5;
-        overflow: visible;
+        overflow: hidden;
     }
 
     .number-block {
@@ -272,47 +272,17 @@
         }
     })();
 
-    // Number blocks with gravity hover effect
+    // Falling numbers animation with physics and mouse interaction
     (function () {
         const container = document.getElementById('numberBlocksContainer');
-        // More numbers than symbols (numbers repeated more often)
-        const symbols = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', '×', '÷'];
-        const blockCount = 60;
-        const blocks = [];
+        const symbols = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', '×', '÷', '='];
+        const numbers = [];
+        const gravity = 0.25; // Slower gravity
+        const bounce = 0.6;
+        const groundLevel = window.innerHeight - 50;
         let mouseX = -1000, mouseY = -1000;
 
-        // Make container full screen for pushing anywhere
-        container.style.height = '100vh';
-        container.style.top = '0';
-        container.style.bottom = 'auto';
-
-        // Create number blocks at bottom
-        for (let i = 0; i < blockCount; i++) {
-            const block = document.createElement('div');
-            block.className = 'number-block';
-            block.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-
-            const leftPos = 1 + (i / blockCount) * 98;
-            const bottomPos = 10 + Math.random() * 60;
-
-            block.style.left = leftPos + '%';
-            block.style.bottom = bottomPos + 'px';
-            block.dataset.restBottom = bottomPos;
-            block.dataset.currentY = 0;
-            block.dataset.velocityY = 0;
-
-            container.appendChild(block);
-            blocks.push({
-                el: block,
-                restBottom: bottomPos,
-                x: 0,
-                y: 0,
-                vx: 0,
-                vy: 0
-            });
-        }
-
-        // Track mouse position globally
+        // Track mouse position
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
@@ -323,72 +293,112 @@
             mouseY = -1000;
         });
 
-        // Physics simulation loop
-        function simulate() {
-            const gravity = 0.8;
-            const friction = 0.92;
-            const pushRadius = 150;
-            const pushStrength = 10;
+        class FallingNumber {
+            constructor() {
+                this.el = document.createElement('div');
+                this.el.className = 'number-block';
+                this.el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
 
-            blocks.forEach(block => {
-                const rect = block.el.getBoundingClientRect();
-                const blockX = rect.left + rect.width / 2;
-                const blockY = rect.top + rect.height / 2;
+                // Random starting position at top
+                this.x = Math.random() * window.innerWidth;
+                this.y = -50;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = Math.random() * 2 + 0.5; // Slower initial speed
 
-                const dx = blockX - mouseX;
-                const dy = blockY - mouseY;
+                this.el.style.position = 'absolute';
+                this.el.style.left = this.x + 'px';
+                this.el.style.top = this.y + 'px';
+
+                container.appendChild(this.el);
+            }
+
+            update() {
+                // Mouse interaction - push away
+                const dx = this.x - mouseX;
+                const dy = this.y - mouseY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
+                const pushRadius = 80;
 
-                // Push away from mouse (upward push = negative vy)
                 if (distance < pushRadius && distance > 0) {
-                    const force = (pushRadius - distance) / pushRadius * pushStrength;
-                    block.vx += (dx / distance) * force * 0.3;
-                    block.vy += (dy / distance) * force * 0.5; // Push in direction away from mouse
+                    const force = (pushRadius - distance) / pushRadius * 3;
+                    this.vx += (dx / distance) * force * 0.5;
+                    this.vy += (dy / distance) * force * 0.5;
                 }
 
-                // Apply gravity (pull DOWN = positive vy, since positive translateY moves element down visually)
-                // But wait - our blocks are positioned with 'bottom', and we use translateY
-                // Negative translateY moves UP (lifts), positive translateY moves DOWN (back to ground)
-                // So gravity should ADD to vy to bring it back toward 0 or positive
-                block.vy += gravity;
+                // Apply gravity
+                this.vy += gravity;
 
-                // Apply friction
-                block.vx *= friction;
-                block.vy *= friction;
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
 
-                // Update position (y is translateY offset from rest position)
-                block.x += block.vx;
-                block.y += block.vy;
+                // Bounce off ground
+                if (this.y >= groundLevel) {
+                    this.y = groundLevel;
+                    this.vy *= -bounce;
+                    this.vx *= 0.95;
 
-                // Ground collision - block cannot go below rest (translateY cannot be positive)
-                if (block.y > 0) {
-                    block.y = 0;
-                    block.vy = 0;
+                    if (Math.abs(this.vy) < 0.5) {
+                        this.vy = 0;
+                    }
                 }
 
-                // Horizontal bounds
-                if (Math.abs(block.x) > 100) {
-                    block.x = Math.sign(block.x) * 100;
-                    block.vx *= -0.5;
+                // Bounce off walls
+                if (this.x <= 0 || this.x >= window.innerWidth) {
+                    this.vx *= -0.8;
+                    this.x = Math.max(0, Math.min(window.innerWidth, this.x));
                 }
 
-                // Apply transform
-                block.el.style.transform = `translateX(${block.x}px) translateY(${block.y}px)`;
+                // Apply position
+                this.el.style.left = this.x + 'px';
+                this.el.style.top = this.y + 'px';
 
-                // Visual feedback when lifted
-                if (block.y < -10) {
-                    block.el.style.color = 'rgba(0, 210, 255, 0.35)';
-                    block.el.style.textShadow = '0 0 40px rgba(0, 210, 255, 0.4)';
+                // Fade out settled numbers
+                if (this.y >= groundLevel && Math.abs(this.vy) < 0.1) {
+                    const opacity = parseFloat(this.el.style.opacity || 1);
+                    this.el.style.opacity = Math.max(0.3, opacity - 0.005);
+                }
+
+                // Highlight when being pushed
+                if (distance < pushRadius && distance > 0) {
+                    this.el.style.color = 'rgba(0, 210, 255, 0.5)';
+                    this.el.style.textShadow = '0 0 40px rgba(0, 210, 255, 0.6)';
                 } else {
-                    block.el.style.color = 'rgba(0, 210, 255, 0.12)';
-                    block.el.style.textShadow = '0 0 30px rgba(0, 210, 255, 0.1)';
+                    this.el.style.color = 'rgba(0, 210, 255, 0.12)';
+                    this.el.style.textShadow = '0 0 30px rgba(0, 210, 255, 0.1)';
                 }
-            });
+            }
 
-            requestAnimationFrame(simulate);
+            isSettled() {
+                return this.y >= groundLevel && Math.abs(this.vy) < 0.1;
+            }
         }
 
-        simulate();
+        // Create new falling numbers periodically (slower spawn rate)
+        setInterval(() => {
+            if (numbers.length < 80) {
+                numbers.push(new FallingNumber());
+            }
+        }, 600); // Slower spawn: 600ms instead of 300ms
+
+        // Animation loop
+        function animate() {
+            numbers.forEach(num => num.update());
+
+            // Remove old settled numbers
+            if (numbers.length > 80) {
+                const toRemove = numbers.filter(n => n.isSettled()).slice(0, 10);
+                toRemove.forEach(num => {
+                    num.el.remove();
+                    const index = numbers.indexOf(num);
+                    if (index > -1) numbers.splice(index, 1);
+                });
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
     })();
 </script>
 {% endblock %}

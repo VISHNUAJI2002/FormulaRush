@@ -1,21 +1,166 @@
 {% extends "base.html" %}
 
 {% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+    /* ===== 3D ANIMATED BACKGROUND ===== */
+    .login-3d-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -10;
+        background: linear-gradient(135deg, #0a0a1a 0%, #0d1020 50%, #050510 100%);
+        overflow: hidden;
+    }
+
+    /* Animated grid floor */
+    .cyber-grid {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 200%;
+        height: 60%;
+        transform: translateX(-50%) perspective(500px) rotateX(60deg);
+        background-image:
+            linear-gradient(rgba(0, 210, 255, 0.15) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 210, 255, 0.15) 1px, transparent 1px);
+        background-size: 60px 60px;
+        animation: gridScroll 20s linear infinite;
+        opacity: 0.6;
+    }
+
+    @keyframes gridScroll {
+        0% {
+            background-position: 0 0;
+        }
+
+        100% {
+            background-position: 60px 60px;
+        }
+    }
+
+    /* Floating particles */
+    .particle {
+        position: absolute;
+        width: 3px;
+        height: 3px;
+        background: rgba(0, 210, 255, 0.6);
+        border-radius: 50%;
+        animation: float 15s infinite ease-in-out;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0) translateX(0);
+            opacity: 0;
+        }
+
+        10% {
+            opacity: 1;
+        }
+
+        90% {
+            opacity: 1;
+        }
+
+        50% {
+            transform: translateY(-300px) translateX(50px);
+        }
+    }
+
+    /* Glowing orbs */
+    .glow-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.3;
+        animation: orbPulse 8s ease-in-out infinite;
+    }
+
+    @keyframes orbPulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 0.2;
+        }
+
+        50% {
+            transform: scale(1.3);
+            opacity: 0.4;
+        }
+    }
+
+    /* ===== FALLING NUMBERS CONTAINER ===== */
+    .falling-numbers-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -5;
+        overflow: hidden;
+    }
+
+    .falling-number {
+        position: absolute;
+        font-family: 'Orbitron', monospace;
+        font-size: 2rem;
+        font-weight: 900;
+        color: rgba(0, 210, 255, 0.6);
+        text-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        pointer-events: none;
+        user-select: none;
+    }
+
+    /* Auth wrapper needs higher z-index to be above the background */
+    .auth-wrapper {
+        position: relative;
+        z-index: 10;
+    }
+</style>
+
+<!-- 3D ANIMATED BACKGROUND -->
+<div class="login-3d-bg">
+    <!-- Cyber grid floor -->
+    <div class="cyber-grid"></div>
+
+    <!-- Glowing orbs -->
+    <div class="glow-orb" style="width: 400px; height: 400px; background: #00d4ff; top: 10%; left: 10%;"></div>
+    <div class="glow-orb"
+        style="width: 300px; height: 300px; background: #9d4edd; top: 60%; right: 5%; animation-delay: -3s;"></div>
+    <div class="glow-orb"
+        style="width: 250px; height: 250px; background: #ffd700; bottom: 20%; left: 40%; animation-delay: -5s;"></div>
+
+    <!-- Floating particles -->
+    <div id="particles"></div>
+</div>
+
+<!-- FALLING NUMBERS CONTAINER -->
+<div class="falling-numbers-container" id="fallingNumbersContainer"></div>
+
+<!-- AUTH CONTENT -->
 <div class="auth-wrapper">
     <div class="auth-card">
         <h2 class="auth-title">Pilot Login</h2>
-        
+
         <form method="POST">
             <div class="form-group">
                 <label class="form-label">Username</label>
                 <input type="text" name="username" class="form-input" placeholder="ENTER CALLSIGN" required>
             </div>
-            
+
             <div class="form-group">
                 <label class="form-label">Password</label>
                 <input type="password" name="password" class="form-input" placeholder="••••••••" required>
             </div>
-            
+
             <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
                 Authenticate
             </button>
@@ -26,4 +171,150 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Create floating particles
+    (function () {
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = 60 + Math.random() * 40 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = 10 + Math.random() * 10 + 's';
+            particlesContainer.appendChild(particle);
+        }
+    })();
+
+    // Falling numbers animation with physics and mouse interaction
+    (function () {
+        const container = document.getElementById('fallingNumbersContainer');
+        const symbols = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', '×', '÷', '='];
+        const numbers = [];
+        const gravity = 0.25; // Slower gravity
+        const bounce = 0.6;
+        const groundLevel = window.innerHeight - 50;
+        let mouseX = -1000, mouseY = -1000;
+
+        // Track mouse position
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        document.addEventListener('mouseleave', () => {
+            mouseX = -1000;
+            mouseY = -1000;
+        });
+
+        class FallingNumber {
+            constructor() {
+                this.el = document.createElement('div');
+                this.el.className = 'falling-number';
+                this.el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+
+                // Random starting position at top
+                this.x = Math.random() * window.innerWidth;
+                this.y = -50;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = Math.random() * 2 + 0.5; // Slower initial speed
+
+                this.el.style.left = this.x + 'px';
+                this.el.style.top = this.y + 'px';
+
+                container.appendChild(this.el);
+            }
+
+            update() {
+                // Mouse interaction - push away
+                const dx = this.x - mouseX;
+                const dy = this.y - mouseY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const pushRadius = 80;
+
+                if (distance < pushRadius && distance > 0) {
+                    const force = (pushRadius - distance) / pushRadius * 3;
+                    this.vx += (dx / distance) * force * 0.5;
+                    this.vy += (dy / distance) * force * 0.5;
+                }
+
+                // Apply gravity
+                this.vy += gravity;
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off ground
+                if (this.y >= groundLevel) {
+                    this.y = groundLevel;
+                    this.vy *= -bounce; // Bounce with energy loss
+                    this.vx *= 0.95; // Friction
+
+                    // Stop bouncing when velocity is very small
+                    if (Math.abs(this.vy) < 0.5) {
+                        this.vy = 0;
+                    }
+                }
+
+                // Bounce off walls
+                if (this.x <= 0 || this.x >= window.innerWidth) {
+                    this.vx *= -0.8;
+                    this.x = Math.max(0, Math.min(window.innerWidth, this.x));
+                }
+
+                // Apply position
+                this.el.style.left = this.x + 'px';
+                this.el.style.top = this.y + 'px';
+
+
+                // Fade out settled numbers
+                if (this.y >= groundLevel && Math.abs(this.vy) < 0.1) {
+                    const opacity = parseFloat(this.el.style.opacity || 1);
+                    this.el.style.opacity = Math.max(0.3, opacity - 0.005);
+                }
+
+                // Highlight when being pushed (reuse distance check from above)
+                if (distance < pushRadius && distance > 0) {
+                    this.el.style.color = 'rgba(0, 210, 255, 0.8)';
+                    this.el.style.textShadow = '0 0 40px rgba(0, 210, 255, 0.7)';
+                } else {
+                    this.el.style.color = 'rgba(0, 210, 255, 0.6)';
+                    this.el.style.textShadow = '0 0 20px rgba(0, 210, 255, 0.4)';
+                }
+            }
+
+            isSettled() {
+                return this.y >= groundLevel && Math.abs(this.vy) < 0.1;
+            }
+        }
+
+        // Create new falling numbers periodically (slower spawn rate)
+        setInterval(() => {
+            if (numbers.length < 80) {
+                numbers.push(new FallingNumber());
+            }
+        }, 600); // Slower spawn: 600ms instead of 300ms
+
+        // Animation loop
+        function animate() {
+            numbers.forEach(num => num.update());
+
+            // Remove old settled numbers
+            if (numbers.length > 80) {
+                const toRemove = numbers.filter(n => n.isSettled()).slice(0, 10);
+                toRemove.forEach(num => {
+                    num.el.remove();
+                    const index = numbers.indexOf(num);
+                    if (index > -1) numbers.splice(index, 1);
+                });
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    })();
+</script>
 {% endblock %}
