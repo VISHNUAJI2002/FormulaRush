@@ -729,6 +729,24 @@
     .garage-item.locked {
         opacity: 0.5;
         filter: grayscale(1);
+        cursor: not-allowed;
+    }
+
+    .garage-item.unlocked-not-owned {
+        border-color: #00d2ff;
+        opacity: 0.8;
+    }
+
+    .garage-item.unlocked-not-owned:hover {
+        transform: scale(1.05);
+        border-color: var(--primary);
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+        opacity: 1;
+    }
+
+    .garage-item .buy-btn:hover {
+        color: #4CAF50 !important;
+        text-decoration: underline;
     }
 
     .garage-item img {
@@ -960,6 +978,42 @@
     </div>
 </div>
 
+<!-- CUSTOM CONFIRMATION MODAL -->
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 400px; text-align: center; padding: 25px;">
+        <h2 style="font-family:'Orbitron'; color:var(--primary); margin: 0 0 20px 0; font-size: 1.2rem;">CONFIRM
+            PURCHASE</h2>
+
+        <!-- Compact Car Preview -->
+        <div
+            style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+            <img id="confirm-car-img" src=""
+                style="width: 120px; height: auto; filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.3));">
+            <div id="confirm-car-name"
+                style="font-family: 'Orbitron'; font-size: 0.9rem; color: var(--primary); margin-top: 10px; font-weight: 600;">
+            </div>
+            <div id="confirm-price"
+                style="font-family: 'Orbitron'; font-size: 1.1rem; color: var(--accent); margin-top: 5px; font-weight: 700;">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button class="action-btn" style="background: #444; border: 1px solid #666; flex:1; padding: 10px;"
+                onclick="confirmAction(false)">CANCEL</button>
+            <button class="action-btn" style="flex:1; padding: 10px;" onclick="confirmAction(true)">CONFIRM</button>
+        </div>
+    </div>
+</div>
+
+<!-- NOTIFICATION MODAL -->
+<div id="notifyModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 400px; text-align: center;">
+        <h2 id="notify-title" style="font-family:'Orbitron'; margin-bottom:15px;">NOTIFICATION</h2>
+        <p id="notify-message" style="font-size:1rem; margin-bottom:20px; color:#ccc;"></p>
+        <button class="action-btn" onclick="closeModal('notifyModal')">OK</button>
+    </div>
+</div>
+
 <script>
     const userCredits = {{ current_user.coins }};
     const highScore = {{ score if score else 0 }};
@@ -1034,33 +1088,138 @@
 
     // --- GARAGE LOGIC ---
     const CAR_DB = [
-        { id: 'car_default', name: 'CROWN VIC', img: 'car_default.png', unlockScore: 0 },
-        { id: 'car_bronze', name: 'CONTINENTAL GT', img: 'car_bronze.png', unlockScore: 500 },
-        { id: 'car_silver', name: '300 SL ROADSTER', img: 'car_silver.png', unlockScore: 1000 },
-        { id: 'car_gold', name: 'SKYLINE GT-R', img: 'car_gold.png', unlockScore: 2000 }
+        { id: 'car_default', name: 'CROWN VIC', img: 'car_default.png', unlockLevel: 1, price: 0 },
+        { id: 'car_bronze', name: 'CONTINENTAL GT', img: 'car_bronze.png', unlockLevel: 2, price: 300 },
+        { id: 'car_silver', name: '300 SL ROADSTER', img: 'car_silver.png', unlockLevel: 4, price: 400 },
+        { id: 'car_gold', name: 'SKYLINE GT-R', img: 'car_gold.png', unlockLevel: 6, price: 500 }
     ];
+
+    // Get user data from Flask template
+    const userMaxLevel = {{ max_level }};
+    let userCoins = {{ coins }};
+    let userInventory = {{ inventory| tojson }};
+    try {
+        userInventory = JSON.parse(userInventory);
+    } catch (e) {
+        userInventory = ['car_default'];
+    }
     function loadGarage() {
         const grid = document.getElementById('garage-grid'); grid.innerHTML = '';
         let currentCar = localStorage.getItem('formulaRush_selectedCar') || 'car_default';
+
         CAR_DB.forEach(car => {
-            const isLocked = highScore < car.unlockScore;
+            const isUnlocked = userMaxLevel >= car.unlockLevel;
+            const isOwned = userInventory.includes(car.id);
             const isSelected = currentCar === car.id;
             const div = document.createElement('div');
-            div.className = `garage-item ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
-            div.innerHTML = `<img src="/static/${car.img}"><div style="font-family:'Orbitron'; font-size:0.8rem; margin-top:5px;">${car.name}</div>${isLocked ? `<div style="color:var(--danger); font-size:0.7rem;">REQ: ${car.unlockScore}</div>` : ''}`;
-            div.onclick = () => {
-                if (isLocked) return;
-                localStorage.setItem('formulaRush_selectedCar', car.id);
-                updateHeroDisplay(); loadGarage();
-            };
+
+            let statusClass = '';
+            let statusText = '';
+            let onclick = null;
+
+            if (!isUnlocked) {
+                // Car is locked - needs campaign progress
+                statusClass = 'locked';
+                statusText = `<div style="color:#ff4444; font-size:0.7rem; margin-top:5px;">🔒 Complete Level ${car.unlockLevel - 1}</div>`;
+            } else if (!isOwned) {
+                // Car is unlocked but not purchased
+                statusClass = 'unlocked-not-owned';
+                statusText = `<div style="color:#00d2ff; font-size:0.7rem; margin-top:5px; cursor:pointer;" class="buy-btn">💰 BUY - ${car.price} coins</div>`;
+                onclick = () => purchaseCar(car.id, car.price);
+            } else {
+                // Car is owned - selectable
+                statusClass = isSelected ? 'selected' : '';
+                statusText = isSelected ? '<div style="color:#4CAF50; font-size:0.7rem; margin-top:5px;">✓ EQUIPPED</div>' : '<div style="color:#aaa; font-size:0.7rem; margin-top:5px;">OWNED</div>';
+                onclick = () => {
+                    localStorage.setItem('formulaRush_selectedCar', car.id);
+                    updateHeroDisplay(); loadGarage();
+                };
+            }
+
+            div.className = `garage-item ${statusClass}`;
+            div.innerHTML = `<img src="/static/${car.img}" style="${!isUnlocked || !isOwned ? 'filter: grayscale(100%) brightness(0.5);' : ''}"><div style="font-family:'Orbitron'; font-size:0.8rem; margin-top:5px;">${car.name}</div>${statusText}`;
+            if (onclick) div.onclick = onclick;
             grid.appendChild(div);
         });
+    }
+
+    async function purchaseCar(carId, price) {
+        if (userCoins < price) {
+            showNotification('Insufficient Coins', `You need ${price} coins but only have ${userCoins}.`, 'error');
+            return;
+        }
+
+        const carName = CAR_DB.find(c => c.id === carId).name;
+        const carData = CAR_DB.find(c => c.id === carId);
+
+        const confirmed = await showConfirmation(
+            'Confirm Purchase',
+            `Purchase ${carName} for ${price} coins?`,
+            carData
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/buy_car', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ carId: carId })
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                showNotification('Success', result.message, 'success');
+                // Update local data
+                userInventory = result.inventory;
+                setTimeout(() => location.reload(), 1500); // Reload after showing message
+            } else {
+                showNotification('Error', result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('Error', 'Failed to purchase car. Please try again.', 'error');
+            console.error(error);
+        }
     }
     function updateHeroDisplay() {
         let id = localStorage.getItem('formulaRush_selectedCar') || 'car_default';
         let car = CAR_DB.find(c => c.id === id) || CAR_DB[0];
         document.getElementById('hero-car-img').src = `/static/${car.img}`;
         document.getElementById('hero-car-name').innerText = car.name;
+    }
+
+    // --- CUSTOM MODAL HELPERS ---
+    let confirmCallback = null;
+
+    function showConfirmation(title, message, carData = null) {
+        return new Promise((resolve) => {
+            // Populate the car preview if car data is provided
+            if (carData) {
+                document.getElementById('confirm-car-img').src = `/static/${carData.img}`;
+                document.getElementById('confirm-car-name').innerText = carData.name;
+                document.getElementById('confirm-price').innerText = `${carData.price} COINS`;
+            }
+
+            document.getElementById('confirmModal').classList.add('active');
+            confirmCallback = resolve;
+        });
+    }
+
+    function confirmAction(confirmed) {
+        document.getElementById('confirmModal').classList.remove('active');
+        if (confirmCallback) {
+            confirmCallback(confirmed);
+            confirmCallback = null;
+        }
+    }
+
+    function showNotification(title, message, type = 'info') {
+        const titleEl = document.getElementById('notify-title');
+        titleEl.innerText = title;
+        titleEl.style.color = type === 'error' ? 'var(--danger)' : type === 'success' ? '#4CAF50' : 'var(--primary)';
+        document.getElementById('notify-message').innerText = message;
+        document.getElementById('notifyModal').classList.add('active');
     }
     document.getElementById('btn-garage-nav').onclick = () => { loadGarage(); document.getElementById('garageModal').classList.add('active'); };
     updateHeroDisplay();

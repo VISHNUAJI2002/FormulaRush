@@ -32,7 +32,7 @@ LEVEL_CONFIG = {
         "desc": "Master the basics. Addition only.",
         "ops": ["addition"],
         "target_score": 500,
-        "reward": 100,
+        "reward": 200,
         "difficulty": "easy"
     },
     2: {
@@ -41,7 +41,7 @@ LEVEL_CONFIG = {
         "desc": "Survival required. Subtraction enabled.",
         "ops": ["subtraction"],
         "target_score": 600,
-        "reward": 120,
+        "reward": 250,
         "difficulty": "easy"
     },
     3: {
@@ -50,7 +50,7 @@ LEVEL_CONFIG = {
         "desc": "Multiplication basics. Tables of 1 and 2.",
         "ops": ["mult_1_2"],
         "target_score": 700,
-        "reward": 150,
+        "reward": 300,
         "difficulty": "easy"
     },
     4: {
@@ -59,7 +59,7 @@ LEVEL_CONFIG = {
         "desc": "Building momentum. Tables of 3 and 4.",
         "ops": ["mult_3_4"],
         "target_score": 800,
-        "reward": 180,
+        "reward": 350,
         "difficulty": "medium"
     },
     5: {
@@ -68,7 +68,7 @@ LEVEL_CONFIG = {
         "desc": "Mid-range challenge. Tables of 5 and 6.",
         "ops": ["mult_5_6"],
         "target_score": 900,
-        "reward": 200,
+        "reward": 400,
         "difficulty": "medium"
     },
     6: {
@@ -77,7 +77,7 @@ LEVEL_CONFIG = {
         "desc": "Getting harder. Tables of 7 and 8.",
         "ops": ["mult_7_8"],
         "target_score": 1000,
-        "reward": 250,
+        "reward": 450,
         "difficulty": "medium"
     },
     7: {
@@ -86,7 +86,7 @@ LEVEL_CONFIG = {
         "desc": "Advanced multiplication. Tables of 9 and 10.",
         "ops": ["mult_9_10"],
         "target_score": 1100,
-        "reward": 300,
+        "reward": 500,
         "difficulty": "hard"
     },
     8: {
@@ -95,7 +95,7 @@ LEVEL_CONFIG = {
         "desc": "Reverse the process. Division only.",
         "ops": ["division"],
         "target_score": 1200,
-        "reward": 350,
+        "reward": 600,
         "difficulty": "hard"
     },
     9: {
@@ -104,7 +104,7 @@ LEVEL_CONFIG = {
         "desc": "Master all operations. Final challenge!",
         "ops": ["all_ops"],
         "target_score": 1500,
-        "reward": 500,
+        "reward": 1000,
         "difficulty": "hard"
     }
 }
@@ -235,7 +235,10 @@ def dashboard():
     return render_template('dashboard.html', 
                            name=current_user.username, 
                            score=current_user.high_score, # This is the High Score
-                           rank=rank_title)               # This is the Real Rank
+                           rank=rank_title,               # This is the Real Rank
+                           coins=current_user.coins,      # User's coins
+                           max_level=current_user.max_level_unlocked,  # Campaign progress
+                           inventory=current_user.inventory)  # Owned cars
 
 # --- NEW ACADEMY ROUTE ---
 @app.route('/academy')
@@ -511,6 +514,64 @@ def submit_score():
         'total_coins': current_user.coins,
         'level_unlocked': level_unlocked,
         'next_level': next_level
+    }), 200
+
+# --- CAR PURCHASE ROUTE ---
+@app.route('/buy_car', methods=['POST'])
+@login_required
+def buy_car():
+    data = request.get_json()
+    car_id = data.get('carId')
+    
+    # Define car unlock requirements
+    CAR_UNLOCK_REQUIREMENTS = {
+        'car_default': {'unlock_level': 1, 'price': 0},
+        'car_bronze': {'unlock_level': 2, 'price': 300},
+        'car_silver': {'unlock_level': 4, 'price': 400},
+        'car_gold': {'unlock_level': 6, 'price': 500}
+    }
+    
+    # Validate car exists
+    if car_id not in CAR_UNLOCK_REQUIREMENTS:
+        return jsonify({'status': 'error', 'message': 'Invalid car ID'}), 400
+    
+    car_req = CAR_UNLOCK_REQUIREMENTS[car_id]
+    
+    # Check if player has unlocked this car (campaign progress)
+    if current_user.max_level_unlocked < car_req['unlock_level']:
+        return jsonify({
+            'status': 'error', 
+            'message': f'Complete level {car_req["unlock_level"] - 1} first!'
+        }), 403
+    
+    # Check if already owned
+    try:
+        inventory = json.loads(current_user.inventory)
+    except:
+        inventory = ['car_default']
+    
+    if car_id in inventory:
+        return jsonify({'status': 'error', 'message': 'Car already owned'}), 400
+    
+    # Check if player has enough coins
+    if current_user.coins < car_req['price']:
+        return jsonify({
+            'status': 'error', 
+            'message': f'Insufficient coins. Need {car_req["price"]}, have {current_user.coins}'
+        }), 400
+    
+    # Process purchase
+    current_user.coins -= car_req['price']
+    inventory.append(car_id)
+    current_user.inventory = json.dumps(inventory)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'status': 'success',
+        'message': f'Car purchased for {car_req["price"]} coins!',
+        'coins': current_user.coins,
+        'inventory': inventory
     }), 200
 
 # --- Place this AFTER your submit_score function ---
