@@ -295,47 +295,9 @@
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 25px;">
-            <div class="panel-box">
-                <div class="panel-title"><span>SCORE HISTORY LOG</span></div>
-                <div style="height: 250px;"><canvas id="historyChart"></canvas></div>
-            </div>
-
-            <div class="panel-box">
-                <div class="panel-title"><span>ACTIVE MISSIONS</span></div>
-                
-                <div class="mission-item">
-                    <div style="flex:1">
-                        <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">DAILY GRIND</h4>
-                        <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">Complete 5 races ({{ races|length }}/5)</p>
-                    </div>
-                    <div class="mission-status {{ 'status-complete' if races|length >= 5 else 'status-active' }}">
-                        {{ 'COMPLETED' if races|length >= 5 else 'ACTIVE' }}
-                    </div>
-                </div>
-
-                {% set acc_target = 50 if accuracy_rate < 50 else (70 if accuracy_rate < 70 else (80 if accuracy_rate < 80 else 90)) %}
-                <div class="mission-item">
-                    <div style="flex:1">
-                        <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">PRECISION PILOT</h4>
-                        <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">Reach {{ acc_target }}% Accuracy</p>
-                    </div>
-                    <div class="mission-status {{ 'status-complete' if accuracy_rate >= acc_target else 'status-active' }}">
-                        {{ accuracy_rate }} / {{ acc_target }}%
-                    </div>
-                </div>
-
-                {% set rank_goal = 'AMATEUR' if rank_title == 'ROOKIE' else ('PRO' if rank_title == 'AMATEUR' else ('LEGEND' if rank_title == 'PRO' else 'MAXED')) %}
-                <div class="mission-item">
-                    <div style="flex:1">
-                        <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">PROMOTION</h4>
-                        <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">Reach {{ rank_goal }} Designation</p>
-                    </div>
-                    <div class="mission-status status-active">
-                        {{ 'COMPLETED' if rank_goal == 'MAXED' else 'IN PROGRESS' }}
-                    </div>
-                </div>
-            </div>
+        <div class="panel-box">
+            <div class="panel-title"><span>SCORE HISTORY LOG</span></div>
+            <div style="height: 350px;"><canvas id="historyChart"></canvas></div>
         </div>
     </div>
     <a href="{{ url_for('dashboard') }}" class="btn-hangar">RETURN TO DASHBOARD</a>

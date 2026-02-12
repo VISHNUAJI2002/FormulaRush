@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --glass-dark: rgba(8, 10, 15, 0.98);
+        --glass-border: rgba(0, 210, 255, 0.2);
+        --neon-cyan: #00d2ff;
+        --neon-red: #ff4b2b;
+        --neon-green: #2ecc71;
+        --neon-gold: #ffd700;
+        --neon-purple: #9d4edd;
+        --text-muted: #6c7a9c;
+    }
+    body { background: #050508; background-image: linear-gradient(rgba(0, 210, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 210, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; color: #fff; font-family: 'Rajdhani', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    .missions-container { max-width: 1500px; margin: 0 auto; padding: 30px 20px; position: relative; z-index: 5; }
+    .missions-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+    .header-main h1 { font-family: 'Orbitron'; font-size: 2.2rem; margin: 0; color: #fff; text-shadow: 0 0 10px var(--neon-cyan); }
+    .header-main p { color: var(--text-muted); margin: 5px 0 0; letter-spacing: 3px; font-size: 0.9rem; }
+    .panel-box { background: var(--glass-dark); border: 1px solid var(--glass-border); border-radius: 4px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); position: relative; margin-bottom: 25px; }
+    .panel-box::before { content: ''; position: absolute; top: 0; left: 0; width: 10px; height: 10px; border-top: 2px solid var(--neon-cyan); border-left: 2px solid var(--neon-cyan); }
+    .panel-box::after { content: ''; position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-bottom: 2px solid var(--neon-cyan); border-right: 2px solid var(--neon-cyan); }
+    .panel-title { font-family: 'Orbitron'; font-size: 0.85rem; letter-spacing: 2px; color: var(--neon-cyan); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 8px; }
+
+    /* MISSION ITEMS */
+    .mission-item { background: rgba(0,0,0,0.3); border: 1px solid #222; padding: 18px 20px; margin-bottom: 12px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.3s, box-shadow 0.3s; }
+    .mission-item:hover { border-color: rgba(0, 210, 255, 0.3); box-shadow: 0 0 15px rgba(0, 210, 255, 0.05); }
+    .mission-status { font-family: 'Orbitron'; font-size: 0.7rem; padding: 5px 12px; border-radius: 3px; font-weight: 900; white-space: nowrap; }
+    .status-active { color: var(--neon-cyan); border: 1px solid var(--neon-cyan); background: rgba(0, 210, 255, 0.05); }
+    .status-complete { color: var(--neon-green); border: 1px solid var(--neon-green); background: rgba(46, 204, 113, 0.1); }
+    .status-locked { color: #555; border: 1px solid #333; background: rgba(0,0,0,0.3); }
+
+    /* COLLECT BUTTON */
+    .btn-collect { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 900; padding: 8px 16px; border: 1px solid var(--neon-gold); background: rgba(255, 215, 0, 0.1); color: var(--neon-gold); border-radius: 3px; cursor: pointer; letter-spacing: 1px; transition: all 0.3s ease; text-shadow: 0 0 8px rgba(255, 215, 0, 0.3); animation: collectPulse 2s infinite; }
+    .btn-collect:hover { background: var(--neon-gold); color: #000; text-shadow: none; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); transform: scale(1.05); }
+    .btn-collect:active { transform: scale(0.95); }
+    .btn-collect:disabled { opacity: 0.5; cursor: not-allowed; animation: none; }
+    @keyframes collectPulse { 0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.2); } 50% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); } }
+
+    /* CLAIMED BADGE */
+    .badge-claimed { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 900; padding: 8px 16px; border: 1px solid var(--neon-green); background: rgba(46, 204, 113, 0.1); color: var(--neon-green); border-radius: 3px; letter-spacing: 1px; }
+
+    /* REWARD AMOUNT */
+    .reward-amount { font-family: 'Orbitron'; font-size: 0.6rem; color: var(--neon-gold); margin-right: 10px; white-space: nowrap; }
+
+    .mission-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* CAMPAIGN GRID */
+    .campaign-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .level-card { background: rgba(0,0,0,0.4); border: 1px solid #222; border-radius: 6px; padding: 20px; position: relative; overflow: hidden; transition: all 0.3s ease; }
+    .level-card:hover { border-color: rgba(0, 210, 255, 0.3); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+    .level-card.completed { border-color: rgba(46, 204, 113, 0.3); }
+    .level-card.locked { opacity: 0.4; filter: grayscale(0.5); }
+    .level-card.locked::after { content: '🔒'; position: absolute; top: 12px; right: 15px; font-size: 1rem; }
+    .level-card.current { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 210, 255, 0.1); }
+    .level-card.current::after { content: '▶'; position: absolute; top: 12px; right: 15px; font-family: 'Orbitron'; font-size: 0.8rem; color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .level-num { font-family: 'Orbitron'; font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 2px; margin-bottom: 5px; opacity: 0.7; }
+    .level-name { font-family: 'Orbitron'; font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .level-desc { font-size: 0.75rem; color: #666; margin-bottom: 12px; line-height: 1.4; }
+    .level-meta { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #222; padding-top: 10px; margin-top: 5px; }
+    .level-target { font-size: 0.65rem; color: #555; font-family: 'Orbitron'; letter-spacing: 1px; }
+    .level-reward { font-family: 'Orbitron'; font-size: 0.75rem; color: var(--neon-gold); text-shadow: 0 0 8px rgba(255, 215, 0, 0.3); }
+    .difficulty-badge { display: inline-block; font-family: 'Orbitron'; font-size: 0.55rem; padding: 2px 8px; border-radius: 2px; letter-spacing: 1px; margin-bottom: 8px; }
+    .diff-easy { color: var(--neon-green); border: 1px solid var(--neon-green); background: rgba(46, 204, 113, 0.08); }
+    .diff-medium { color: var(--neon-gold); border: 1px solid var(--neon-gold); background: rgba(255, 215, 0, 0.08); }
+    .diff-hard { color: var(--neon-red); border: 1px solid var(--neon-red); background: rgba(255, 75, 43, 0.08); }
+    .level-card-actions { margin-top: 12px; text-align: center; }
+    .section-gap { margin-top: 25px; }
+
+    /* NOTIFICATION TOAST */
+    .reward-toast { position: fixed; top: 30px; right: 30px; background: rgba(8, 10, 15, 0.95); border: 1px solid var(--neon-gold); border-radius: 6px; padding: 15px 25px; font-family: 'Orbitron'; font-size: 0.8rem; color: var(--neon-gold); z-index: 9999; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+    .reward-toast.show { transform: translateX(0); }
+
+    /* COIN DISPLAY */
+    .coin-display { font-family: 'Orbitron'; font-size: 1rem; color: var(--neon-gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+
+    /* RETURN BUTTON */
+    .btn-hangar { display: block; width: 100%; text-align: center; padding: 18px; margin-top: 25px; background: var(--neon-cyan); color: #000; text-decoration: none; font-family: 'Orbitron'; font-weight: 900; letter-spacing: 4px; clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); border: none; }
+    .btn-hangar:hover { background: #fff; color: #000; transform: translateY(-3px); filter: drop-shadow(0 0 15px var(--neon-cyan)); letter-spacing: 6px; }
+    .btn-hangar:active { transform: translateY(1px); filter: drop-shadow(0 0 5px var(--neon-cyan)); }
+</style>
+
+<div class="missions-container">
+
+    <div class="missions-header">
+        <div class="header-main">
+            <h1>MISSION CONTROL</h1>
+            <p>OBJECTIVES & CAMPAIGN REWARDS</p>
+        </div>
+        <div style="text-align: right">
+            <div class="coin-display" id="coinDisplay">🪙 {{ current_user.coins }}</div>
+            <div style="font-size:0.7rem; color:#555; margin-top:5px;">TOTAL RACES: {{ total_races }}</div>
+        </div>
+    </div>
+
+    <!-- DAILY MISSIONS -->
+    <div class="panel-box">
+        <div class="panel-title"><span>ACTIVE MISSIONS</span></div>
+
+        <!-- DAILY GRIND -->
+        {% set daily_id = 'daily_grind_' ~ now_date %}
+        {% set daily_done = today_races >= 5 %}
+        {% set daily_claimed = daily_id in claimed_rewards %}
+        <div class="mission-item">
+            <div style="flex:1">
+                <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">DAILY GRIND</h4>
+                <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">Complete 5 races today ({{ today_races }}/5)</p>
+            </div>
+            <div class="mission-actions">
+                <span class="reward-amount">🪙 50</span>
+                {% if daily_claimed %}
+                    <span class="badge-claimed">CLAIMED ✓</span>
+                {% elif daily_done %}
+                    <button class="btn-collect" onclick="claimReward('{{ daily_id }}', this)">COLLECT 🪙</button>
+                {% else %}
+                    <div class="mission-status status-active">{{ today_races }}/5</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- PRECISION PILOT -->
+        {% if total_races >= 5 %}
+            {% set acc_target = 50 if accuracy_rate < 50 else (70 if accuracy_rate < 70 else (80 if accuracy_rate < 80 else 90)) %}
+            {% set precision_id = 'precision_' ~ acc_target %}
+            {% set precision_done = accuracy_rate >= acc_target %}
+            {% set precision_claimed = precision_id in claimed_rewards %}
+            <div class="mission-item">
+                <div style="flex:1">
+                    <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">PRECISION PILOT</h4>
+                    <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">Reach {{ acc_target }}% Accuracy ({{ accuracy_rate }}% current)</p>
+                </div>
+                <div class="mission-actions">
+                    <span class="reward-amount">🪙 100</span>
+                    {% if precision_claimed %}
+                        <span class="badge-claimed">CLAIMED ✓</span>
+                    {% elif precision_done %}
+                        <button class="btn-collect" onclick="claimReward('{{ precision_id }}', this)">COLLECT 🪙</button>
+                    {% else %}
+                        <div class="mission-status status-active">{{ accuracy_rate }} / {{ acc_target }}%</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="mission-item" style="opacity: 0.4;">
+                <div style="flex:1">
+                    <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">PRECISION PILOT</h4>
+                    <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">Complete {{ 5 - total_races }} more race{{ 's' if (5 - total_races) > 1 else '' }} to unlock</p>
+                </div>
+                <div class="mission-actions">
+                    <span class="reward-amount">🪙 100</span>
+                    <div class="mission-status status-locked">LOCKED</div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- PROMOTION -->
+        {% set rank_goal = 'AMATEUR' if rank_title == 'ROOKIE' else ('PRO' if rank_title == 'AMATEUR' else ('LEGEND' if rank_title == 'PRO' else 'MAXED')) %}
+        {% set promo_id = 'promo_' ~ rank_goal %}
+        {% set promo_done = rank_goal == 'MAXED' %}
+        {% set promo_claimed = promo_id in claimed_rewards %}
+        <div class="mission-item">
+            <div style="flex:1">
+                <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">PROMOTION</h4>
+                <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">{% if promo_done %}All ranks achieved!{% else %}Reach {{ rank_goal }} Designation{% endif %}</p>
+            </div>
+            <div class="mission-actions">
+                <span class="reward-amount">🪙 200</span>
+                {% if promo_claimed %}
+                    <span class="badge-claimed">CLAIMED ✓</span>
+                {% elif promo_done %}
+                    <button class="btn-collect" onclick="claimReward('{{ promo_id }}', this)">COLLECT 🪙</button>
+                {% else %}
+                    <div class="mission-status status-active">IN PROGRESS</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- CAMPAIGN LEVEL REWARDS -->
+    <div class="panel-box section-gap">
+        <div class="panel-title">
+            <span>CAMPAIGN REWARDS</span>
+            <span style="font-size:0.6rem; color:#555;">{{ max_level_unlocked - 1 if max_level_unlocked > 1 else 0 }}/{{ levels|length }} COMPLETED</span>
+        </div>
+
+        <div class="campaign-grid">
+            {% for id, level in levels.items() %}
+                {% if id < max_level_unlocked %}
+                    {% set card_class = 'completed' %}
+                {% elif id == max_level_unlocked %}
+                    {% set card_class = 'current' %}
+                {% else %}
+                    {% set card_class = 'locked' %}
+                {% endif %}
+                {% set camp_id = 'campaign_' ~ id %}
+                {% set camp_claimed = camp_id in claimed_rewards %}
+
+                <div class="level-card {{ card_class }}">
+                    <div class="level-num">LEVEL {{ id }}</div>
+                    <div class="level-name">{{ level.name }}</div>
+                    <span class="difficulty-badge diff-{{ level.difficulty }}">{{ level.difficulty | upper }}</span>
+                    <div class="level-desc">{{ level.desc }}</div>
+                    <div class="level-meta">
+                        <div class="level-target">TARGET: {{ level.target_score }}m</div>
+                        <div class="level-reward">🪙 {{ level.reward }}</div>
+                    </div>
+                    {% if card_class == 'completed' %}
+                        <div class="level-card-actions">
+                            {% if camp_claimed %}
+                                <span class="badge-claimed">CLAIMED ✓</span>
+                            {% else %}
+                                <button class="btn-collect" onclick="claimReward('{{ camp_id }}', this)">COLLECT 🪙 {{ level.reward }}</button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <a href="{{ url_for('dashboard') }}" class="btn-hangar">RETURN TO DASHBOARD</a>
+</div>
+
+<!-- REWARD TOAST -->
+<div class="reward-toast" id="rewardToast"></div>
+
+<script>
+    function claimReward(rewardId, btn) {
+        btn.disabled = true;
+        btn.textContent = 'CLAIMING...';
+
+        fetch('/claim_reward', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reward_id: rewardId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Replace button with claimed badge
+                const badge = document.createElement('span');
+                badge.className = 'badge-claimed';
+                badge.textContent = 'CLAIMED ✓';
+                btn.replaceWith(badge);
+
+                // Update coin display
+                document.getElementById('coinDisplay').textContent = '🪙 ' + data.total_coins;
+
+                // Show toast
+                showToast('+' + data.coins_added + ' 🪙 REWARD COLLECTED!');
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'COLLECT 🪙';
+                showToast('⚠ ' + (data.message || 'Failed to claim'));
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = 'COLLECT 🪙';
+            showToast('⚠ Network error');
+        });
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('rewardToast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+</script>
+{% endblock %}

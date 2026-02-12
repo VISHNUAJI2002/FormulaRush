@@ -122,6 +122,7 @@ class User(db.Model, UserMixin):
     # Relationship to access all races
     races = db.relationship('RaceSession', backref='player', lazy=True)
     max_level_unlocked = db.Column(db.Integer, default=1)
+    claimed_rewards = db.Column(db.Text, default='[]')  # JSON list of claimed reward IDs
 
 # NEW: The Table for Pilot Career Data
 # THE UPGRADED TABLE
@@ -366,6 +367,127 @@ def career():
                             accuracy_rate=accuracy_rate,
                             neural_load=neural_load,
                             today_flight_time=today_flight_time)
+
+# --- MISSIONS ROUTE ---
+@app.route('/missions')
+@login_required
+def missions():
+    races = RaceSession.query.filter_by(user_id=current_user.id).order_by(RaceSession.date_played.desc()).all()
+    total_races = len(races)
+    total_distance = sum(r.score for r in races) if races else 0
+
+    # Today's race count
+    from datetime import datetime
+    today = datetime.utcnow().date()
+    today_races = len([r for r in races if r.date_played.date() == today])
+
+    # Rank
+    rank_title = "ROOKIE"
+    if total_distance >= 50000: rank_title = "LEGEND"
+    elif total_distance >= 15000: rank_title = "PRO RACER"
+    elif total_distance >= 5000: rank_title = "AMATEUR"
+
+    # Accuracy
+    total_telemetry = TelemetryData.query.filter_by(user_id=current_user.id).count()
+    correct_telemetry = TelemetryData.query.filter_by(user_id=current_user.id, is_correct=True).count()
+    accuracy_rate = int((correct_telemetry / total_telemetry) * 100) if total_telemetry > 0 else 0
+
+    # Parse claimed rewards
+    try:
+        claimed = json.loads(current_user.claimed_rewards or '[]')
+    except:
+        claimed = []
+
+    return render_template('missions.html',
+                           total_races=total_races,
+                           today_races=today_races,
+                           accuracy_rate=accuracy_rate,
+                           rank_title=rank_title,
+                           levels=LEVEL_CONFIG,
+                           max_level_unlocked=current_user.max_level_unlocked,
+                           claimed_rewards=claimed,
+                           now_date=today.isoformat())
+
+# --- CLAIM REWARD ROUTE ---
+@app.route('/claim_reward', methods=['POST'])
+@login_required
+def claim_reward():
+    data = request.get_json()
+    reward_id = data.get('reward_id', '')
+
+    # Parse existing claims
+    try:
+        claimed = json.loads(current_user.claimed_rewards or '[]')
+    except:
+        claimed = []
+
+    # Prevent double-claiming
+    if reward_id in claimed:
+        return jsonify({'success': False, 'message': 'Already claimed'}), 400
+
+    # --- VALIDATE & DETERMINE REWARD ---
+    coins_to_add = 0
+    races = RaceSession.query.filter_by(user_id=current_user.id).all()
+    total_races = len(races)
+    total_distance = sum(r.score for r in races) if races else 0
+
+    if reward_id.startswith('daily_grind_'):
+        # Validate: 5+ races today
+        from datetime import datetime
+        today_str = datetime.utcnow().date().isoformat()
+        if reward_id != f'daily_grind_{today_str}':
+            return jsonify({'success': False, 'message': 'Invalid daily reward'}), 400
+        today_races = len([r for r in races if r.date_played.date().isoformat() == today_str])
+        if today_races < 5:
+            return jsonify({'success': False, 'message': 'Mission not completed'}), 400
+        coins_to_add = 50
+
+    elif reward_id.startswith('precision_'):
+        # Validate: accuracy >= target
+        target = int(reward_id.split('_')[1])
+        total_telemetry = TelemetryData.query.filter_by(user_id=current_user.id).count()
+        correct_telemetry = TelemetryData.query.filter_by(user_id=current_user.id, is_correct=True).count()
+        accuracy_rate = int((correct_telemetry / total_telemetry) * 100) if total_telemetry > 0 else 0
+        if accuracy_rate < target or total_races < 5:
+            return jsonify({'success': False, 'message': 'Mission not completed'}), 400
+        coins_to_add = 100
+
+    elif reward_id.startswith('promo_'):
+        # Validate: rank matches
+        rank_title = "ROOKIE"
+        if total_distance >= 50000: rank_title = "LEGEND"
+        elif total_distance >= 15000: rank_title = "PRO RACER"
+        elif total_distance >= 5000: rank_title = "AMATEUR"
+        # promo_MAXED means they reached LEGEND (final rank)
+        target_rank = reward_id.replace('promo_', '')
+        if target_rank == 'MAXED' and rank_title != 'LEGEND':
+            return jsonify({'success': False, 'message': 'Mission not completed'}), 400
+        coins_to_add = 200
+
+    elif reward_id.startswith('campaign_'):
+        # Validate: level completed (id < max_level_unlocked)
+        level_id = int(reward_id.split('_')[1])
+        if level_id >= current_user.max_level_unlocked:
+            return jsonify({'success': False, 'message': 'Level not completed'}), 400
+        if level_id not in LEVEL_CONFIG:
+            return jsonify({'success': False, 'message': 'Invalid level'}), 400
+        coins_to_add = LEVEL_CONFIG[level_id]['reward']
+
+    else:
+        return jsonify({'success': False, 'message': 'Unknown reward'}), 400
+
+    # Award coins
+    current_user.coins += coins_to_add
+    claimed.append(reward_id)
+    current_user.claimed_rewards = json.dumps(claimed)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'coins_added': coins_to_add,
+        'total_coins': current_user.coins
+    })
+
 # --- GAME ROUTES ---
 
 # --- CAMPAIGN HUB (Map) ---
@@ -615,4 +737,15 @@ def ai_predict():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        # Migrate: add claimed_rewards column if missing
+        import sqlite3
+        try:
+            conn = sqlite3.connect('instance/database.db')
+            cursor = conn.cursor()
+            cursor.execute("ALTER TABLE user ADD COLUMN claimed_rewards TEXT DEFAULT '[]'")
+            conn.commit()
+            conn.close()
+            print("MIGRATION: Added claimed_rewards column")
+        except:
+            pass  # Column already exists
     app.run(debug=True)
