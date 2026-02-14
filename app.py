@@ -226,20 +226,64 @@ def dashboard():
     # 1. Calculate Rank Logic (Same as Career)
     races = RaceSession.query.filter_by(user_id=current_user.id).all()
     total_distance = sum(r.score for r in races) if races else 0
+    total_races = len(races)
     
     rank_title = "ROOKIE"
     if total_distance > 50000: rank_title = "LEGEND"
     elif total_distance > 15000: rank_title = "PRO RACER"
     elif total_distance > 5000: rank_title = "AMATEUR"
 
-    # 2. Pass these to the template
+    # 2. Check for unclaimed mission rewards
+    try:
+        claimed = json.loads(current_user.claimed_rewards or '[]')
+    except:
+        claimed = []
+
+    has_unclaimed = False
+
+    # Daily Grind: 5+ races today
+    from datetime import datetime
+    today = datetime.utcnow().date()
+    today_races = len([r for r in races if r.date_played.date() == today])
+    daily_id = f'daily_grind_{today.isoformat()}'
+    if today_races >= 5 and daily_id not in claimed:
+        has_unclaimed = True
+
+    # Precision Pilot: accuracy >= target
+    if not has_unclaimed and total_races >= 5:
+        total_telemetry = TelemetryData.query.filter_by(user_id=current_user.id).count()
+        correct_telemetry = TelemetryData.query.filter_by(user_id=current_user.id, is_correct=True).count()
+        accuracy_rate = int((correct_telemetry / total_telemetry) * 100) if total_telemetry > 0 else 0
+        acc_target = 50 if accuracy_rate < 50 else (70 if accuracy_rate < 70 else (80 if accuracy_rate < 80 else 90))
+        precision_id = f'precision_{acc_target}'
+        if accuracy_rate >= acc_target and precision_id not in claimed:
+            has_unclaimed = True
+
+    # Promotion: rank achieved
+    if not has_unclaimed:
+        rank_goal = 'AMATEUR' if rank_title == 'ROOKIE' else ('PRO' if rank_title == 'AMATEUR' else ('LEGEND' if rank_title == 'PRO' else 'MAXED'))
+        promo_id = f'promo_{rank_goal}'
+        if rank_goal == 'MAXED' and promo_id not in claimed:
+            has_unclaimed = True
+
+    # Campaign level rewards: completed but unclaimed
+    if not has_unclaimed:
+        for level_id in LEVEL_CONFIG:
+            if level_id < current_user.max_level_unlocked:
+                camp_id = f'campaign_{level_id}'
+                if camp_id not in claimed:
+                    has_unclaimed = True
+                    break
+
+    # 3. Pass these to the template
     return render_template('dashboard.html', 
                            name=current_user.username, 
-                           score=current_user.high_score, # This is the High Score
-                           rank=rank_title,               # This is the Real Rank
-                           coins=current_user.coins,      # User's coins
-                           max_level=current_user.max_level_unlocked,  # Campaign progress
-                           inventory=current_user.inventory)  # Owned cars
+                           score=current_user.high_score,
+                           rank=rank_title,
+                           coins=current_user.coins,
+                           max_level=current_user.max_level_unlocked,
+                           inventory=current_user.inventory,
+                           has_unclaimed_rewards=has_unclaimed)
 
 # --- NEW ACADEMY ROUTE ---
 @app.route('/academy')
