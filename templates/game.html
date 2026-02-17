@@ -4,11 +4,10 @@
 
 <style>
     /* --- CORE LAYOUT OVERRIDES --- */
-    /* Force the game background and disable scrolling specifically for this page */
     body {
-        background-color: #0b0b14 !important; /* Darker Space Blue */
+        background-color: #0b0b14 !important;
         margin: 0;
-        overflow: hidden; /* Stop scrolling */
+        overflow: hidden;
         color: #eee;
         font-family: 'Rajdhani', sans-serif;
     }
@@ -20,14 +19,9 @@
         left: 0;
         width: 100vw;
         height: 100vh;
-        
-        /* Flexbox Centering */
         display: flex;
         justify-content: center;
         align-items: center;
-        
-        /* PADDING: Pushes game down so the Base Navbar doesn't cover it. 
-           Adjust this (e.g., 70px or 80px) depending on your Base Navbar height. */
         padding-top: 70px; 
         box-sizing: border-box;
         z-index: 1; 
@@ -53,7 +47,8 @@
         border: 4px solid #333;
         box-shadow: 10px 10px 30px rgba(0,0,0,0.6);
         display: flex; flex-direction: column; align-items: center;
-        height: 600px; justify-content: space-between;
+        height: 640px; /* Increased height for Weapon Sys */
+        justify-content: space-between;
     }
     .p1-panel { border-color: #00d2ff; }
     .p2-panel { border-color: #d966ff; }
@@ -66,33 +61,47 @@
     .control-label { font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 2px; margin: 10px 0; font-size: 0.8rem; width: 100%; text-align: center; }
 
     /* GEAR SHIFTER */
-    .shifter-container { position: relative; width: 120px; height: 180px; background: linear-gradient(145deg, #2a2a2a, #1a1a1a); border-radius: 10px; border: 3px solid #444; box-shadow: inset 0 0 15px #000; overflow: hidden; margin: 0 auto; }
-    .shifter-slot { width: 10px; height: 140px; background: #000; border-radius: 10px; margin: 20px auto 0; box-shadow: inset 0 0 5px rgba(0,0,0,1); position: relative; z-index: 1; }
+    .shifter-container { position: relative; width: 120px; height: 160px; background: linear-gradient(145deg, #2a2a2a, #1a1a1a); border-radius: 10px; border: 3px solid #444; box-shadow: inset 0 0 15px #000; overflow: hidden; margin: 0 auto; }
+    .shifter-slot { width: 10px; height: 120px; background: #000; border-radius: 10px; margin: 20px auto 0; box-shadow: inset 0 0 5px rgba(0,0,0,1); position: relative; z-index: 1; }
     .shifter-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
     .shift-mark { position: absolute; left: 10px; font-weight: 800; font-size: 0.7rem; color: #444; text-transform: uppercase; transition: color 0.3s; }
-    .mark-3 { top: 30px; } .mark-2 { top: 80px; } .mark-1 { top: 130px; }
-    .shifter-stick-assembly { position: absolute; top: 130px; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; z-index: 10; transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none; }
-    .shifter-knob { width: 50px; height: 50px; background: radial-gradient(circle at 30% 30%, #444, #111); border-radius: 50%; border: 2px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; color: #888; font-weight: bold; font-size: 1.5rem; }
-    .click-zone { position: absolute; left: 0; width: 100%; height: 60px; cursor: pointer; z-index: 20; }
-    .zone-3 { top: 0px; } .zone-2 { top: 60px; } .zone-1 { top: 120px; }
+    .mark-3 { top: 30px; } .mark-2 { top: 75px; } .mark-1 { top: 120px; }
+    .shifter-stick-assembly { position: absolute; top: 120px; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; z-index: 10; transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none; }
+    .shifter-knob { width: 40px; height: 40px; background: radial-gradient(circle at 30% 30%, #444, #111); border-radius: 50%; border: 2px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; color: #888; font-weight: bold; font-size: 1.2rem; }
+    .click-zone { position: absolute; left: 0; width: 100%; height: 53px; cursor: pointer; z-index: 20; }
+    .zone-3 { top: 0px; } .zone-2 { top: 53px; } .zone-1 { top: 106px; }
 
     /* ROCKER SWITCHES */
     .rocker-group { display: flex; gap: 10px; justify-content: center; width: 100%; }
     .rocker-input { display: none; }
-    .rocker-label { width: 70px; height: 45px; background: linear-gradient(to bottom, #222, #333); border-top: 2px solid #555; border-bottom: 2px solid #111; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .rocker-label { width: 70px; height: 40px; background: linear-gradient(to bottom, #222, #333); border-top: 2px solid #555; border-bottom: 2px solid #111; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .rocker-light { width: 12px; height: 4px; background: #333; margin-bottom: 3px; transition: 0.3s; }
     .rocker-text { font-size: 0.6rem; font-weight: bold; color: #666; text-transform: uppercase; }
     .rocker-input:checked + .rocker-label { background: linear-gradient(to bottom, #111, #222); border-top: 2px solid #000; transform: translateY(2px); }
     .p1-panel .rocker-input:checked + .rocker-label .rocker-light { background: #00d2ff; box-shadow: 0 0 8px #00d2ff; }
     .p2-panel .rocker-input:checked + .rocker-label .rocker-light { background: #d966ff; box-shadow: 0 0 8px #d966ff; }
 
+    /* --- NEW WEAPON SYSTEM --- */
+    .weapon-hud { width: 100%; background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; margin: 5px 0; }
+    .ammo-bar { display: flex; gap: 4px; justify-content: center; margin-bottom: 8px; }
+    .ammo-pip { width: 30px; height: 6px; background: #333; border-radius: 2px; transition: 0.2s; }
+    .ammo-pip.active-p1 { background: #00d2ff; box-shadow: 0 0 5px #00d2ff; }
+    .ammo-pip.active-p2 { background: #d966ff; box-shadow: 0 0 5px #d966ff; }
+    
+    .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; font-weight: bold; color: #555; }
+    .status-icon { font-size: 1.2rem; opacity: 0.2; transition: 0.3s; }
+    .status-icon.ready { opacity: 1; color: #fff; text-shadow: 0 0 8px #fff; animation: pulse 1s infinite; }
+    .status-icon.shielded { opacity: 1; color: #00f260; text-shadow: 0 0 10px #00f260; }
+    
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
     /* SPEEDOMETERS */
-    .gauge-wrapper { position: relative; width: 160px; height: 160px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #444; margin: 10px auto; }
+    .gauge-wrapper { position: relative; width: 140px; height: 140px; background: radial-gradient(#222, #000); border-radius: 50%; border: 4px solid #444; margin: 5px auto; }
     .gauge-arc { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; -webkit-mask: radial-gradient(transparent 65%, black 65%); mask: radial-gradient(transparent 65%, black 65%); }
     .p1-arc { background: conic-gradient(from 225deg, #00d2ff 0deg, #0056b3 200deg, transparent 200deg); }
     .p2-arc { background: conic-gradient(from 225deg, #d966ff 0deg, #b33a00 200deg, transparent 200deg); }
     .gauge-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 3px; background: #fff; transform-origin: 0% 50%; transform: rotate(225deg); border-radius: 50%; z-index: 5; transition: transform 0.1s; }
-    .gauge-value { position: absolute; bottom: 35px; left: 0; right: 0; text-align: center; color: white; font-size: 1.8rem; font-weight: bold; z-index: 6; }
+    .gauge-value { position: absolute; bottom: 30px; left: 0; right: 0; text-align: center; color: white; font-size: 1.5rem; font-weight: bold; z-index: 6; }
 
 
     /* --- CENTER AREA --- */
@@ -115,139 +124,59 @@
     .problem { font-size: 1.5rem; font-weight: bold; color: white; display: block; }
     .timer-float { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #fff; padding: 5px 15px; border-radius: 20px; font-size: 1.5rem; font-weight: bold; color: #fff; }
 
-    /* --- 3. NEON GLASS + PHYSICAL WEIGHT BUTTONS --- */
+    /* BUTTONS & MODAL (Same as before) */
     .mission-control {
-        margin-top: 15px; height: 110px; /* Taller for the button depth */
+        margin-top: 15px; height: 110px; 
         background: rgba(0, 0, 0, 0.8); 
-        border: 2px solid #333; 
-        border-radius: 12px;
+        border: 2px solid #333; border-radius: 12px;
         display: flex; justify-content: center; align-items: center; gap: 40px;
         box-shadow: inset 0 0 30px #000;
     }
-
     .ctrl-btn {
         height: 60px; min-width: 220px;
         font-family: 'Rajdhani', sans-serif;
         font-size: 1.5rem; font-weight: 900; letter-spacing: 3px;
-        text-transform: uppercase;
-        cursor: pointer;
-        position: relative;
-        
-        /* Glass Base */
-        background: rgba(0, 0, 0, 0.3);
-        border: 2px solid; /* Color comes from specific class */
-        border-radius: 6px; 
-        backdrop-filter: blur(4px);
-        
-        /* Snappy mechanical transition */
-        transition: all 0.1s ease-in-out; 
+        text-transform: uppercase; cursor: pointer; position: relative;
+        background: rgba(0, 0, 0, 0.3); border: 2px solid; border-radius: 6px; 
+        backdrop-filter: blur(4px); transition: all 0.1s ease-in-out; 
     }
-
-    /* --- INITIATE BUTTON (Neon Cyan) --- */
     .btn-initiate {
-        color: #00ffcc;
-        border-color: #00ffcc;
-        text-shadow: 0 0 8px rgba(0, 255, 204, 0.8);
-        
-        /* The Weight: Semi-transparent colored shadow creates a "Glass Block" depth */
-        box-shadow: 
-            0 6px 0 rgba(0, 255, 204, 0.4), /* The thick bottom edge */
-            0 0 15px rgba(0, 255, 204, 0.2); /* The ambient glow */
+        color: #00ffcc; border-color: #00ffcc; text-shadow: 0 0 8px rgba(0, 255, 204, 0.8);
+        box-shadow: 0 6px 0 rgba(0, 255, 204, 0.4), 0 0 15px rgba(0, 255, 204, 0.2);
     }
-
-    .btn-initiate:hover {
-        transform: translateY(-2px); /* Slight lift */
-        background: rgba(0, 255, 204, 0.1);
-        box-shadow: 
-            0 8px 0 rgba(0, 255, 204, 0.4), 
-            0 0 25px rgba(0, 255, 204, 0.6); /* Brighter glow on hover */
-    }
-
-    .btn-initiate:active {
-        /* The Press: Move down to cover the shadow space */
-        transform: translateY(6px); 
-        box-shadow: 
-            0 0 0 rgba(0, 255, 204, 0.4), /* Bottom edge disappears */
-            inset 0 0 20px rgba(0, 255, 204, 0.4); /* Glow moves inside */
-    }
-
-    /* --- ABORT BUTTON (Neon Red) --- */
+    .btn-initiate:hover { transform: translateY(-2px); background: rgba(0, 255, 204, 0.1); }
+    .btn-initiate:active { transform: translateY(6px); box-shadow: inset 0 0 20px rgba(0, 255, 204, 0.4); }
     .btn-abort {
-        color: #ff2a2a;
-        border-color: #ff2a2a;
-        text-shadow: 0 0 8px rgba(255, 42, 42, 0.8);
-        
-        /* The Weight: Red glass depth */
-        box-shadow: 
-            0 6px 0 rgba(255, 42, 42, 0.4), 
-            0 0 15px rgba(255, 42, 42, 0.2);
+        color: #ff2a2a; border-color: #ff2a2a; text-shadow: 0 0 8px rgba(255, 42, 42, 0.8);
+        box-shadow: 0 6px 0 rgba(255, 42, 42, 0.4), 0 0 15px rgba(255, 42, 42, 0.2);
     }
+    .btn-abort:hover { transform: translateY(-2px); background: rgba(255, 42, 42, 0.15); }
+    .btn-abort:active { transform: translateY(6px); box-shadow: inset 0 0 20px rgba(255, 42, 42, 0.4); }
+    .ctrl-btn.disabled { filter: grayscale(100%); opacity: 0.2; pointer-events: none; transform: translateY(6px); box-shadow: none; }
 
-    .btn-abort:hover {
-        transform: translateY(-2px);
-        background: rgba(255, 42, 42, 0.15);
-        box-shadow: 
-            0 8px 0 rgba(255, 42, 42, 0.4),
-            0 0 25px rgba(255, 42, 42, 0.6);
-    }
-
-    .btn-abort:active {
-        transform: translateY(6px);
-        box-shadow: 
-            0 0 0 rgba(255, 42, 42, 0.4),
-            inset 0 0 20px rgba(255, 42, 42, 0.4);
-    }
-
-    /* --- DISABLED STATE --- */
-    .ctrl-btn.disabled { 
-        filter: grayscale(100%); 
-        opacity: 0.2; 
-        pointer-events: none; 
-        box-shadow: none; 
-        border-color: #555;
-        color: #555;
-        transform: translateY(6px); /* Permanently pressed down look */
-    }
-
-    /* --- 4. COOLER GAME OVER MODAL --- */
     .ui-layer { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; z-index: 100; pointer-events: none;}
     .ui-layer.hidden { display: none; }
-    
     .glass-panel {
-        pointer-events: auto;
-        background: rgba(15, 15, 25, 0.95);
-        padding: 50px;
-        border-radius: 20px;
-        text-align: center;
-        border: 4px solid #00d2ff;
-        box-shadow: 0 0 50px rgba(0, 210, 255, 0.3);
-        min-width: 400px;
+        pointer-events: auto; background: rgba(15, 15, 25, 0.95); padding: 50px;
+        border-radius: 20px; text-align: center; border: 4px solid #00d2ff;
+        box-shadow: 0 0 50px rgba(0, 210, 255, 0.3); min-width: 400px;
     }
-
     .winner-result { font-size: 2.5rem; color: #fff; margin: 10px 0 30px 0; text-transform: uppercase; font-weight: 800; letter-spacing: 2px; }
     #winnerText { font-size: 4rem; margin: 0; line-height: 1; color: #ffc107; text-shadow: 0 0 20px #ffc107; }
-
     .modal-btn {
         display: inline-block; width: 200px; padding: 15px 0; margin: 10px;
         font-size: 1.2rem; font-weight: 800; text-transform: uppercase;
-        text-decoration: none; border-radius: 5px; border: none; cursor: pointer;
-        transition: transform 0.1s;
+        text-decoration: none; border-radius: 5px; border: none; cursor: pointer; transition: transform 0.1s;
     }
-    .btn-retry {
-        background: #00d2ff; color: #000; box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
-    }
-    .btn-exit {
-        background: transparent; color: #888; border: 2px solid #555;
-    }
+    .btn-retry { background: #00d2ff; color: #000; box-shadow: 0 0 20px rgba(0, 210, 255, 0.4); }
+    .btn-exit { background: transparent; color: #888; border: 2px solid #555; }
     .btn-retry:hover { background: #fff; }
     .btn-exit:hover { border-color: #fff; color: #fff; }
-
 
     /* Scaling */
     @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.9); } }
     @media (max-height: 750px) { .game-transform-wrapper { transform: scale(0.8); } }
     @media (max-width: 1350px) { .game-transform-wrapper { transform: scale(0.85); } }
-
 </style>
 
 <div class="cockpit-body">
@@ -275,6 +204,24 @@
                         </div>
                     </div>
 
+                    <div class="control-label">Combat Sys</div>
+                    <div class="weapon-hud" style="border-color: #00d2ff;">
+                        <div class="ammo-bar" id="p1-ammo-bar">
+                            <div class="ammo-pip"></div><div class="ammo-pip"></div>
+                            <div class="ammo-pip"></div><div class="ammo-pip"></div><div class="ammo-pip"></div>
+                        </div>
+                        <div class="status-display">
+                            <div>
+                                <div class="status-icon" id="p1-icon-fire">☠</div>
+                                <div>FIRE [W]</div>
+                            </div>
+                            <div>
+                                <div class="status-icon" id="p1-icon-shield">🛡</div>
+                                <div>SHIELD [S]</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="control-label">Nav Computer</div>
                     <div class="rocker-group">
                         <div class="rocker-wrapper">
@@ -286,7 +233,7 @@
                         <div class="rocker-wrapper">
                             <input type="radio" name="p1-math" id="p1-mixed" value="mixed" class="rocker-input" onclick="setMath(1, 'mixed')">
                             <label for="p1-mixed" class="rocker-label">
-                                <div><div class="rocker-light"></div><div class="rocker-text">All Operations</div></div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">All Ops</div></div>
                             </label>
                         </div>
                     </div>
@@ -305,7 +252,6 @@
 
             <div class="center-stage">
                 <div class="canvas-wrapper">
-                    
                     <div class="math-layer">
                         <div class="p1-math-group">
                             <div class="math-box left"><span class="label">LEFT</span><span class="problem" id="p1-txt-left">--</span></div>
@@ -318,7 +264,6 @@
                     </div>
 
                     <div class="timer-float" id="timerDisplay">60s</div>
-
                     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
                     <div id="uiLayer" class="ui-layer hidden">
@@ -361,6 +306,24 @@
                         </div>
                     </div>
 
+                    <div class="control-label">Combat Sys</div>
+                    <div class="weapon-hud" style="border-color: #d966ff;">
+                        <div class="ammo-bar" id="p2-ammo-bar">
+                            <div class="ammo-pip"></div><div class="ammo-pip"></div>
+                            <div class="ammo-pip"></div><div class="ammo-pip"></div><div class="ammo-pip"></div>
+                        </div>
+                        <div class="status-display">
+                            <div>
+                                <div class="status-icon" id="p2-icon-fire">☠</div>
+                                <div>FIRE [UP]</div>
+                            </div>
+                            <div>
+                                <div class="status-icon" id="p2-icon-shield">🛡</div>
+                                <div>SHIELD [DN]</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="control-label">Nav Computer</div>
                     <div class="rocker-group">
                         <div class="rocker-wrapper">
@@ -372,7 +335,7 @@
                         <div class="rocker-wrapper">
                             <input type="radio" name="p2-math" id="p2-mixed" value="mixed" class="rocker-input" onclick="setMath(2, 'mixed')">
                             <label for="p2-mixed" class="rocker-label">
-                                <div><div class="rocker-light"></div><div class="rocker-text">All Operations</div></div>
+                                <div><div class="rocker-light"></div><div class="rocker-text">All Ops</div></div>
                             </label>
                         </div>
                     </div>
@@ -408,8 +371,8 @@
 
         let topPos, num;
         if (level === 'hard') { topPos = '30px'; num = '3'; }
-        else if (level === 'medium') { topPos = '80px'; num = '2'; }
-        else { topPos = '130px'; num = '1'; }
+        else if (level === 'medium') { topPos = '75px'; num = '2'; }
+        else { topPos = '120px'; num = '1'; }
 
         assembly.style.top = topPos;
         knob.innerText = num;
@@ -419,7 +382,6 @@
         activeLbl.style.color = color;
         activeLbl.style.textShadow = `0 0 8px ${color}`;
         
-        // Pass to logic engine if available
         if(window.updateGameGear) window.updateGameGear(player, level);
     }
 </script>
