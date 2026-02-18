@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
 <style>
     /* --- CORE LAYOUT OVERRIDES --- */
@@ -35,7 +39,7 @@
     }
 
     .main-layout {
-        display: flex; flexDirection: row; align-items: flex-start; gap: 20px;
+        display: flex; flex-direction: row; align-items: flex-start; gap: 15px;
     }
 
     /* --- SIDE PANELS --- */
@@ -173,15 +177,133 @@
     .btn-retry:hover { background: #fff; }
     .btn-exit:hover { border-color: #fff; color: #fff; }
 
-    /* Scaling */
-    @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.9); } }
-    @media (max-height: 750px) { .game-transform-wrapper { transform: scale(0.8); } }
-    @media (max-width: 1350px) { .game-transform-wrapper { transform: scale(0.85); } }
+    /* --- INPUT MODE SELECTOR --- */
+    .input-mode-row {
+        display: flex; gap: 8px; justify-content: center; width: 100%; margin-top: 5px;
+    }
+    .mode-btn {
+        width: 60px; height: 42px; border: 2px solid #333; border-radius: 8px;
+        background: rgba(0, 0, 0, 0.6); color: #555; font-size: 1.2rem;
+        cursor: pointer; transition: all 0.3s ease; display: flex;
+        align-items: center; justify-content: center;
+    }
+    .mode-btn:hover { background: rgba(255,255,255,0.05); border-color: #666; color: #aaa; }
+    /* P1 Active */
+    .p1-panel .mode-btn.active {
+        border-color: #00d2ff; color: #fff; background: rgba(0, 210, 255, 0.15);
+        box-shadow: 0 0 12px rgba(0, 210, 255, 0.4), inset 0 0 8px rgba(0, 210, 255, 0.1);
+    }
+    /* P2 Active */
+    .p2-panel .mode-btn.active {
+        border-color: #d966ff; color: #fff; background: rgba(217, 102, 255, 0.15);
+        box-shadow: 0 0 12px rgba(217, 102, 255, 0.4), inset 0 0 8px rgba(217, 102, 255, 0.1);
+    }
+    /* Taken (exclusive resource used by other player) */
+    .mode-btn.taken {
+        border-color: #ff2a2a; color: #ff2a2a; opacity: 0.3;
+        pointer-events: none; cursor: not-allowed;
+        background: rgba(255, 42, 42, 0.05);
+    }
+    .mode-btn .mode-icon { font-size: 1.1rem; }
+    .mode-btn .mode-label { font-size: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
+
+    /* Hidden gesture camera source (video only — canvas moves to deck) */
+    .gesture-pipeline { position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+    /* --- SIDE STATUS DECKS --- */
+    .side-deck {
+        width: 160px; min-height: 300px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid #222; border-radius: 10px;
+        display: none; /* hidden by default (keyboard mode) */
+        flex-direction: column; align-items: center;
+        padding: 10px 6px; gap: 8px;
+        transition: opacity 0.4s ease, transform 0.3s ease;
+        opacity: 0; transform: scale(0.95);
+        flex-shrink: 0;
+    }
+    .side-deck.visible {
+        display: flex; opacity: 1; transform: scale(1);
+    }
+    /* P1 deck — left, cyan accent */
+    #p1-side-deck { border-color: rgba(0, 210, 255, 0.2); }
+    #p1-side-deck .deck-header { color: #00d2ff; }
+    #p1-side-deck .deck-border-glow { box-shadow: inset 0 0 15px rgba(0, 210, 255, 0.05); }
+    /* P2 deck — right, purple accent */
+    #p2-side-deck { border-color: rgba(217, 102, 255, 0.2); }
+    #p2-side-deck .deck-header { color: #d966ff; }
+    #p2-side-deck .deck-border-glow { box-shadow: inset 0 0 15px rgba(217, 102, 255, 0.05); }
+
+    .deck-header {
+        font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 3px; text-align: center; padding-bottom: 5px;
+        border-bottom: 1px solid #333; width: 100%;
+    }
+
+    /* Voice Status in Deck */
+    .deck-voice-log {
+        width: 100%; flex: 1; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; gap: 10px;
+        font-family: 'Courier New', monospace;
+    }
+    .voice-status-icon {
+        font-size: 2rem; animation: voice-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes voice-pulse {
+        0%, 100% { opacity: 0.4; transform: scale(0.95); }
+        50% { opacity: 1; transform: scale(1.1); }
+    }
+    .voice-status-text {
+        font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 2px; color: #00d2ff; text-align: center;
+        word-break: break-word; line-height: 1.4;
+    }
+    .voice-heard-text {
+        font-size: 0.85rem; font-weight: 800; color: #fff;
+        background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.2);
+        border-radius: 6px; padding: 6px 10px; text-align: center;
+        min-height: 28px; width: 90%; word-break: break-word;
+    }
+    #p2-side-deck .voice-status-text { color: #d966ff; }
+    #p2-side-deck .voice-heard-text {
+        background: rgba(217, 102, 255, 0.1); border-color: rgba(217, 102, 255, 0.2);
+    }
+
+    /* Gesture Canvas in Deck */
+    .deck-gesture-view {
+        width: 100%; flex: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 6px;
+    }
+    .deck-gesture-view canvas {
+        width: 148px; height: 111px; border: 1px solid #333;
+        border-radius: 6px; background: #000;
+    }
+    .gesture-finger-count {
+        font-size: 2.5rem; font-weight: 900; color: #f39c12;
+        text-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+        line-height: 1;
+    }
+    .gesture-status-label {
+        font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 2px; color: #f39c12;
+    }
+
+    /* Scaling — slightly tighter to fit side decks */
+    @media (max-height: 850px) { .game-transform-wrapper { transform: scale(0.88); } }
+    @media (max-height: 750px) { .game-transform-wrapper { transform: scale(0.78); } }
+    @media (max-width: 1550px) { .game-transform-wrapper { transform: scale(0.82); } }
+    @media (max-width: 1350px) { .game-transform-wrapper { transform: scale(0.72); } }
 </style>
 
 <div class="cockpit-body">
     <div class="game-transform-wrapper">
         <div class="main-layout">
+
+            <!-- P1 Side Status Deck (left of P1 panel) -->
+            <div id="p1-side-deck" class="side-deck">
+                <div class="deck-header">P1 Status</div>
+                <div id="p1-deck-content" class="deck-border-glow" style="width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;"></div>
+            </div>
 
             <div class="control-panel p1-panel">
                 <div>
@@ -236,6 +358,19 @@
                                 <div><div class="rocker-light"></div><div class="rocker-text">All Ops</div></div>
                             </label>
                         </div>
+                    </div>
+
+                    <div class="control-label">Input Mode</div>
+                    <div class="input-mode-row">
+                        <button class="mode-btn active" data-player="1" data-mode="keyboard" onclick="selectMode(1,'keyboard')" title="Keyboard">
+                            <span class="mode-icon">⌨️</span>
+                        </button>
+                        <button class="mode-btn" data-player="1" data-mode="voice" onclick="selectMode(1,'voice')" title="Voice">
+                            <span class="mode-icon">🎙️</span>
+                        </button>
+                        <button class="mode-btn" data-player="1" data-mode="gesture" onclick="selectMode(1,'gesture')" title="Gesture">
+                            <span class="mode-icon">🖐️</span>
+                        </button>
                     </div>
                 </div>
 
@@ -339,6 +474,19 @@
                             </label>
                         </div>
                     </div>
+
+                    <div class="control-label">Input Mode</div>
+                    <div class="input-mode-row">
+                        <button class="mode-btn active" data-player="2" data-mode="keyboard" onclick="selectMode(2,'keyboard')" title="Keyboard">
+                            <span class="mode-icon">⌨️</span>
+                        </button>
+                        <button class="mode-btn" data-player="2" data-mode="voice" onclick="selectMode(2,'voice')" title="Voice">
+                            <span class="mode-icon">🎙️</span>
+                        </button>
+                        <button class="mode-btn" data-player="2" data-mode="gesture" onclick="selectMode(2,'gesture')" title="Gesture">
+                            <span class="mode-icon">🖐️</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div>
@@ -351,7 +499,19 @@
                 </div>
             </div>
 
+            <!-- P2 Side Status Deck (right of P2 panel) -->
+            <div id="p2-side-deck" class="side-deck">
+                <div class="deck-header">P2 Status</div>
+                <div id="p2-deck-content" class="deck-border-glow" style="width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;"></div>
+            </div>
+
         </div>
+    </div>
+
+    <!-- Hidden MediaPipe Pipeline (video source only — canvas lives in deck) -->
+    <div class="gesture-pipeline">
+        <video id="gestureVideo" playsinline></video>
+        <canvas id="gestureCanvas" width="320" height="240"></canvas>
     </div>
 </div>
 
