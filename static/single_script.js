@@ -438,6 +438,29 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
     });
 });
 
+// CLEAR ALL FEATURES (Called from modal Clear All button)
+function clearAllFeatures() {
+    // 1. Remove visual active state from all feature buttons
+    document.querySelectorAll('.feature-btn.active').forEach(b => b.classList.remove('active'));
+
+    // 2. Reset playerConfig state
+    playerConfig.multipliers = [];
+    playerConfig.advancedOps = { squares: false, cubes: false, sqrt: false };
+    playerConfig.voiceOps = { shapes: false, diff: false, int: false, trig: false };
+    playerConfig.customActive = false;
+
+    // 3. Re-enable Nav Computer
+    if (stdNavControls) {
+        stdNavControls.classList.remove('controls-disabled');
+    }
+
+    // 4. Persist the reset
+    savePlayerConfig();
+
+    // 5. Regenerate problems if game is running
+    if (gameState.isPlaying) generateTwoProblems();
+}
+
 /* --- MATH GENERATION --- */
 function generateTwoProblems() {
     let leftObj = createMathProblem();
@@ -1374,3 +1397,10 @@ function activateCoPilot() {
 
 // Load saved config and update UI elements immediately
 loadPlayerConfig();
+
+// Ensure default control mode is visually active (keyboard) if no saved config set it
+if (!btnModeKey.classList.contains('active-mode') &&
+    !btnModeVoice.classList.contains('active-mode') &&
+    !btnModeGesture.classList.contains('active-mode')) {
+    btnModeKey.classList.add('active-mode');
+}

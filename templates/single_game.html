@@ -1008,6 +1008,79 @@
         margin-top: 25px;
         display: flex;
         justify-content: center;
+        gap: 16px;
+    }
+
+    /* CLEAR BUTTON — Amber/Warning Neon */
+    .btn-clear {
+        padding: 14px 42px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 900;
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+
+        background:
+            linear-gradient(160deg,
+                rgba(243, 156, 18, 0.15),
+                rgba(180, 100, 0, 0.10)),
+            rgba(8, 12, 20, 0.85);
+
+        border: 1px solid rgba(243, 156, 18, 0.45);
+        border-bottom: 4px solid rgba(150, 80, 0, 0.9);
+
+        color: #ffeacc;
+        text-shadow:
+            0 0 4px rgba(243, 156, 18, 0.6),
+            0 0 10px rgba(243, 156, 18, 0.25);
+
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            0 8px 22px rgba(0, 0, 0, 0.65);
+
+        backdrop-filter: blur(6px);
+
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.12s ease,
+            background 0.15s ease,
+            border-color 0.15s ease,
+            text-shadow 0.15s ease,
+            color 0.15s ease;
+    }
+
+    .btn-clear:hover {
+        background:
+            linear-gradient(160deg,
+                rgba(243, 156, 18, 0.32),
+                rgba(200, 120, 0, 0.22)),
+            rgba(10, 15, 25, 0.9);
+
+        border-color: #f39c12;
+
+        color: #ffffff;
+        text-shadow:
+            0 0 6px #f39c12,
+            0 0 14px rgba(243, 156, 18, 0.75);
+
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.12),
+            0 12px 30px rgba(243, 156, 18, 0.35);
+    }
+
+    .btn-clear:active {
+        transform: translateY(3px);
+        border-bottom-width: 1px;
+
+        box-shadow:
+            inset 0 3px 10px rgba(0, 0, 0, 0.85),
+            0 3px 6px rgba(0, 0, 0, 0.8);
+
+        color: #ffffff;
+        text-shadow:
+            0 0 10px rgba(255, 255, 255, 0.9);
     }
 
     /* CONFIRM BUTTON — Premium Cyan Glass */
@@ -1408,6 +1481,8 @@
         </div>
 
         <div class="modal-footer">
+            <button class="btn-clear"
+                onclick="clearAllFeatures()">CLEAR ALL</button>
             <button class="btn-confirm"
                 onclick="document.getElementById('config-modal').classList.remove('active')">CONFIRM</button>
         </div>

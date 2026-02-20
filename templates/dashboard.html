@@ -792,7 +792,7 @@
         <div class="chain-spacer"></div>
         <div class="chain-item">
             <div class="chain-link"></div>
-            <a href="{{ url_for('logout') }}" class="nav-btn" style="border-color: var(--danger); color: var(--danger);">
+            <a href="#" onclick="localStorage.removeItem('formulaRushConfig'); window.location.href='{{ url_for('logout') }}';" class="nav-btn" style="border-color: var(--danger); color: var(--danger);">
                 <span class="icon">⏻</span> <span class="label">Logout</span>
             </a>
         </div>
