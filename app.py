@@ -259,12 +259,14 @@ def dashboard():
         if accuracy_rate >= acc_target and precision_id not in claimed:
             has_unclaimed = True
 
-    # Promotion: rank achieved
+    # Promotion: per-rank rewards
     if not has_unclaimed:
-        rank_goal = 'AMATEUR' if rank_title == 'ROOKIE' else ('PRO' if rank_title == 'AMATEUR' else ('LEGEND' if rank_title == 'PRO' else 'MAXED'))
-        promo_id = f'promo_{rank_goal}'
-        if rank_goal == 'MAXED' and promo_id not in claimed:
-            has_unclaimed = True
+        rank_thresholds = {'AMATEUR': 5000, 'PRO RACER': 15000, 'LEGEND': 50000}
+        for rname, rthresh in rank_thresholds.items():
+            promo_id = f'promo_{rname}'
+            if total_distance >= rthresh and promo_id not in claimed:
+                has_unclaimed = True
+                break
 
     # Campaign level rewards: completed but unclaimed
     if not has_unclaimed:
@@ -497,15 +499,13 @@ def claim_reward():
         coins_to_add = 100
 
     elif reward_id.startswith('promo_'):
-        # Validate: rank matches
-        rank_title = "ROOKIE"
-        if total_distance >= 50000: rank_title = "LEGEND"
-        elif total_distance >= 15000: rank_title = "PRO RACER"
-        elif total_distance >= 5000: rank_title = "AMATEUR"
-        # promo_MAXED means they reached LEGEND (final rank)
+        # Validate: player has reached the specific rank
+        rank_thresholds = {'AMATEUR': 5000, 'PRO RACER': 15000, 'LEGEND': 50000}
         target_rank = reward_id.replace('promo_', '')
-        if target_rank == 'MAXED' and rank_title != 'LEGEND':
-            return jsonify({'success': False, 'message': 'Mission not completed'}), 400
+        if target_rank not in rank_thresholds:
+            return jsonify({'success': False, 'message': 'Invalid rank reward'}), 400
+        if total_distance < rank_thresholds[target_rank]:
+            return jsonify({'success': False, 'message': 'Rank not yet achieved'}), 400
         coins_to_add = 200
 
     elif reward_id.startswith('campaign_'):

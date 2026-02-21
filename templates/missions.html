@@ -156,27 +156,43 @@
             </div>
         {% endif %}
 
-        <!-- PROMOTION -->
-        {% set rank_goal = 'AMATEUR' if rank_title == 'ROOKIE' else ('PRO' if rank_title == 'AMATEUR' else ('LEGEND' if rank_title == 'PRO' else 'MAXED')) %}
-        {% set promo_id = 'promo_' ~ rank_goal %}
-        {% set promo_done = rank_goal == 'MAXED' %}
-        {% set promo_claimed = promo_id in claimed_rewards %}
-        <div class="mission-item">
-            <div style="flex:1">
-                <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">PROMOTION</h4>
-                <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">{% if promo_done %}All ranks achieved!{% else %}Reach {{ rank_goal }} Designation{% endif %}</p>
+        <!-- PROMOTION REWARDS (Per-Rank) -->
+        <!-- Rank thresholds: ROOKIE (default) → AMATEUR (5000m) → PRO RACER (15000m) → LEGEND (50000m) -->
+        {% set rank_order = ['AMATEUR', 'PRO RACER', 'LEGEND'] %}
+        {% set rank_reached = [] %}
+        {% if rank_title == 'AMATEUR' %}
+            {% set rank_reached = ['AMATEUR'] %}
+        {% elif rank_title == 'PRO RACER' %}
+            {% set rank_reached = ['AMATEUR', 'PRO RACER'] %}
+        {% elif rank_title == 'LEGEND' %}
+            {% set rank_reached = ['AMATEUR', 'PRO RACER', 'LEGEND'] %}
+        {% endif %}
+
+        {% for target_rank in rank_order %}
+            {% set promo_id = 'promo_' ~ target_rank %}
+            {% set promo_claimed = promo_id in claimed_rewards %}
+            {% set promo_done = target_rank in rank_reached %}
+            <div class="mission-item">
+                <div style="flex:1">
+                    <h4 style="margin:0; font-size:0.85rem; font-family:'Orbitron';">PROMOTION: {{ target_rank }}</h4>
+                    <p style="margin:3px 0 0; font-size:0.7rem; color:#666;">Reach {{ target_rank }} Designation</p>
+                </div>
+                <div class="mission-actions">
+                    <span class="reward-amount">🪙 200</span>
+                    {% if promo_claimed %}
+                        <span class="badge-claimed">CLAIMED ✓</span>
+                    {% elif promo_done %}
+                        <button class="btn-collect" onclick="claimReward('{{ promo_id }}', this)">COLLECT 🪙</button>
+                    {% else %}
+                        <div class="mission-status status-active">IN PROGRESS</div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="mission-actions">
-                <span class="reward-amount">🪙 200</span>
-                {% if promo_claimed %}
-                    <span class="badge-claimed">CLAIMED ✓</span>
-                {% elif promo_done %}
-                    <button class="btn-collect" onclick="claimReward('{{ promo_id }}', this)">COLLECT 🪙</button>
-                {% else %}
-                    <div class="mission-status status-active">IN PROGRESS</div>
-                {% endif %}
-            </div>
-        </div>
+        {% endfor %}
+
+        {% if rank_reached|length == 3 %}
+            <div style="text-align:center; padding:10px; font-family:'Orbitron'; font-size:0.7rem; color:var(--neon-gold); text-shadow: 0 0 10px rgba(255,215,0,0.3);">🏆 ALL RANKS ACHIEVED 🏆</div>
+        {% endif %}
     </div>
 
     <!-- CAMPAIGN LEVEL REWARDS -->
