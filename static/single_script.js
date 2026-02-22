@@ -238,6 +238,7 @@ let expectedRight = null;
 let spawnTimer = null;
 let recognition = null;
 let isProcessingSpeech = false;
+let lastActedResultIndex = -1;
 
 /* --- UI ELEMENTS --- */
 const questionLeftEl = document.getElementById('question-left');
@@ -463,11 +464,32 @@ function clearAllFeatures() {
 
 /* --- MATH GENERATION --- */
 function generateTwoProblems() {
-    let leftObj = createMathProblem();
-    let rightObj = createMathProblem();
+    // Store previous answers to prevent double-steering from stale voice input
+    const prevLeft = expectedLeft;
+    const prevRight = expectedRight;
 
+    const answersMatch = (a, b) => {
+        if (a === undefined || a === null || b === undefined || b === null) return false;
+        return JSON.stringify(a) === JSON.stringify(b);
+    };
+
+    // Generate LEFT: must not match either previous answer
+    let leftObj = createMathProblem();
     let safe = 0;
-    while (JSON.stringify(rightObj.answer) === JSON.stringify(leftObj.answer) && safe < 50) { rightObj = createMathProblem(); safe++; }
+    while (safe < 50 && (answersMatch(leftObj.answer, prevLeft) || answersMatch(leftObj.answer, prevRight))) {
+        leftObj = createMathProblem(); safe++;
+    }
+
+    // Generate RIGHT: must not match left, and must not match either previous answer
+    let rightObj = createMathProblem();
+    safe = 0;
+    while (safe < 50 && (
+        answersMatch(rightObj.answer, leftObj.answer) ||
+        answersMatch(rightObj.answer, prevLeft) ||
+        answersMatch(rightObj.answer, prevRight)
+    )) {
+        rightObj = createMathProblem(); safe++;
+    }
 
     expectedLeft = leftObj.answer;
     expectedRight = rightObj.answer;
@@ -716,8 +738,10 @@ function initSpeech() {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-        if (isProcessingSpeech) return;
         const last = event.results.length - 1;
+        // Skip results we already acted on (prevents stale speech re-matching)
+        if (last <= lastActedResultIndex) return;
+        if (isProcessingSpeech) return;
         let transcript = event.results[last][0].transcript.trim().toLowerCase();
 
         for (const [key, val] of Object.entries(wordMap)) { if (transcript === key) transcript = val.toString(); }
@@ -728,8 +752,8 @@ function initSpeech() {
             return transcript.includes(String(expected).toLowerCase());
         };
 
-        if (check(expectedLeft)) { processVoice(transcript); return; }
-        if (check(expectedRight)) { processVoice(transcript); return; }
+        if (check(expectedLeft)) { lastActedResultIndex = last; processVoice(transcript); return; }
+        if (check(expectedRight)) { lastActedResultIndex = last; processVoice(transcript); return; }
 
         let num = null;
         if (!isNaN(parseInt(transcript))) num = parseInt(transcript);
@@ -737,11 +761,13 @@ function initSpeech() {
 
         if (num !== null) {
             let digit = parseInt(String(num).slice(-1));
+            lastActedResultIndex = last;
             processVoice(digit);
         }
     };
 
     recognition.onend = () => {
+        lastActedResultIndex = -1; // Reset for fresh recognition session
         if (gameState.isPlaying && gameState.controlMode === 'voice') { try { recognition.start(); } catch (e) { } }
         else { micIndicator.classList.remove('listening'); micText.innerText = "STANDBY"; }
     };

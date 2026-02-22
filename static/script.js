@@ -376,13 +376,33 @@ function genProblem(playerObj) {
 }
 
 function refreshMath(mathData, playerObj) {
+    // Store previous answers to prevent double-steering from stale voice input
+    const prevLeftAns = mathData.left.ans;
+    const prevRightAns = mathData.right.ans;
+    const prevLeftDigit = mathData.left.lastDigit;
+    const prevRightDigit = mathData.right.lastDigit;
+
+    // Generate LEFT: must not share lastDigit with either previous answer
     let l = genProblem(playerObj);
-    let r = genProblem(playerObj);
     let safe = 0;
-    while (r.lastDigit === l.lastDigit && safe < 50) {
-        r = genProblem(playerObj);
-        safe++;
+    while (safe < 50 && (
+        l.lastDigit === prevLeftDigit ||
+        l.lastDigit === prevRightDigit
+    )) {
+        l = genProblem(playerObj); safe++;
     }
+
+    // Generate RIGHT: must not match left, and must not match either previous answer
+    let r = genProblem(playerObj);
+    safe = 0;
+    while (safe < 50 && (
+        r.lastDigit === l.lastDigit ||
+        r.lastDigit === prevLeftDigit ||
+        r.lastDigit === prevRightDigit
+    )) {
+        r = genProblem(playerObj); safe++;
+    }
+
     mathData.left = l; mathData.right = r;
     if (playerObj.id === 1) { uiRefs.p1L.innerText = l.text; uiRefs.p1R.innerText = r.text; }
     else { uiRefs.p2L.innerText = l.text; uiRefs.p2R.innerText = r.text; }
@@ -810,6 +830,7 @@ function initMultiSpeech() {
     };
 
     recognition.onend = () => {
+        lastActedResultIndex = -1; // Reset for fresh recognition session
         if (active && voiceOwner) {
             try { recognition.start(); } catch (e) { }
         }
