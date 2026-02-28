@@ -29,74 +29,74 @@ window.SHAPES = {
 // --- DATA POOLS ---
 window.VOICE_DATA = {
     shapes: [
-        {html: window.SHAPES.triangle, a:"triangle"}, 
-        {html: window.SHAPES.square, a:"square"}, 
-        {html: window.SHAPES.circle, a:"circle"}, 
-        {html: window.SHAPES.rectangle, a:"rectangle"},
-        {html: window.SHAPES.pentagon, a:"pentagon"}, 
-        {html: window.SHAPES.hexagon, a:"hexagon"},
-        {html: window.SHAPES.line, a:["line", "line segment", "lie"]}, 
-        {html: window.SHAPES.arc, a:["arc", "ark", "art", "arch", "dark"]},
-        {html: window.SHAPES.parallelogram, a:"parallelogram"}, 
-        {html: window.SHAPES.trapezium, a:["trapezium", "trapezoid"]}, 
-        {html: window.SHAPES.angle, a:["angle", "angel", "ankle"]},
+        { html: window.SHAPES.triangle, a: "triangle" },
+        { html: window.SHAPES.square, a: "square" },
+        { html: window.SHAPES.circle, a: "circle" },
+        { html: window.SHAPES.rectangle, a: "rectangle" },
+        { html: window.SHAPES.pentagon, a: "pentagon" },
+        { html: window.SHAPES.hexagon, a: "hexagon" },
+        { html: window.SHAPES.line, a: ["line", "line segment", "lie", "light"] },
+        { html: window.SHAPES.arc, a: ["arc", "ark", "art", "arch", "dark"] },
+        { html: window.SHAPES.parallelogram, a: "parallelogram" },
+        { html: window.SHAPES.trapezium, a: ["trapezium", "trapezoid"] },
+        { html: window.SHAPES.angle, a: ["angle", "angel", "ankle"] },
         // 3D Shapes
-        {html: window.SHAPES.cube, a:["cube", "cute", "kube"]}, 
-        {html: window.SHAPES.semicircle, a:"semicircle"},
-        {html: window.SHAPES.hemisphere, a:"hemisphere"},
-        {html: window.SHAPES.cylinder, a:"cylinder"},
-        {html: window.SHAPES.cone, a:["cone", "corn", "bone", "kaun"]}
-    ], 
+        { html: window.SHAPES.cube, a: ["cube", "cute", "kube", "tube"] },
+        { html: window.SHAPES.semicircle, a: "semicircle" },
+        { html: window.SHAPES.hemisphere, a: "hemisphere" },
+        { html: window.SHAPES.cylinder, a: "cylinder" },
+        { html: window.SHAPES.cone, a: ["cone", "corn", "bone", "kaun","code"] }
+    ],
     // DIFFERENTIATION
     diff: [
-        {t:"d/dx (x²)", a:["2x", "two x"]}, 
-        {t:"d/dx (sin x)", a:["cos x", "cost x", "cause x", "cosine"]}, 
-        {t:"d/dx (e^x)", a:["e power x", "e^x", "exponential"]}, 
-        {t:"d/dx (ln x)", a:["one by x", "1/x", "one over x"]},
-        {t:"d/dx (5x)", a:["5", "five"]},
-        {t:"d/dx (cos x)", a:["minus sin x", "-sin x", "negative sine"]},
-        {t:"d/dx (10)", a:["0", "zero", "constant"]},
-        {t:"d/dx (x³)", a:["3x²", "three x square", "3x^2"]},
-        {t:"d/dx (x)", a:["1", "one"]},
-        {t:"d/dx (tan x)", a:["sec square x", "secant squared", "sec^2 x"]}
+        { t: "d/dx (x²)", a: ["2x", "two x"] },
+        { t: "d/dx (sin x)", a: ["cos x", "cost x", "cause x", "cosine"] },
+        { t: "d/dx (e^x)", a: ["e power x", "e^x", "exponential"] },
+        { t: "d/dx (ln x)", a: ["one by x", "1/x", "one over x"] },
+        { t: "d/dx (5x)", a: ["5", "five"] },
+        { t: "d/dx (cos x)", a: ["minus sin x", "-sin x", "negative sine"] },
+        { t: "d/dx (10)", a: ["0", "zero", "constant"] },
+        { t: "d/dx (x³)", a: ["3x²", "three x square", "3x^2"] },
+        { t: "d/dx (x)", a: ["1", "one"] },
+        { t: "d/dx (tan x)", a: ["sec square x", "secant squared", "sec^2 x"] }
     ],
     // INTEGRATION
     int: [
-        {t:"∫ 2x dx", a:["x squared", "x^2", "x square"]}, 
-        {t:"∫ cos x dx", a:["sin x", "sign x", "sine x"]}, 
-        {t:"∫ 1/x dx", a:["ln x", "log x", "natural log"]}, 
-        {t:"∫ e^x dx", a:["e^x", "e power x"]},
-        {t:"∫ 1 dx", a:["x", "ex"]},
-        {t:"∫ sin x dx", a:["minus cos x", "-cos x", "negative cosine"]},
-        {t:"∫ 0 dx", a:["constant", "c", "constant c"]},
-        {t:"∫ x dx", a:["x square by two", "x^2/2", "half x square"]},
-        {t:"∫ 5 dx", a:["5x", "five x", "5 times x", "five into x", "five times ex"]},
-        {t:"∫ sec²x dx", a:["tan x", "tangent"]}
+        { t: "∫ 2x dx", a: ["x squared", "x^2", "x square"] },
+        { t: "∫ cos x dx", a: ["sin x", "sign x", "sine x"] },
+        { t: "∫ 1/x dx", a: ["ln x", "log x", "natural log"] },
+        { t: "∫ e^x dx", a: ["e^x", "e power x"] },
+        { t: "∫ 1 dx", a: ["x", "ex"] },
+        { t: "∫ sin x dx", a: ["minus cos x", "-cos x", "negative cosine"] },
+        { t: "∫ 0 dx", a: ["constant", "c", "constant c"] },
+        { t: "∫ x dx", a: ["x square by two", "x^2/2", "half x square"] },
+        { t: "∫ 5 dx", a: ["5x", "five x", "5 times x", "five into x", "five times ex"] },
+        { t: "∫ sec²x dx", a: ["tan x", "tangent"] }
     ],
-// TRIGONOMETRY (Expanded: 0, 30, 45, 60, 90)
+    // TRIGONOMETRY (Expanded: 0, 30, 45, 60, 90)
     trig: [
         // 0 Degrees
-        {t:"sin(0°)", a:["0", "zero","hero"]}, 
-        {t:"cos(0°)", a:["1", "one"]}, 
-        {t:"tan(0°)", a:["0", "zero","hero"]},
+        { t: "sin(0°)", a: ["0", "zero", "hero"] },
+        { t: "cos(0°)", a: ["1", "one"] },
+        { t: "tan(0°)", a: ["0", "zero", "hero"] },
         // 30 Degrees
-        {t:"sin(30°)", a:["0.5", "point five", "half", "one by two", "1/2"]},
-        {t:"cos(30°)", a:["root three by two", "root 3 by 2", "0.866"]},
-        {t:"tan(30°)", a:["one by root three", "1/root 3", "one over root three", "0.577"]},
+        { t: "sin(30°)", a: ["0.5", "point five", "half", "one by two", "1/2"] },
+        { t: "cos(30°)", a: ["root three by two", "root 3 by 2", "0.866"] },
+        { t: "tan(30°)", a: ["one by root three", "1/root 3", "one over root three", "0.577"] },
         // 45 Degrees
-        {t:"sin(45°)", a:["one by root two", "1/root 2", "one over root two", "0.707"]},
-        {t:"cos(45°)", a:["one by root two", "1/root 2", "one over root two", "0.707"]},
-        {t:"tan(45°)", a:["1", "one"]},
+        { t: "sin(45°)", a: ["one by root two", "1/root 2", "one over root two", "0.707"] },
+        { t: "cos(45°)", a: ["one by root two", "1/root 2", "one over root two", "0.707"] },
+        { t: "tan(45°)", a: ["1", "one"] },
         // 60 Degrees
-        {t:"sin(60°)", a:["root three by two", "root 3 by 2", "0.866"]},
-        {t:"cos(60°)", a:["0.5", "point five", "half", "one by two", "1/2"]},
-        {t:"tan(60°)", a:["root three", "root 3", "1.732"]},
+        { t: "sin(60°)", a: ["root three by two", "root 3 by 2", "0.866"] },
+        { t: "cos(60°)", a: ["0.5", "point five", "half", "one by two", "1/2"] },
+        { t: "tan(60°)", a: ["root three", "root 3", "1.732"] },
         // 90 Degrees
-        {t:"sin(90°)", a:["1", "one"]},
-        {t:"cos(90°)", a:["0", "zero"]},
-        {t:"tan(90°)", a:["undefined", "infinity", "infinite", "not defined"]},
+        { t: "sin(90°)", a: ["1", "one"] },
+        { t: "cos(90°)", a: ["0", "zero"] },
+        { t: "tan(90°)", a: ["undefined", "infinity", "infinite", "not defined"] },
         // Bonus (180 for completeness)
-        {t:"sin(180°)", a:["0", "zero","hero"]},
-        {t:"cos(180°)", a:["-1", "minus one", "negative one"]}
+        { t: "sin(180°)", a: ["0", "zero", "hero"] },
+        { t: "cos(180°)", a: ["-1", "minus one", "negative one"] }
     ]
 };
