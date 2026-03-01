@@ -518,24 +518,35 @@ function createMathProblem() {
             if (typeof LEVEL_CONTEXT !== 'undefined' && LEVEL_CONTEXT.mode === 'campaign' && LEVEL_CONTEXT.ops && LEVEL_CONTEXT.ops.length > 0) {
                 operators = [];
 
+                // Map campaign op keys → their table ranges
+                const RANGE_MAP = {
+                    'mult_1_2': [1, 2],
+                    'mult_3_4': [3, 4],
+                    'mult_5_6': [5, 6],
+                    'mult_7_8': [7, 8],
+                    'mult_9_10': [9, 10]
+                };
+
                 // Basic operations
                 if (LEVEL_CONTEXT.ops.includes('addition')) operators.push('+');
                 if (LEVEL_CONTEXT.ops.includes('subtraction')) operators.push('-');
                 if (LEVEL_CONTEXT.ops.includes('division')) operators.push('/');
 
                 // Specific multiplication table ranges
-                if (LEVEL_CONTEXT.ops.includes('mult_1_2')) { operators.push('*'); tableRange = [1, 2]; }
-                if (LEVEL_CONTEXT.ops.includes('mult_3_4')) { operators.push('*'); tableRange = [3, 4]; }
-                if (LEVEL_CONTEXT.ops.includes('mult_5_6')) { operators.push('*'); tableRange = [5, 6]; }
-                if (LEVEL_CONTEXT.ops.includes('mult_7_8')) { operators.push('*'); tableRange = [7, 8]; }
-                if (LEVEL_CONTEXT.ops.includes('mult_9_10')) { operators.push('*'); tableRange = [9, 10]; }
+                for (const [key, range] of Object.entries(RANGE_MAP)) {
+                    if (LEVEL_CONTEXT.ops.includes(key)) {
+                        operators.push('*');
+                        tableRange = range; // Last matched range wins (only one active per level)
+                    }
+                }
 
-                // Legacy support
+                // Legacy / generic multiplication support
                 if (LEVEL_CONTEXT.ops.includes('mult_easy')) operators.push('*');
 
                 // All operations (final level)
                 if (LEVEL_CONTEXT.ops.includes('all_ops') || LEVEL_CONTEXT.ops.includes('mixed')) {
                     operators = ['+', '-', '*', '/'];
+                    tableRange = null; // No restriction for mixed level
                 }
 
                 // Fallback if no operators matched
@@ -1423,6 +1434,28 @@ function activateCoPilot() {
 
 // Load saved config and update UI elements immediately
 loadPlayerConfig();
+
+// ============================================================
+// CAMPAIGN MODE OVERRIDE
+// Runs AFTER loadPlayerConfig() so it always wins.
+// Prevents quick-race/practice saved settings from leaking
+// into campaign levels and corrupting question generation.
+// ============================================================
+if (typeof LEVEL_CONTEXT !== 'undefined' && LEVEL_CONTEXT.mode === 'campaign') {
+    // 1. Disable all custom overrides — campaign uses LEVEL_CONTEXT.ops exclusively
+    playerConfig.customActive = false;
+    playerConfig.multipliers = [];
+    playerConfig.advancedOps = { squares: false, cubes: false, sqrt: false };
+    playerConfig.voiceOps = { shapes: false, diff: false, int: false, trig: false };
+
+    // 2. Remove any 'active' highlight from feature toggle buttons
+    document.querySelectorAll('.feature-btn').forEach(btn => btn.classList.remove('active'));
+
+    // 3. Re-enable the standard nav computer (gear + math mode) in case it was disabled
+    if (stdNavControls) stdNavControls.classList.remove('controls-disabled');
+
+    console.log('[Campaign] Config overridden for Level', LEVEL_CONTEXT.id, '| ops:', LEVEL_CONTEXT.ops);
+}
 
 // Ensure default control mode is visually active (keyboard) if no saved config set it
 if (!btnModeKey.classList.contains('active-mode') &&
