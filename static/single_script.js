@@ -19,6 +19,43 @@ activeLoadout.shield = urlParams.get('shield') === '1';
 activeLoadout.nitro = urlParams.get('nitro') === '1';
 activeLoadout.copilot = urlParams.get('copilot') === '1';
 
+
+// --- AUDIO MANAGER ---
+const sfx = {
+    click: new Audio('/static/sounds/click.mp3'),
+    crash: new Audio('/static/sounds/crash.mp3'),
+    correct: new Audio('/static/sounds/correct.mp3'),
+    wrong: new Audio('/static/sounds/wrong.mp3'),
+    engine: new Audio('/static/sounds/engine.mp3'),
+    rev: new Audio('/static/sounds/rev.mp3'),       
+    shift: new Audio('/static/sounds/shift.mp3'),
+    play: function(soundName) {
+            if (!this[soundName]) return; // Safety check
+            
+            // Creating a new Audio object from the source guarantees 
+            // it plays immediately without cloneNode buffer issues
+            let sound = new Audio(this[soundName].src); 
+            sound.volume = 0.6; 
+            sound.play().catch(e => console.log("Audio play prevented:", e));
+        },   
+
+    play: function(soundName) {
+        let sound = this[soundName].cloneNode(); 
+        sound.volume = 0.6; 
+        sound.play().catch(e => console.log("Audio play prevented:", e));
+    },
+
+    startEngine: function() {
+        this.engine.loop = true;
+        this.engine.volume = 0.3; 
+        this.engine.play().catch(e => console.log("Engine play prevented:", e));
+    },
+    
+    stopEngine: function() {
+        this.engine.pause();
+    }
+};
+
 // 3. CREATE HUD CONTAINER
 if (!document.getElementById('loadout-hud')) {
     const hud = document.createElement('div');
@@ -710,10 +747,12 @@ function checkAnswer(input) {
     const playerY = canvas.height - 150;
 
     if (correct) {
+        sfx.play('correct');
         sessionStats.correct++;
         if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 10, true);
         generateTwoProblems();
     } else {
+        sfx.play('wrong');
         sessionStats.wrong++;
         if (typeof spawnCoinEffect === 'function') spawnCoinEffect(playerX, playerY, 2, false);
         logMistake(`${leftMathValue.innerText} | ${rightMathValue.innerText}`);
@@ -988,6 +1027,7 @@ function updateMathMode() {
 }
 
 function shiftGear(level) {
+    sfx.play('shift');
     playerConfig.difficulty = level;
     savePlayerConfig();
 
@@ -1102,6 +1142,8 @@ function startGame() {
     gameState.score = Math.floor(gameState.distance / 10);
     enemies = [];
 
+    sfx.play('rev');
+    sfx.startEngine();
     // Initialize Inputs
     if (playerConfig.controlMode === 'voice') {
         if (!recognition) initSpeech();
@@ -1124,6 +1166,7 @@ function startGame() {
 function abortRace() {
     if (!gameState.isPlaying) return;
     gameState.isPlaying = false;
+    sfx.stopEngine();
     if (recognition) recognition.stop();
     micIndicator.classList.remove('listening'); micText.innerText = "STANDBY";
     gameOverTitle.innerText = "RACE ABORTED"; gameOverTitle.style.color = "#ffc107";
@@ -1279,6 +1322,7 @@ function gameLoop() {
                 console.log("SHIELD DEPLOYED");
             } else {
                 console.log("CRASH! Calling GameOver...");
+                sfx.play('crash');
                 gameOver();
                 return; // Stop the loop immediately
             }
@@ -1293,6 +1337,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 function gameOver() {
+    sfx.stopEngine();
     // 1. SAVE HIGH SCORE (Local Storage)
     const currentHigh = parseInt(localStorage.getItem('formulaRush_highScore') || '0');
     if (gameState.score > currentHigh) {
@@ -1463,3 +1508,19 @@ if (!btnModeKey.classList.contains('active-mode') &&
     !btnModeGesture.classList.contains('active-mode')) {
     btnModeKey.classList.add('active-mode');
 }
+/* =========================================
+   GLOBAL UI AUDIO MANAGER (BULLETPROOF)
+   ========================================= */
+/* =========================================
+   GLOBAL UI AUDIO MANAGER (BULLETPROOF)
+   ========================================= */
+document.body.addEventListener('click', (e) => {
+    // Added .input-mode-btn, .input-btn, and the specific IDs to guarantee they are caught
+    const clickableElements = 'button, .click-zone, .feature-btn, .rocker-label, .input-icon-btn, .input-mode-btn, .input-btn, #btn-mode-key, #btn-mode-voice, #btn-mode-gesture, .close-btn, .ctrl-btn, .action-btn, .modal-btn';
+    
+    if (e.target.closest(clickableElements)) {
+        if (typeof sfx !== 'undefined' && sfx.play) {
+            sfx.play('click');
+        }
+    }
+});
