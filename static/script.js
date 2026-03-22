@@ -5,6 +5,50 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+
+// --- AUDIO MANAGER ---
+const sfx = {
+    click: new Audio('/static/sounds/click.mp3'),
+    crash: new Audio('/static/sounds/crash.mp3'),
+    correct: new Audio('/static/sounds/correct.mp3'),
+    wrong: new Audio('/static/sounds/wrong.mp3'),
+    engine: new Audio('/static/sounds/engine.mp3'),
+    rev: new Audio('/static/sounds/rev.mp3'),       
+    shift: new Audio('/static/sounds/shift.mp3'),
+    shoot: new Audio('/static/sounds/fire.mp3'),  
+    shield: new Audio('/static/sounds/shield.mp3'), 
+    
+    play: function(soundName) {
+        if (!this[soundName]) return; 
+        let sound = new Audio(this[soundName].src); 
+        sound.volume = 0.6; 
+        sound.play().catch(e => console.log("Audio play prevented:", e));
+    },
+
+    startEngine: function() {
+        this.engine.loop = true;
+        this.engine.volume = 0.3; 
+        this.engine.play().catch(e => console.log("Engine play prevented:", e));
+    },
+    
+    stopEngine: function() {
+        this.engine.pause();
+    }
+};
+
+/* =========================================
+   GLOBAL UI AUDIO MANAGER (BULLETPROOF)
+   ========================================= */
+document.body.addEventListener('click', (e) => {
+    // List of all your multiplayer UI elements
+    const clickableElements = 'button, .click-zone, .rocker-label, .input-icon-btn, .ctrl-btn, .modal-btn, .mode-btn';
+    if (e.target.closest(clickableElements)) {
+        if (typeof sfx !== 'undefined' && sfx.play) {
+            sfx.play('click');
+        }
+    }
+});
+
 // --- ASSETS ---
 const imgP1 = new Image(); imgP1.src = "/static/car1.png";
 const imgP2 = new Image(); imgP2.src = "/static/car2.png";
@@ -126,6 +170,7 @@ const uiRefs = {
    ========================================= */
 
 window.updateGameGear = function (playerNum, level) {
+    sfx.play('shift');
     if (playerNum === 1) p1.gear = level;
     else p2.gear = level;
 };
@@ -219,10 +264,12 @@ function useCombatAbility(p, type) {
 
     if (p.ammo > 0) {
         if (type === 'fire') {
+            sfx.play('fire');
             p.ammo = 0;
             p.streak = 0; // Consumption
             spawnProjectile(p);
         } else if (type === 'shield') {
+            sfx.play('shield');
             p.ammo = 0;
             p.streak = 0;
             p.shieldActive = true;
@@ -504,12 +551,15 @@ function updateProjectilesAndParticles() {
             // Hit!
             if (target.shieldActive) {
                 // BLOCKED
+                sfx.play('shield');
                 createExplosion(proj.x, proj.y, '#ffffff'); // Steam effect
                 target.shieldActive = false; // Shield Breaks
                 updateCombatHUD();
             } else {
                 // DAMAGE
+                
                 if (target.invuln === 0) {
+                    sfx.play('crash');
                     target.speed *= 0.5; // 50% Slow
                     target.invuln = 60;
                     createExplosion(proj.x, proj.y, '#ff4b2b'); // Fire effect
@@ -575,6 +625,7 @@ function updateGame() {
 
         if (!o.hit && p.invuln === 0) {
             if (p.x < o.x + o.w && p.x + 50 > o.x && 450 < o.y + o.h && 450 + 90 > o.y) {
+                sfx.play('crash');
                 p.speed = 1; p.invuln = 60; o.hit = true;
             }
         }
@@ -686,6 +737,8 @@ function initGame() {
     updateCombatHUD(); // Reset UI bars
 
     active = true;
+    sfx.play('rev');
+    sfx.startEngine();
     const durationParam = getQueryParam('duration');
     timeLeft = durationParam ? parseInt(durationParam) : 60;
 
@@ -717,6 +770,7 @@ function endGame(aborted) {
     active = false;
     clearInterval(timerInt);
 
+    sfx.stopEngine();
     // Stop voice/gesture on game end
     stopSpeech();
     stopGesture();
