@@ -12,6 +12,185 @@ let sessionStats = { correct: 0, wrong: 0 };
 let loadoutCost = 0;
 let telemetryLog = [];
 let autoPilotActive = false;
+let currentOperands = [];
+
+// Helper: Extract numeric operands (1-12) from question text
+function extractOperands(text) {
+    const nums = text.match(/\d+/g);
+    if (!nums) return [];
+    return nums.map(Number).filter(n => n >= 1 && n <= 12);
+}
+
+// ============================================
+// AUTO-PILOT ENGINE — Client-Side DDA System
+// Uses rolling-window telemetry analysis for
+// dynamic difficulty adjustment.
+// ============================================
+class AutoPilotEngine {
+    constructor() {
+        this.WINDOW_SIZE = 4;      // Small window for fast responsiveness
+        this.COOLDOWN_MS = 5000;   // 5s cooldown (kid-friendly, less waiting)
+        this.CONFIRM_COUNT = 2;    // Only 2 consecutive confirmations needed
+        this.window = [];
+        this.strugglingMap = {};
+        this.lastShiftTime = 0;
+        this.consecutiveRecommendation = null;
+        this.consecutiveCount = 0;
+        this.recentTimestamps = [];
+        this.thresholds = {
+            up: {
+                easy:   { accuracy: 0.85, maxRT: 6.0, struggleErrorRate: 0.40 },
+                medium: { accuracy: 0.85, maxRT: 4.0, struggleErrorRate: 0.30 }
+            },
+            down: {
+                hard:   { accuracy: 0.60, maxRT: 8.0 },
+                medium: { accuracy: 0.60, maxRT: 6.0 }
+            }
+        };
+    }
+
+    record(entry) {
+        this.window.push(entry);
+        if (this.window.length > this.WINDOW_SIZE) this.window.shift();
+        this.recentTimestamps.push(entry.timestamp);
+        const cutoff = entry.timestamp - 30000;
+        this.recentTimestamps = this.recentTimestamps.filter(t => t > cutoff);
+        if (entry.operands) {
+            for (const op of entry.operands) {
+                if (op < 1 || op > 12) continue;
+                if (!this.strugglingMap[op]) {
+                    this.strugglingMap[op] = { attempts: 0, errors: 0, totalRT: 0 };
+                }
+                this.strugglingMap[op].attempts++;
+                if (!entry.correct) this.strugglingMap[op].errors++;
+                this.strugglingMap[op].totalRT += entry.reactionTime;
+            }
+        }
+    }
+
+    evaluate(currentGear) {
+        if (this.window.length < this.WINDOW_SIZE) return 'hold';
+        const correctCount = this.window.filter(e => e.correct).length;
+        const accuracy = correctCount / this.window.length;
+        const avgRT = this.window.reduce((s, e) => s + e.reactionTime, 0) / this.window.length;
+        const inputRate = this.recentTimestamps.length / 30;
+        if (inputRate < 0.1) return 'hold';
+        const hasHeavyStruggling = this._checkStruggling(currentGear, avgRT);
+        if (currentGear === 'hard' || currentGear === 'medium') {
+            const dt = this.thresholds.down[currentGear];
+            if (dt && (accuracy < dt.accuracy || avgRT > dt.maxRT)) return 'down';
+        }
+        if (currentGear === 'easy' || currentGear === 'medium') {
+            const ut = this.thresholds.up[currentGear];
+            if (ut && accuracy >= ut.accuracy && avgRT < ut.maxRT && !hasHeavyStruggling) return 'up';
+        }
+        return 'hold';
+    }
+
+    _checkStruggling(currentGear, overallAvgRT) {
+        const threshold = (currentGear === 'easy') ? 0.40 : 0.30;
+        for (const [op, data] of Object.entries(this.strugglingMap)) {
+            if (data.attempts < 3) continue;
+            const errRate = data.errors / data.attempts;
+            const opAvgRT = data.totalRT / data.attempts;
+            if (errRate > threshold || opAvgRT > overallAvgRT * 2) return true;
+        }
+        return false;
+    }
+
+    tryShift(currentGear) {
+        const recommendation = this.evaluate(currentGear);
+        if (recommendation === 'hold') {
+            this.consecutiveCount = 0;
+            this.consecutiveRecommendation = null;
+            return null;
+        }
+        if (recommendation === this.consecutiveRecommendation) {
+            this.consecutiveCount++;
+        } else {
+            this.consecutiveRecommendation = recommendation;
+            this.consecutiveCount = 1;
+        }
+        if (this.consecutiveCount < this.CONFIRM_COUNT) return null;
+        const now = Date.now();
+        if (now - this.lastShiftTime < this.COOLDOWN_MS) return null;
+        let nextGear = currentGear;
+        if (recommendation === 'up') {
+            if (currentGear === 'easy') nextGear = 'medium';
+            else if (currentGear === 'medium') nextGear = 'hard';
+        } else if (recommendation === 'down') {
+            if (currentGear === 'hard') nextGear = 'medium';
+            else if (currentGear === 'medium') nextGear = 'easy';
+        }
+        if (nextGear !== currentGear) {
+            this.lastShiftTime = now;
+            this.consecutiveCount = 0;
+            this.consecutiveRecommendation = null;
+            return nextGear;
+        }
+        return null;
+    }
+
+    getMetrics() {
+        if (this.window.length === 0) {
+            return { accuracy: 0, avgRT: '0.0', inputRate: '0.00', windowFill: 0, windowSize: this.WINDOW_SIZE, struggling: [] };
+        }
+        const correctCount = this.window.filter(e => e.correct).length;
+        const accuracy = Math.round((correctCount / this.window.length) * 100);
+        const avgRT = (this.window.reduce((s, e) => s + e.reactionTime, 0) / this.window.length).toFixed(1);
+        const inputRate = (this.recentTimestamps.length / 30).toFixed(2);
+        const struggling = [];
+        const overallAvgRT = parseFloat(avgRT);
+        for (const [op, data] of Object.entries(this.strugglingMap)) {
+            if (data.attempts < 3) continue;
+            const errRate = data.errors / data.attempts;
+            const opAvgRT = data.totalRT / data.attempts;
+            if (errRate > 0.30 || opAvgRT > overallAvgRT * 2) struggling.push(parseInt(op));
+        }
+        return { accuracy, avgRT, inputRate, windowFill: this.window.length, windowSize: this.WINDOW_SIZE, struggling };
+    }
+
+    reset() {
+        this.window = [];
+        this.strugglingMap = {};
+        this.lastShiftTime = 0;
+        this.consecutiveRecommendation = null;
+        this.consecutiveCount = 0;
+        this.recentTimestamps = [];
+    }
+}
+
+const autoPilotEngine = new AutoPilotEngine();
+
+// Update the Auto-Pilot HUD elements (confidence bar + status text)
+function updateAutoPilotUI() {
+    if (!autoPilotActive) return;
+    const statusText = document.getElementById('ai-status-text');
+    const confidenceBar = document.getElementById('ai-confidence-bar');
+    if (!statusText || !confidenceBar) return;
+    const metrics = autoPilotEngine.getMetrics();
+    confidenceBar.style.width = metrics.accuracy + '%';
+    if (metrics.accuracy >= 85) {
+        confidenceBar.style.background = '#2ecc71';
+        confidenceBar.style.boxShadow = '0 0 8px #2ecc71';
+    } else if (metrics.accuracy >= 60) {
+        confidenceBar.style.background = '#f39c12';
+        confidenceBar.style.boxShadow = '0 0 8px #f39c12';
+    } else {
+        confidenceBar.style.background = '#e74c3c';
+        confidenceBar.style.boxShadow = '0 0 8px #e74c3c';
+    }
+    if (metrics.windowFill < metrics.windowSize) {
+        statusText.innerText = `CALIBRATING ${metrics.windowFill}/${metrics.windowSize}`;
+        statusText.style.color = '#9b59b6';
+    } else if (metrics.struggling.length > 0) {
+        statusText.innerText = `STRUGGLING: ${metrics.struggling.join(', ')}`;
+        statusText.style.color = '#e74c3c';
+    } else {
+        statusText.innerText = `ACC: ${metrics.accuracy}% | RT: ${metrics.avgRT}s`;
+        statusText.style.color = '#9b59b6';
+    }
+}
 
 // 2. READ URL PARAMS (To detect purchased items)
 const urlParams = new URLSearchParams(window.location.search);
@@ -77,14 +256,21 @@ function updateLoadoutHUD() {
 function toggleAutoPilot() {
     autoPilotActive = !autoPilotActive;
     const btn = document.getElementById('btn-ai-auto');
+    const statusText = document.getElementById('ai-status-text');
+    const confidenceBar = document.getElementById('ai-confidence-bar');
 
     if (autoPilotActive) {
-        btn.innerText = "AUTO-PILOT: ACTIVE";
-        btn.classList.add('ai-active'); // We can style this in CSS later
-        console.log("AI AUTO-PILOT ENGAGED");
+        btn.innerText = "AUTO-PILOT:\nACTIVE";
+        btn.classList.add('ai-active');
+        autoPilotEngine.reset();
+        if (statusText) statusText.innerText = "CALIBRATING...";
+        if (confidenceBar) confidenceBar.style.width = "0%";
+        console.log("AI AUTO-PILOT ENGAGED — Client-Side DDA Active");
     } else {
-        btn.innerText = "AUTO-PILOT: OFF";
+        btn.innerText = "PILOT\nSYSTEM";
         btn.classList.remove('ai-active');
+        if (statusText) statusText.innerText = "OFFLINE";
+        if (confidenceBar) confidenceBar.style.width = "0%";
         console.log("AI AUTO-PILOT DISENGAGED");
     }
 }
@@ -539,6 +725,8 @@ function generateTwoProblems() {
     leftMathValue.innerHTML = leftObj.html || leftObj.text;
     rightMathValue.innerHTML = rightObj.html || rightObj.text;
     questionStartTime = Date.now(); // Mark the exact millisecond the question appeared
+    // Extract operands for Auto-Pilot struggling numbers tracking
+    currentOperands = extractOperands((leftObj.text || '') + ' ' + (rightObj.text || ''));
 }
 
 function createMathProblem() {
@@ -687,57 +875,25 @@ function checkAnswer(input) {
         correct: correct
     });
 
-    // --- GRADUAL AI AUTO-PILOT LOGIC ---
+    // --- CLIENT-SIDE AUTO-PILOT DDA ENGINE ---
     if (autoPilotActive) {
-        fetch('/ai_predict', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                speed: gameState.speed,
-                difficulty: playerConfig.difficulty,
-                rt: reactionTime,
-                correct: correct
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                // Handle "Not Enough Data" Warning
-                if (data.status === 'insufficient_data') {
-                    autoPilotActive = false; // Turn off to prevent spamming
-                    const btn = document.getElementById('btn-ai-auto');
-                    btn.innerText = "LOCKED";
-                    alert(`AI Learning: Need ${data.needed} more data points to enable Auto-Pilot.`);
-                    return;
-                }
+        autoPilotEngine.record({
+            correct: correct,
+            reactionTime: reactionTime,
+            operands: currentOperands,
+            difficulty: playerConfig.difficulty,
+            timestamp: now
+        });
 
-                const currentGear = playerConfig.difficulty; // 'easy', 'medium', or 'hard'
-                const prediction = data.prediction; // 'confident', 'stable', or 'unstable'
-
-                /* GRADUAL SHIFT LOGIC:
-                   1. If 'confident': Move UP one level (Easy -> Medium -> Hard)
-                   2. If 'unstable' or WRONG: Move DOWN one level (Hard -> Medium -> Easy)
-                   3. If 'stable': Maintain current gear.
-                */
-
-                let nextGear = currentGear;
-
-                if (prediction === 'confident' && correct) {
-                    if (currentGear === 'easy') nextGear = 'medium';
-                    else if (currentGear === 'medium') nextGear = 'hard';
-                }
-                else if (prediction === 'unstable' || !correct) {
-                    if (currentGear === 'hard') nextGear = 'medium';
-                    else if (currentGear === 'medium') nextGear = 'easy';
-                }
-
-                // Only trigger a shift if the gear actually changes
-                if (nextGear !== currentGear) {
-                    console.log(`AI shifting from ${currentGear} to ${nextGear}`);
-                    shiftGear(nextGear);
-                    visualizeAIShift(nextGear);
-                }
-            })
-            .catch(err => console.error("AI Prediction Error:", err));
+        const nextGear = autoPilotEngine.tryShift(playerConfig.difficulty);
+        if (nextGear) {
+            const metrics = autoPilotEngine.getMetrics();
+            console.log(`[Auto-Pilot] Shifting: ${playerConfig.difficulty} → ${nextGear}`);
+            console.log(`[Auto-Pilot] Metrics — ACC: ${metrics.accuracy}% | RT: ${metrics.avgRT}s | Struggling: [${metrics.struggling}]`);
+            shiftGear(nextGear);
+            visualizeAIShift(nextGear);
+        }
+        updateAutoPilotUI();
     }
 
     questionStartTime = Date.now();
@@ -762,13 +918,20 @@ function checkAnswer(input) {
 // Helper for UI Feedback
 function visualizeAIShift(gear) {
     const aiButton = document.getElementById('btn-ai-auto');
-    const colors = { 'easy': '#ff4b2b', 'medium': '#ffc107', 'hard': '#00d2ff' };
-    aiButton.style.boxShadow = `0 0 20px ${colors[gear]}`;
+    const statusText = document.getElementById('ai-status-text');
+    const colors = { 'easy': '#00d2ff', 'medium': '#ffc107', 'hard': '#dc3545' };
+    const labels = { 'easy': 'GEAR 1', 'medium': 'GEAR 2', 'hard': 'GEAR 3' };
+
+    aiButton.style.boxShadow = `0 0 25px ${colors[gear]}`;
     aiButton.style.borderColor = colors[gear];
+    if (statusText) {
+        statusText.innerText = `SHIFTED → ${labels[gear]}`;
+        statusText.style.color = colors[gear];
+    }
     setTimeout(() => {
         aiButton.style.boxShadow = "0 0 10px #9b59b6";
         aiButton.style.borderColor = "#9b59b6";
-    }, 800);
+    }, 1200);
 }
 
 /* --- VOICE INPUT --- */
@@ -1108,6 +1271,10 @@ function startGame() {
         controlMethod: playerConfig.controlMode,
         inputStats: { total: 0 }
     };
+
+    // Reset Auto-Pilot engine for fresh game session
+    autoPilotEngine.reset();
+    telemetryLog = [];
 
     // UI Setup
     btnStart.classList.add('btn-disabled');
