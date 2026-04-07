@@ -609,6 +609,82 @@ function showTooltip(x, y, text) {
     setTimeout(() => { cursorTooltip.classList.remove('visible'); }, 2000);
 }
 
+// LOW VARIETY DETECTION — Edge Case Warning
+// Detects when easy gear + custom math config produces too few unique
+// questions, which causes repetitive or broken gameplay.
+//
+// Full analysis for easy gear (answer must be < 10):
+//   X2: 4 valid  |  X3: 3  |  X4: 2  |  X5–X9: 1 each
+//   X10–X11: 0 (game-breaking — no valid question exists!)
+//   Squares: 3 (1²,2²,3²)  |  Cubes: 2 (1³,2³)  |  Sqrt: 9
+//
+// Any single table alone is problematic. Combinations can be too.
+function checkLowVariety() {
+    // Only relevant when custom mode is active and gear is easy
+    if (!playerConfig.customActive || playerConfig.difficulty !== 'easy') return;
+
+    const hasMult = playerConfig.multipliers.length > 0;
+    const hasAdv = Object.values(playerConfig.advancedOps).some(x => x);
+
+    // If no numeric custom ops are active, nothing to check
+    if (!hasMult && !hasAdv) return;
+
+    // Collect all possible valid answers (unique) to gauge true variety
+    const validAnswers = new Set();
+
+    // Count valid multiplication questions
+    if (hasMult) {
+        for (const table of playerConfig.multipliers) {
+            for (let n2 = 1; n2 <= 12; n2++) {
+                const ans = table * n2;
+                if (ans >= 0 && ans < 10) validAnswers.add(table + 'x' + n2);
+            }
+        }
+    }
+
+    // Count valid advanced op questions
+    if (playerConfig.advancedOps.squares) {
+        for (let n = 1; n <= 12; n++) { if (n * n >= 0 && n * n < 10) validAnswers.add('sq_' + n); }
+    }
+    if (playerConfig.advancedOps.cubes) {
+        for (let n = 1; n <= 6; n++) { if (n * n * n >= 0 && n * n * n < 10) validAnswers.add('cb_' + n); }
+    }
+    if (playerConfig.advancedOps.sqrt) {
+        for (let n = 1; n <= 12; n++) { if (n >= 0 && n < 10) validAnswers.add('sqrt_' + n); }
+    }
+
+    // Threshold: 4 or fewer unique questions = repetitive/broken gameplay
+    // (The game needs 2 different questions on screen at once, so ≤4 is critical)
+    if (validAnswers.size <= 4) {
+        const popup = document.getElementById('low-variety-warning');
+        if (popup) popup.classList.add('active');
+        return true; // low variety detected
+    }
+    return false; // variety is fine
+}
+
+// Called by CONFIRM button in config modal
+function confirmConfig() {
+    const isLow = checkLowVariety();
+    if (!isLow) {
+        // No issue — close modal normally
+        document.getElementById('config-modal').classList.remove('active');
+    }
+    // If low variety detected, checkLowVariety already showed the warning popup
+}
+
+// Called by "CONFIRM ANYWAY" button in warning popup
+function confirmAnyway() {
+    document.getElementById('low-variety-warning').classList.remove('active');
+    document.getElementById('config-modal').classList.remove('active');
+}
+
+// Called by "RECONFIGURE" button in warning popup
+function reconfigFromWarning() {
+    document.getElementById('low-variety-warning').classList.remove('active');
+    // Config modal stays open so user can adjust settings
+}
+
 // FEATURE TOGGLES (Classy Tile Logic)
 document.querySelectorAll('.feature-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {

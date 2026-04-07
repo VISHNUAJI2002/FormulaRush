@@ -911,6 +911,132 @@
         z-index: 20;
     }
 
+    /* --- LOW VARIETY WARNING POPUP --- */
+    #low-variety-warning {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 200;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+    }
+
+    #low-variety-warning.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .warning-popup-content {
+        width: 480px;
+        background: rgba(12, 14, 22, 0.98);
+        border: 2px solid #ffc107;
+        border-radius: 14px;
+        padding: 28px 32px;
+        box-shadow: 0 0 50px rgba(255, 193, 7, 0.2), inset 0 0 80px rgba(0, 0, 0, 0.7);
+        transform: translateY(40px) scale(0.95);
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        text-align: center;
+    }
+
+    #low-variety-warning.active .warning-popup-content {
+        transform: translateY(0) scale(1);
+    }
+
+    .warning-popup-icon {
+        font-size: 2.8rem;
+        margin-bottom: 10px;
+        display: block;
+        animation: warningPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes warningPulse {
+        0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255, 193, 7, 0.5)); }
+        50% { transform: scale(1.1); filter: drop-shadow(0 0 14px rgba(255, 193, 7, 0.8)); }
+    }
+
+    .warning-popup-title {
+        font-family: 'Orbitron', 'Segoe UI', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 900;
+        color: #ffc107;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 14px;
+        text-shadow: 0 0 10px rgba(255, 193, 7, 0.4);
+    }
+
+    .warning-popup-msg {
+        font-size: 0.82rem;
+        color: #c8ccd4;
+        line-height: 1.65;
+        margin-bottom: 22px;
+        font-weight: 400;
+    }
+
+    .warning-popup-msg strong {
+        color: #ffc107;
+        font-weight: 700;
+    }
+
+    .warning-popup-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .warning-popup-btn {
+        width: 170px;
+        height: 44px;
+        border-radius: 6px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .warning-popup-btn:active {
+        transform: scale(0.97);
+    }
+
+    .btn-confirm-anyway {
+        background: linear-gradient(to bottom, #2a2614, #1a1808);
+        border: 1.5px solid rgba(255, 193, 7, 0.5);
+        color: #ffc107;
+        text-shadow: 0 0 6px rgba(255, 193, 7, 0.3);
+    }
+
+    .btn-confirm-anyway:hover {
+        background: rgba(255, 193, 7, 0.15);
+        border-color: #ffc107;
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+        color: #fff;
+        text-shadow: 0 0 8px #ffc107;
+    }
+
+    .btn-reconfigure {
+        background: linear-gradient(to bottom, #0f1a2a, #0a1018);
+        border: 1.5px solid rgba(0, 210, 255, 0.5);
+        color: #00d2ff;
+        text-shadow: 0 0 6px rgba(0, 210, 255, 0.3);
+    }
+
+    .btn-reconfigure:hover {
+        background: rgba(0, 210, 255, 0.1);
+        border-color: #00d2ff;
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+        color: #fff;
+        text-shadow: 0 0 8px #00d2ff;
+    }
+
     /* --- POPUP WINDOW --- */
     #config-modal {
         position: fixed;
@@ -1511,7 +1637,7 @@
                 <div class="panel-divider"></div>
                 {% if level_config.mode != 'campaign' %}
                 <div id="btn-sys-config" class="btn-sys-config">
-                    ADDITIONAL FEATURES
+                    ADDITIONAL CONFIGURATION
                 </div>
                 {% endif %}
             </div>
@@ -1565,9 +1691,24 @@
             <button class="btn-clear"
                 onclick="clearAllFeatures()">CLEAR ALL</button>
             <button class="btn-confirm"
-                onclick="document.getElementById('config-modal').classList.remove('active')">CONFIRM</button>
+                onclick="confirmConfig()">CONFIRM</button>
         </div>
 
+    </div>
+</div>
+
+<div id="low-variety-warning">
+    <div class="warning-popup-content">
+        <span class="warning-popup-icon">⚠️</span>
+        <div class="warning-popup-title">Low Question Variety</div>
+        <div class="warning-popup-msg">
+            <strong>Easy gear</strong> restricts answers to single digits only. With your current math selection, very few unique questions are possible — this may cause <strong>repetitive gameplay</strong>.<br><br>
+            Shift to <strong>Medium</strong> or <strong>Hard</strong> gear, or add more math operations (Squares, Cubes, Square Roots, etc.) to unlock a wider question pool.
+        </div>
+        <div class="warning-popup-footer">
+            <button class="warning-popup-btn btn-reconfigure" onclick="reconfigFromWarning()">RECONFIGURE</button>
+            <button class="warning-popup-btn btn-confirm-anyway" onclick="confirmAnyway()">CONFIRM ANYWAY</button>
+        </div>
     </div>
 </div>
 
