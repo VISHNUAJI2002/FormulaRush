@@ -517,6 +517,273 @@
             transform: rotate(360deg);
         }
     }
+
+    /* ========================================
+       GEAR ADVISORY — Info Button & Modal
+       ======================================== */
+    .gear-info-btn {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(8, 12, 20, 0.92);
+        border: 1.5px solid rgba(255, 215, 0, 0.5);
+        color: #ffd700;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 900;
+        cursor: pointer;
+        z-index: 55;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.5);
+        animation: advisoryPulse 3s ease-in-out infinite;
+    }
+    .gear-info-btn:hover {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: #ffd700;
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.5);
+        transform: scale(1.1);
+    }
+    @keyframes advisoryPulse {
+        0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.5); }
+        50% { box-shadow: 0 0 22px rgba(255, 215, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.5); }
+    }
+
+    /* Advisory Modal Overlay */
+    .gear-advisory-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(8px);
+        z-index: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 60px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+    }
+    .gear-advisory-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Advisory Modal Box */
+    .gear-advisory-modal {
+        width: 520px;
+        max-width: 92vw;
+        max-height: 85vh;
+        overflow-y: auto;
+        background: rgba(6, 8, 14, 0.97);
+        border: 1.5px solid rgba(255, 215, 0, 0.35);
+        border-radius: 12px;
+        padding: 28px 32px;
+        box-shadow:
+            0 0 50px rgba(255, 215, 0, 0.12),
+            0 20px 60px rgba(0, 0, 0, 0.7),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        transform: translateY(30px) scale(0.96);
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+    }
+    .gear-advisory-overlay.active .gear-advisory-modal {
+        transform: translateY(0) scale(1);
+    }
+
+    /* Scrollbar styling for the modal */
+    .gear-advisory-modal::-webkit-scrollbar { width: 4px; }
+    .gear-advisory-modal::-webkit-scrollbar-track { background: transparent; }
+    .gear-advisory-modal::-webkit-scrollbar-thumb { background: rgba(255, 215, 0, 0.25); border-radius: 2px; }
+
+    /* Modal Header */
+    .advisory-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+    }
+    .advisory-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .advisory-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+    .advisory-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.85rem;
+        color: #ffd700;
+        letter-spacing: 2px;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    .advisory-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #666;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        line-height: 1;
+    }
+    .advisory-close:hover {
+        background: rgba(255, 75, 43, 0.15);
+        border-color: rgba(255, 75, 43, 0.4);
+        color: #ff4b2b;
+    }
+
+    /* Explanation Block */
+    .advisory-explain {
+        background: rgba(255, 215, 0, 0.04);
+        border: 1px solid rgba(255, 215, 0, 0.12);
+        border-left: 3px solid rgba(255, 215, 0, 0.5);
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+    }
+    .advisory-explain p {
+        color: #b0b8c8;
+        font-size: 0.78rem;
+        line-height: 1.6;
+        margin: 0;
+    }
+    .advisory-explain strong {
+        color: #ffd700;
+    }
+    .advisory-explain .gear-tag {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 3px;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        vertical-align: middle;
+        margin: 0 2px;
+    }
+    .gear-tag-easy {
+        background: rgba(0, 210, 255, 0.12);
+        border: 1px solid rgba(0, 210, 255, 0.4);
+        color: #00d2ff;
+    }
+    .gear-tag-med {
+        background: rgba(255, 193, 7, 0.12);
+        border: 1px solid rgba(255, 193, 7, 0.4);
+        color: #ffc107;
+    }
+    .gear-tag-hard {
+        background: rgba(255, 75, 43, 0.12);
+        border: 1px solid rgba(255, 75, 43, 0.4);
+        color: #ff4b2b;
+    }
+
+    /* Level Table */
+    .advisory-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 6px;
+    }
+    .advisory-table thead th {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.55rem;
+        color: #666;
+        letter-spacing: 1.5px;
+        text-align: left;
+        padding: 4px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .advisory-table tbody tr {
+        background: rgba(255, 255, 255, 0.02);
+        transition: background 0.2s;
+    }
+    .advisory-table tbody tr:hover {
+        background: rgba(255, 215, 0, 0.04);
+    }
+    .advisory-table td {
+        padding: 9px 10px;
+        font-size: 0.72rem;
+        color: #9aa0b0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .advisory-table td:first-child {
+        border-radius: 4px 0 0 4px;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.65rem;
+        color: #ccc;
+        letter-spacing: 0.5px;
+    }
+    .advisory-table td:last-child {
+        border-radius: 0 4px 4px 0;
+    }
+
+    /* Status indicators */
+    .status-ok {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #2ecc71;
+        font-weight: 600;
+    }
+    .status-warn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #f39c12;
+        font-weight: 600;
+    }
+    .status-critical {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #ff4b2b;
+        font-weight: 600;
+    }
+
+    /* Footer Tip */
+    .advisory-footer-tip {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .advisory-footer-tip .tip-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+    .advisory-footer-tip p {
+        color: #7a8a9a;
+        font-size: 0.7rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+    .advisory-footer-tip strong {
+        color: #00c8ff;
+    }
 </style>
 
 <!-- 3D SPACE GALAXY BACKGROUND -->
@@ -532,6 +799,11 @@
         <h1>CAMPAIGN MAP</h1>
         <div class="clearance-badge">CLEARANCE: LEVEL {{9 if max_level > 9 else max_level-1 }} / 9</div>
     </div>
+
+    <!-- Gear Advisory Info Button -->
+    <button class="gear-info-btn" id="gear-advisory-btn" title="Gear Advisory">
+        ℹ
+    </button>
 
     <div class="map-3d-layer">
 
@@ -681,6 +953,132 @@
     <a href="{{ url_for('dashboard') }}" class="btn-dashboard">RETURN TO DASHBOARD</a>
 
 </div>
+
+<!-- ========================================
+     GEAR ADVISORY MODAL
+     ======================================== -->
+<div class="gear-advisory-overlay" id="gear-advisory-overlay">
+    <div class="gear-advisory-modal">
+
+        <div class="advisory-header">
+            <div class="advisory-header-left">
+                <div class="advisory-icon">⚙️</div>
+                <span class="advisory-title">GEAR ADVISORY</span>
+            </div>
+            <button class="advisory-close" id="advisory-close-btn">&times;</button>
+        </div>
+
+        <div class="advisory-explain">
+            <p>
+                The <span class="gear-tag gear-tag-easy">EASY</span> gear restricts all answers to
+                <strong>single digits only</strong> (0–9). In campaign levels that focus on higher multiplication
+                tables, this creates an extremely limited question pool — some levels may have as few as
+                <strong>1–2 unique questions</strong>, causing repetitive and frustrating gameplay.
+            </p>
+        </div>
+
+        <table class="advisory-table">
+            <thead>
+                <tr>
+                    <th>LEVEL</th>
+                    <th>OPERATION</th>
+                    <th>RECOMMENDATION</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>01 — Addition</td>
+                    <td>Addition only</td>
+                    <td><span class="gear-tag gear-tag-easy">ANY GEAR</span></td>
+                </tr>
+                <tr>
+                    <td>02 — Subtraction</td>
+                    <td>Subtraction only</td>
+                    <td><span class="gear-tag gear-tag-easy">ANY GEAR</span></td>
+                </tr>
+                <tr>
+                    <td>03 — Tables 1 & 2</td>
+                    <td>1× and 2× tables</td>
+                    <td><span class="gear-tag gear-tag-med">MEDIUM+</span></td>
+                </tr>
+                <tr>
+                    <td>04 — Tables 3 & 4</td>
+                    <td>3× and 4× tables</td>
+                    <td><span class="gear-tag gear-tag-med">MEDIUM+</span></td>
+                </tr>
+                <tr>
+                    <td>05 — Tables 5 & 6</td>
+                    <td>5× and 6× tables</td>
+                    <td><span class="gear-tag gear-tag-med">MEDIUM+</span></td>
+                </tr>
+                <tr>
+                    <td>06 — Tables 7 & 8</td>
+                    <td>7× and 8× tables</td>
+                    <td><span class="gear-tag gear-tag-med">MEDIUM+</span></td>
+                </tr>
+                <tr>
+                    <td>07 — Tables 9 & 10</td>
+                    <td>9× and 10× tables</td>
+                    <td><span class="gear-tag gear-tag-med">MEDIUM+</span></td>
+                </tr>
+                <tr>
+                    <td>08 — Division</td>
+                    <td>Division only</td>
+                    <td><span class="gear-tag gear-tag-easy">ANY GEAR</span></td>
+                </tr>
+                <tr>
+                    <td>09 — The Gauntlet</td>
+                    <td>All operations</td>
+                    <td><span class="gear-tag gear-tag-easy">ANY GEAR</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="advisory-footer-tip">
+            <span class="tip-icon">💡</span>
+            <p>
+                For the best experience on <strong>multiplication-focused levels</strong> (Levels 3–7),
+                shift to <span class="gear-tag gear-tag-med">MEDIUM</span> or
+                <span class="gear-tag gear-tag-hard">HARD</span> gear before starting.
+                The <strong>Auto-Pilot AI</strong> can also dynamically adjust your gear during gameplay.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// === GEAR ADVISORY MODAL LOGIC ===
+(function() {
+    const advisoryBtn = document.getElementById('gear-advisory-btn');
+    const advisoryOverlay = document.getElementById('gear-advisory-overlay');
+    const advisoryCloseBtn = document.getElementById('advisory-close-btn');
+
+    if (advisoryBtn && advisoryOverlay) {
+        advisoryBtn.addEventListener('click', function() {
+            advisoryOverlay.classList.add('active');
+        });
+
+        advisoryCloseBtn.addEventListener('click', function() {
+            advisoryOverlay.classList.remove('active');
+        });
+
+        // Close on overlay background click
+        advisoryOverlay.addEventListener('click', function(e) {
+            if (e.target === advisoryOverlay) {
+                advisoryOverlay.classList.remove('active');
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && advisoryOverlay.classList.contains('active')) {
+                advisoryOverlay.classList.remove('active');
+            }
+        });
+    }
+})();
+</script>
 
 <script>
 (function() {
