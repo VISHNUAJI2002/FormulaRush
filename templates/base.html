@@ -10,7 +10,14 @@
 
     <nav class="navbar">
         <a class="brand" href="/">🏎️ Formula Rush</a>
-        <div class="nav-links">
+
+        <button class="hamburger-btn" id="hamburgerBtn">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+        </button>
+
+        <div class="nav-links" id="navLinks">
             {% if current_user.is_authenticated %}
                 <span class="user-greeting">Pilot: {{ current_user.username }}</span>
                 <a href="/dashboard" class="btn btn-primary">Dashboard</a>
@@ -34,5 +41,19 @@
         {% block content %}{% endblock %}
     </div>
 
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const navLinks = document.getElementById('navLinks');
+
+            if (hamburgerBtn && navLinks) {
+                hamburgerBtn.addEventListener('click', function() {
+                    navLinks.classList.toggle('active');
+                    hamburgerBtn.classList.toggle('active');
+                });
+            }
+        });
+    </script>
+    
 </body>
 </html>
