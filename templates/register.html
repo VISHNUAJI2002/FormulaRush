@@ -150,7 +150,7 @@
     <div class="auth-card">
         <h2 class="auth-title" style="color: var(--neon-pink);">New License</h2>
 
-        <form method="POST">
+        <form method="POST" id="registerForm" onsubmit="return validateRegister()">
             <div class="form-group">
                 <label class="form-label">Choose Callsign (Username)</label>
                 <input type="text" name="username" class="form-input" placeholder="PILOT NAME" required>
@@ -158,7 +158,24 @@
 
             <div class="form-group">
                 <label class="form-label">Set Security Code (Password)</label>
-                <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+                <div style="position: relative;">
+                    <input type="password" id="regPassword" name="password" class="form-input" placeholder="••••••••" required style="padding-right: 40px;">
+                    <span id="togglePassword" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--neon-pink); display: flex; align-items: center; justify-content: center; user-select: none;" title="Toggle Visibility">
+                        <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </span>
+                </div>
+                <small id="passwordError" style="color: #ff4b2b; display: none; font-size: 0.8rem; margin-top: 5px; text-shadow: 0 0 5px #ff4b2b;">Must be at least 5 characters.</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Confirm Security Code</label>
+                <div style="position: relative;">
+                    <input type="password" id="regConfirmPassword" class="form-input" placeholder="••••••••" required style="padding-right: 40px;">
+                    <span id="toggleConfirmPassword" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--neon-pink); display: flex; align-items: center; justify-content: center; user-select: none;" title="Toggle Visibility">
+                        <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </span>
+                </div>
+                <small id="confirmError" style="color: #ff4b2b; display: none; font-size: 0.8rem; margin-top: 5px; text-shadow: 0 0 5px #ff4b2b;">Passwords do not match.</small>
             </div>
 
             <button type="submit" class="btn btn-primary"
@@ -316,5 +333,57 @@
 
         animate();
     })();
+
+    // Password Visibility Toggle
+    function setupPasswordToggle(toggleId, inputId) {
+        const toggle = document.getElementById(toggleId);
+        const input = document.getElementById(inputId);
+        const eyeSvg = '<svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        const eyeOffSvg = '<svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+        
+        if (toggle && input) {
+            toggle.addEventListener('click', function() {
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                
+                // Toggle between eye and eye-off icon
+                if (type === 'text') {
+                    toggle.innerHTML = eyeOffSvg;
+                    toggle.style.opacity = '1';
+                } else {
+                    toggle.innerHTML = eyeSvg;
+                    toggle.style.opacity = '1';
+                }
+            });
+        }
+    }
+
+    setupPasswordToggle('togglePassword', 'regPassword');
+    setupPasswordToggle('toggleConfirmPassword', 'regConfirmPassword');
+
+    // Form Validation 
+    function validateRegister() {
+        const pwd = document.getElementById('regPassword').value;
+        const confirmPwd = document.getElementById('regConfirmPassword').value;
+        let isValid = true;
+        
+        const pwdError = document.getElementById('passwordError');
+        const confirmError = document.getElementById('confirmError');
+        
+        pwdError.style.display = 'none';
+        confirmError.style.display = 'none';
+
+        if (pwd.length < 5) {
+            pwdError.style.display = 'block';
+            isValid = false;
+        }
+
+        if (pwd !== confirmPwd) {
+            confirmError.style.display = 'block';
+            isValid = false;
+        }
+
+        return isValid;
+    }
 </script>
 {% endblock %}
