@@ -692,9 +692,16 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
         const value = btn.dataset.value;
         let isActive = btn.classList.contains('active');
 
+        // INTERCEPT "UNDER DEVELOPMENT" FEATURES
+        if (type === 'voice' && ['diff', 'int', 'trig'].includes(value)) {
+            showTooltip(e.clientX, e.clientY, "FEATURE CURRENTLY UNDER DEVELOPMENT 🚧");
+            btn.classList.remove('active'); 
+            return; 
+        }
+
         // WARNING 1: Voice Only Check
         if (type === 'voice' && !isActive) {
-            if (playerConfig.controlMode !== 'voice') { // Fixed typo Configplayer -> playerConfig
+            if (playerConfig.controlMode !== 'voice') { 
                 showTooltip(e.clientX, e.clientY, "REQ: VOICE MODE");
                 return;
             }
@@ -727,7 +734,6 @@ document.querySelectorAll('.feature-btn').forEach(btn => {
             else stdNavControls.classList.remove('controls-disabled');
         }
 
-        // WARNING 2: Gear Suggestion
         // WARNING 2: Gear Suggestion (Only for numeric operations)
         if (isActive && playerConfig.customActive && playerConfig.difficulty === 'easy' && type !== 'voice') {
             showTooltip(e.clientX, e.clientY, "SUGGESTION: SHIFT UP (Answers > 9)");
@@ -1289,6 +1295,18 @@ function shiftGear(level) {
         shifterAssembly.style.top = "165px"; knobNumber.innerText = "1";
         knobNumber.style.color = "#00d2ff"; knobNumber.style.textShadow = "0 0 15px #00d2ff";
         labelEasy.classList.add('active-label'); labelEasy.style.color = "#00d2ff";
+    }
+
+    // MULTI-DIGIT RULE WARNING SYSTEM
+    if (level === 'medium' || level === 'hard') {
+        const hintEl = document.getElementById('dynamic-digit-rule-hint');
+        if (hintEl) {
+            if (window.digitRuleTimer) clearTimeout(window.digitRuleTimer);
+            hintEl.style.opacity = '1';
+            window.digitRuleTimer = setTimeout(() => {
+                hintEl.style.opacity = '0';
+            }, 10000);
+        }
     }
 
     // 2. PHYSICS UPDATE

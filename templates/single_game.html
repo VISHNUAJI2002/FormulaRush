@@ -767,6 +767,61 @@
             0 0 10px rgba(255, 255, 255, 0.9);
     }
 
+    /* AI PILOT BUTTON */
+    .btn-ai-pilot {
+        width: 100%;
+        flex-grow: 1;
+        margin-top: 0;
+        cursor: pointer;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.65rem;
+        line-height: 1.4;
+        border-radius: 6px;
+
+        /* Solid Base with Purple Theme */
+        background: linear-gradient(160deg, #161224, #0d0a14);
+        border: 1px solid rgba(155, 89, 182, 0.4);
+        border-bottom: 4px solid rgba(80, 20, 100, 0.9);
+        
+        /* Neon Typography */
+        color: #d7a8f5;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-shadow: 0 0 5px rgba(155, 89, 182, 0.5);
+
+        /* Depth */
+        box-shadow: 
+            inset 0 1px 0 rgba(255, 255, 255, 0.05),
+            0 6px 12px rgba(0, 0, 0, 0.6);
+
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.08s ease,
+            background 0.15s ease,
+            color 0.15s ease,
+            border-color 0.15s ease;
+    }
+
+    .btn-ai-pilot:hover {
+        background: linear-gradient(160deg, #1b152e, #130e1d);
+        border-color: #9b59b6;
+        color: #fff;
+        text-shadow: 0 0 8px #9b59b6, 0 0 15px rgba(155, 89, 182, 0.7);
+        box-shadow: 
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 8px 16px rgba(155, 89, 182, 0.2);
+    }
+
+    .btn-ai-pilot:active {
+        transform: translateY(3px);
+        border-bottom-width: 1px;
+        box-shadow: 
+            inset 0 3px 6px rgba(0, 0, 0, 0.8),
+            0 2px 4px rgba(0, 0, 0, 0.5);
+        color: #fff;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    }
+
     /* --- MISSION BRIEFING CARD (Campaign Only) --- */
     .mission-card {
         background: rgba(255, 215, 0, 0.05);
@@ -1430,6 +1485,13 @@
 <div id="shootingStarContainer"></div>
 
 <div class="cockpit-body">
+    <div id="dynamic-digit-rule-hint" style="position: absolute; top: 75px; left: 0; right: 0; opacity: 0; transition: opacity 0.5s ease-in-out; display: flex; justify-content: center; pointer-events: none; z-index: 50;">
+        <div style="background: rgba(10, 15, 25, 0.85); border: 1px solid #f39c12; color: #f39c12; font-family: 'Rajdhani', 'Segoe UI', sans-serif; font-size: 0.85rem; font-weight: 800; padding: 6px 20px; border-radius: 8px; box-shadow: 0 0 25px rgba(243, 156, 18, 0.6); display: flex; align-items: center; gap: 12px; backdrop-filter: blur(4px);">
+            <span style="font-size: 0.75rem; color: #e67e22; text-shadow: 0 0 5px #e67e22; border-right: 1px solid #f39c12; padding-right: 12px; text-transform: uppercase;">System Override</span>
+            <span style="text-transform: uppercase; letter-spacing: 1px;">For multi-digit answers, enter ONLY the last digit (e.g., 13 ➔ Press 3)</span>
+        </div>
+    </div>
+
     <div class="game-transform-wrapper">
         <div class="game-wrapper">
 
@@ -1444,9 +1506,9 @@
                                 style="font-size: 0.65rem; color: #9b59b6; margin-bottom: 8px; text-shadow: 0 0 8px rgba(155, 89, 182, 0.6);">AI
                                 ASSISTANT</span>
 
-                            <button id="btn-ai-auto" class="btn-sys-config" onclick="toggleAutoPilot()"
-                                style="width: 100%; flex-grow: 1; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.08); 
-                           font-family: 'Orbitron', sans-serif; font-size: 0.65rem; line-height: 1.4; border-radius: 6px; cursor: pointer; transition: all 0.3s; margin-top:0;">
+                            <button id="btn-ai-auto" class="btn-ai-pilot" onclick="toggleAutoPilot()"
+                                title="This is for automate gear change. When activated, you don't have to worry about manual shifting and it automatically changes the gears for you."
+                                data-tooltip="This is for automate gear change. When activated, you don't have to worry about manual shifting and it automatically changes the gears for you.">
                                 PILOT<br>SYSTEM
                             </button>
 
