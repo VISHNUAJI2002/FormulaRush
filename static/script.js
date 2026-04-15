@@ -13,25 +13,25 @@ const sfx = {
     correct: new Audio('/static/sounds/correct.mp3'),
     wrong: new Audio('/static/sounds/wrong.mp3'),
     engine: new Audio('/static/sounds/engine.mp3'),
-    rev: new Audio('/static/sounds/rev.mp3'),       
+    rev: new Audio('/static/sounds/rev.mp3'),
     shift: new Audio('/static/sounds/shift.mp3'),
-    shoot: new Audio('/static/sounds/fire.mp3'),  
-    shield: new Audio('/static/sounds/shield.mp3'), 
-    
-    play: function(soundName) {
-        if (!this[soundName]) return; 
-        let sound = new Audio(this[soundName].src); 
-        sound.volume = 0.6; 
+    shoot: new Audio('/static/sounds/fire.mp3'),
+    shield: new Audio('/static/sounds/shield.mp3'),
+
+    play: function (soundName) {
+        if (!this[soundName]) return;
+        let sound = new Audio(this[soundName].src);
+        sound.volume = 0.6;
         sound.play().catch(e => console.log("Audio play prevented:", e));
     },
 
-    startEngine: function() {
+    startEngine: function () {
         this.engine.loop = true;
-        this.engine.volume = 0.3; 
+        this.engine.volume = 0.3;
         this.engine.play().catch(e => console.log("Engine play prevented:", e));
     },
-    
-    stopEngine: function() {
+
+    stopEngine: function () {
         this.engine.pause();
     }
 };
@@ -50,9 +50,30 @@ document.body.addEventListener('click', (e) => {
 });
 
 // --- ASSETS ---
-const imgP1 = new Image(); imgP1.src = "/static/car1.png";
+const imgP1 = new Image(); imgP1.src = "/static/greencar.png";
 const imgP2 = new Image(); imgP2.src = "/static/car2.png";
-const imgObs = new Image(); imgObs.src = "/static/obstacle.png";
+
+// --- DYNAMIC CAR REGISTRY (PLAYERS) ---
+const PLAYER_CONFIGS = {
+    p1: { width: 85, height: 105 },
+    p2: { width: 50, height: 100 }
+};
+
+// --- DYNAMIC TRAFFIC REGISTRY ---
+const TRAFFIC_TYPES = [
+    { name: "normal", img: "/static/normal.png", width: 93, height: 103, speedMultiplier: 1.0, spawnWeight: 15 },
+    { name: "taxi", img: "/static/car_enemy.png", width: 43, height: 88, speedMultiplier: 0.85, spawnWeight: 45 },
+    { name: "bike", img: "/static/bike.png", width: 73, height: 100, speedMultiplier: 0.9, spawnWeight: 10 },
+    { name: "redcar", img: "/static/car1.png", width: 79, height: 103, speedMultiplier: 0.8, spawnWeight: 30 }
+];
+
+// Pre-load all enemy images into a dictionary
+const enemyImages = {};
+TRAFFIC_TYPES.forEach(type => {
+    const img = new Image();
+    img.src = type.img;
+    enemyImages[type.name] = img;
+});
 
 // --- CONFIGURATION ---
 const ROAD_WIDTH = 800;
@@ -81,13 +102,17 @@ let p1 = {
     id: 1, x: 0, lane: 1, speed: 0, dist: 0, invuln: 0,
     gear: 'easy', mathMode: 'simple', laneOffset: 0,
     streak: 0, ammo: 0, shieldActive: false,
-    controlMode: 'keyboard'
+    controlMode: 'keyboard',
+    w: PLAYER_CONFIGS.p1.width,
+    h: PLAYER_CONFIGS.p1.height
 };
 let p2 = {
     id: 2, x: 0, lane: 1, speed: 0, dist: 0, invuln: 0,
     gear: 'easy', mathMode: 'simple', laneOffset: 0,
     streak: 0, ammo: 0, shieldActive: false,
-    controlMode: 'keyboard'
+    controlMode: 'keyboard',
+    w: PLAYER_CONFIGS.p2.width,
+    h: PLAYER_CONFIGS.p2.height
 };
 
 // --- MULTI-MODAL INPUT STATE ---
@@ -255,20 +280,14 @@ window.addEventListener('keydown', (e) => {
 
 // --- COMBAT ACTIONS ---
 function useCombatAbility(p, type) {
-    if (p.shieldActive) {
-        // If shield is active, can we manually drop it? 
-        // Logic: Shield drops only on hit or reset. But if desired, allow toggle.
-        // Current design: Shield stays until hit. No manual drop to reload.
-        return;
-    }
-
     if (p.ammo > 0) {
         if (type === 'fire') {
-            sfx.play('fire');
+            sfx.play('shoot'); // Fixed audio reference from 'fire' to 'shoot'
             p.ammo = 0;
             p.streak = 0; // Consumption
             spawnProjectile(p);
         } else if (type === 'shield') {
+            if (p.shieldActive) return; // Don't waste ammo if already shielded!
             sfx.play('shield');
             p.ammo = 0;
             p.streak = 0;
@@ -337,7 +356,7 @@ function checkAnswer(playerObj, mathData, inputVal) {
 
     // --- STREAK LOGIC ---
     if (correct) {
-        if (!playerObj.shieldActive && playerObj.ammo === 0) {
+        if (playerObj.ammo === 0) {
             playerObj.streak++;
             if (playerObj.streak >= 5) {
                 playerObj.streak = 5;
@@ -557,7 +576,7 @@ function updateProjectilesAndParticles() {
                 updateCombatHUD();
             } else {
                 // DAMAGE
-                
+
                 if (target.invuln === 0) {
                     sfx.play('crash');
                     target.speed *= 0.5; // 50% Slow
@@ -592,8 +611,26 @@ function spawnObstacle() {
     let targetP = Math.random() > 0.5 ? p1 : p2;
     let roadOffset = (targetP.id === 1) ? 20 : HALF_WIDTH + 20;
     let lane = Math.floor(Math.random() * 3);
-    let x = roadOffset + (lane * LANE_WIDTH) + (LANE_WIDTH / 2) - 25;
-    obstacles.push({ x: x, y: -100, w: 50, h: 50, lane: lane, roadId: targetP.id, hit: false });
+    const totalWeight = TRAFFIC_TYPES.reduce((sum, t) => sum + t.spawnWeight, 0);
+    let rand = Math.random() * totalWeight;
+    let chosenType = TRAFFIC_TYPES[0];
+    for (let t of TRAFFIC_TYPES) {
+        rand -= t.spawnWeight;
+        if (rand <= 0) { chosenType = t; break; }
+    }
+
+    // Center the custom-sized car perfectly in the lane
+    let x = roadOffset + (lane * LANE_WIDTH) + (LANE_WIDTH / 2) - (chosenType.width / 2);
+
+    obstacles.push({
+        x: x, y: -150,
+        w: chosenType.width,
+        h: chosenType.height,
+        lane: lane,
+        roadId: targetP.id,
+        hit: false,
+        type: chosenType // Store reference to apply speed/image later
+    });
 
     let delay1 = DIFFICULTY[p1.gear].trafficFreq;
     let delay2 = DIFFICULTY[p2.gear].trafficFreq;
@@ -617,14 +654,22 @@ function updateGame() {
     });
 
     // Obstacles
+    // Obstacles
     for (let i = 0; i < obstacles.length; i++) {
         let o = obstacles[i];
-        let speed = (o.roadId === 1) ? p1.speed : p2.speed;
-        o.y += speed;
         let p = (o.roadId === 1) ? p1 : p2;
 
+        // Apply the specific traffic's speed multiplier
+        let baseSpeed = (o.roadId === 1) ? p1.speed : p2.speed;
+        o.y += (baseSpeed * o.type.speedMultiplier);
+
+        // Dynamic Collision Check using p.w, p.h, o.w, and o.h
         if (!o.hit && p.invuln === 0) {
-            if (p.x < o.x + o.w && p.x + 50 > o.x && 450 < o.y + o.h && 450 + 90 > o.y) {
+            if (p.x < o.x + o.w &&
+                p.x + p.w > o.x &&
+                450 < o.y + o.h &&
+                450 + p.h > o.y) {
+
                 sfx.play('crash');
                 p.speed = 1; p.invuln = 60; o.hit = true;
             }
@@ -653,16 +698,21 @@ function drawGame() {
 
     // Obstacles
     obstacles.forEach(o => {
-        if (imgObs.complete && imgObs.naturalWidth !== 0) ctx.drawImage(imgObs, o.x, o.y, o.w, o.h);
-        else { ctx.fillStyle = 'red'; ctx.fillRect(o.x, o.y, o.w, o.h); }
+        const img = enemyImages[o.type.name];
+        if (img && img.complete && img.naturalWidth !== 0) {
+            ctx.drawImage(img, o.x, o.y, o.w, o.h);
+        } else {
+            ctx.fillStyle = 'red'; ctx.fillRect(o.x, o.y, o.w, o.h);
+        }
     });
 
     // Players
     [p1, p2].forEach(p => {
-        // Draw Shield
+        // Draw Shield (Dynamically sized based on car size)
         if (p.shieldActive) {
+            const radius = Math.max(p.w, p.h) / 1.5;
             ctx.beginPath();
-            ctx.arc(p.x + 25, 450 + 45, 60, 0, Math.PI * 2);
+            ctx.arc(p.x + (p.w / 2), 450 + (p.h / 2), radius, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(0, 242, 96, 0.2)'; // Green tint shield
             ctx.fill();
             ctx.strokeStyle = '#00f260';
@@ -672,7 +722,7 @@ function drawGame() {
         // Draw Car (Blink if invuln)
         if (!(p.invuln > 0 && Math.floor(Date.now() / 50) % 2 === 0)) {
             let img = (p.id === 1) ? imgP1 : imgP2;
-            ctx.drawImage(img, p.x, 450, 50, 90);
+            ctx.drawImage(img, p.x, 450, p.w, p.h);
         }
     });
 
@@ -722,8 +772,8 @@ function getQueryParam(param) {
 
 function initGame() {
     // Reset Logic
-    p1.x = 20 + LANE_WIDTH + LANE_WIDTH / 2 - 25;
-    p2.x = HALF_WIDTH + 20 + LANE_WIDTH + LANE_WIDTH / 2 - 25;
+    p1.x = 20 + LANE_WIDTH + LANE_WIDTH / 2 - (p1.w / 2);
+    p2.x = HALF_WIDTH + 20 + LANE_WIDTH + LANE_WIDTH / 2 - (p2.w / 2);
     p1.lane = 1; p2.lane = 1;
     p1.speed = DIFFICULTY[p1.gear].baseSpeed;
     p2.speed = DIFFICULTY[p2.gear].baseSpeed;
