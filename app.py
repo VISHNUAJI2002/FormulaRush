@@ -6,6 +6,7 @@ from datetime import datetime # NEW: To track when a game was played
 import json # NEW: To store mistakes as text
 import pickle
 import pandas as pd
+import os
 
 # --- LOAD AI BRAIN ---
 try:
@@ -20,7 +21,7 @@ except FileNotFoundError:
     print("AI BRAIN: NOT FOUND - AUTO-PILOT DISABLED")
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'formularush_secure_key_2026'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'formularush_secure_key_2026')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
 db = SQLAlchemy(app)
@@ -171,6 +172,9 @@ class TelemetryData(db.Model):
     def __repr__(self):
         return f'<Telemetry {self.user_id}: RT={self.reaction_time} Correct={self.is_correct}>'
 
+
+with app.app_context():
+    db.create_all()
 # --- LOGIN MANAGER SETUP ---
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -638,7 +642,7 @@ def submit_score():
     
     if mode == 'campaign' and level_id is not None:
         # Player must reach 1000m to unlock the next level
-        if score >= 200:
+        if score >= 500:
             next_level = level_id + 1
             # Only unlock if it's actually a new level for the player
             if next_level > current_user.max_level_unlocked:
