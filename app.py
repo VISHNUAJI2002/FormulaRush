@@ -9,7 +9,16 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'formularush_secure_key_2026')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
+# Grab the database URL from Render, or use local SQLite if testing on your laptop
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
+
+# Safety check: SQLAlchemy requires the URL to start with "postgresql://"
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+
 
 db = SQLAlchemy(app)
 
